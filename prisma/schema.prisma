@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SituacaoVenda {
+  CONCLUIDO
+  CANCELADO
+  INCOMPLETO
+  OUTRO
+}
+
+enum SituacaoNf {
+  EMITIDO
+  CANCELADO
+  ERRO_DE_EMISSAO
+  EM_EMISSAO
+  OUTRO
+}
+
+enum SituacaoConferencia {
+  NF_EMITIDA
+  NF_NAO_EMITIDA
+  ERRO_DE_EMISSAO
+  ERRO_DE_CANCELAMENTO
+  NF_CANCELADA
+  MULTIPLAS_NOTAS_REVISAO
+  OUTRO
+}
+
+enum CommType {
+  INTEGRAL
+  FIXED
+  CALC
+}
+
+enum CurrencyMode {
+  FIXED
+  COL
+  NONE
+}
+
+enum ImportSourceType {
+  PLATFORM
+  EMITTER
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  codigo    String   @unique
+  nome      String
+  cnpj      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  platformConfigs PlatformConfig[]
+  emitterConfigs  EmitterConfig[]
+  importBatches   ImportBatch[]
+  sales           Sale[]
+  invoices        Invoice[]
+  checklistStates ChecklistState[]
+}
+
+model PlatformConfig {
+  id             String       @id @default(cuid())
+  companyId      String
+  company        Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name           String
+  mappings       Json
+  commType       CommType
+  fixedCommValue Float?
+  currencyMode   CurrencyMode
+  fixedCurrency  String?
+  currencyCol    String?
+  cleanupChars   String       @default("")
+  statusMap      Json
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  importBatches ImportBatch[]
+  sales         Sale[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model EmitterConfig {
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name            String
+  mappings        Json
+  cleanupChars    String   @default("")
+  fallbackService String   @default("")
+  statusMap       Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  importBatches ImportBatch[]
+  invoices      Invoice[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model ImportBatch {
+  id               String            @id @default(cuid())
+  companyId        String
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sourceType       ImportSourceType
+  platformConfigId String?
+  platformConfig   PlatformConfig?   @relation(fields: [platformConfigId], references: [id])
+  emitterConfigId  String?
+  emitterConfig    EmitterConfig?    @relation(fields: [emitterConfigId], references: [id])
+  originalFilename String
+  rowCount         Int
+  rawRows          Json
+  competencias     String[]
+  importedAt       DateTime          @default(now())
+  replacedBatchId  String?
+
+  sales    Sale[]
+  invoices Invoice[]
+
+  @@index([companyId, sourceType])
+  @@index([companyId, platformConfigId])
+  @@index([companyId, emitterConfigId])
+}
+
+model Sale {
+  id                    String        @id @default(cuid())
+  companyId             String
+  company               Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  importBatchId         String
+  importBatch           ImportBatch   @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  platformConfigId      String
+  platformConfig        PlatformConfig @relation(fields: [platformConfigId], references: [id])
+  codigoVenda           String
+  codigoVendaNormalized String
+  comprador             String
+  plataforma            String
+  moeda                 String        @default("BRL")
+  valorVenda            Float
+  comissao              Float
+  valorNf               Float
+  situacaoVenda         SituacaoVenda
+  competencia           String
+  createdAt             DateTime      @default(now())
+
+  @@index([companyId, competencia])
+  @@index([companyId, codigoVendaNormalized])
+  @@index([companyId, plataforma])
+}
+
+model Invoice {
+  id                    String        @id @default(cuid())
+  companyId             String
+  company               Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  importBatchId         String
+  importBatch           ImportBatch   @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  emitterConfigId       String
+  emitterConfig         EmitterConfig @relation(fields: [emitterConfigId], references: [id])
+  codigoVenda           String
+  codigoVendaNormalized String
+  comprador             String
+  situacaoNf            SituacaoNf
+  competencia           String
+  valorNf               Float
+  numero                String
+  tipo                  String
+  codigoServico         String
+  createdAt             DateTime      @default(now())
+
+  @@index([companyId, competencia])
+  @@index([companyId, codigoVendaNormalized])
+}
+
+model ChecklistState {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  competencia String
+  itemsJson   Json
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, competencia])
+}

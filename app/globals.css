@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #141414;
+}
+
+/* Plano A Contabilidade — design tokens (ver skill plano-a-design-system) */
+@theme {
+  --color-deep: #00323c;
+  --color-deep-dark: #042a32;
+  --color-teal: #007878;
+
+  --color-mint-50: #f0fbf9;
+  --color-mint-100: #d7f4ee;
+  --color-mint-200: #aee9dd;
+  --color-mint-300: #7bd8c8;
+  --color-mint-400: #42c2ae;
+  --color-mint-500: #14b4a0;
+  --color-mint-600: #0f9284;
+  --color-mint-700: #0d766c;
+  --color-mint-800: #0d5f58;
+  --color-mint-900: #0d4e49;
+  --color-mint: #14b4a0;
+
+  --color-sand: #dcdcdc;
+
+  --color-clay-50: #fdf3ee;
+  --color-clay-100: #fbe4d8;
+  --color-clay-200: #f6c6ac;
+  --color-clay-300: #eea378;
+  --color-clay-400: #e58c5f;
+  --color-clay-500: #d97d54;
+  --color-clay-600: #c1613a;
+  --color-clay-700: #a04d2e;
+  --color-clay-800: #803e27;
+  --color-clay-900: #683321;
+  --color-clay: #d97d54;
+
+  --color-ink: #141414;
+  --color-paper: #f4f1ea;
+  --color-paper-alt: #ece7dc;
+
+  /* Cores semânticas de status — convenção universal de dashboard, não são
+     cores de marca. Use com modificador de opacidade para o fundo do badge,
+     ex: bg-status-success/15 text-status-success */
+  --color-status-success: #10b981;
+  --color-status-error: #f43f5e;
+  --color-status-warning: #f59e0b;
+  --color-status-warning-warm: #d97d54;
+  --color-status-info: #6366f1;
+
+  --font-serif: var(--font-merriweather), Georgia, serif;
+  --font-sans: var(--font-source-sans), system-ui, sans-serif;
+
+  --radius-pill: 100px;
+  --radius-card: 20px;
+  --radius-card-sm: 16px;
+  --radius-input: 12px;
+
+  --shadow-card: 0 12px 30px -12px rgba(0, 50, 60, 0.18);
+  --shadow-card-hover: 0 30px 60px -30px rgba(0, 50, 60, 0.4);
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
