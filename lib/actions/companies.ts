@@ -40,3 +40,13 @@ export async function createCompany(
 export async function listCompanies() {
   return db.company.findMany({ orderBy: { createdAt: "desc" } });
 }
+
+/**
+ * Deletes a company and, via cascade, every Sale/Invoice/ImportBatch/
+ * ChecklistState row scoped to it. Mapping configs (platform/emitter) are
+ * global and are never affected by deleting a company.
+ */
+export async function deleteCompany(companyId: string) {
+  await db.company.delete({ where: { id: companyId } });
+  revalidatePath("/companies");
+}

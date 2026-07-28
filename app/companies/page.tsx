@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listCompanies } from "@/lib/actions/companies";
 import { CreateCompanyForm } from "@/components/company/CreateCompanyForm";
+import { DeleteCompanyButton } from "@/components/company/DeleteCompanyButton";
 import { Card } from "@/components/ui/Card";
 import { SlidersHorizontal } from "lucide-react";
 
@@ -40,21 +41,16 @@ export default async function CompaniesPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {companies.map((company) => (
-                <Link
-                  key={company.id}
-                  href={`/c/${company.id}/dashboard`}
-                  className="block"
-                >
-                  <Card className="p-5 hover:shadow-card-hover transition-shadow">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-ink/40 font-bold uppercase tracking-wider">
-                        Código {company.codigo}
-                      </span>
-                    </div>
+                <Card key={company.id} className="p-5 hover:shadow-card-hover transition-shadow relative">
+                  <Link href={`/c/${company.id}/dashboard`} className="block pr-8">
+                    <span className="text-[10px] text-ink/40 font-bold uppercase tracking-wider">
+                      Código {company.codigo}
+                    </span>
                     <h3 className="font-serif font-black text-lg text-ink mt-1">{company.nome}</h3>
                     <span className="text-xs text-ink/50 block mt-1">{company.cnpj}</span>
-                  </Card>
-                </Link>
+                  </Link>
+                  <DeleteCompanyButton companyId={company.id} companyName={company.nome} />
+                </Card>
               ))}
             </div>
           )}
