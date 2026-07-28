@@ -107,7 +107,7 @@ export default async function ImportsPage({
       )}
 
       <Card className="p-6 space-y-4">
-        <h3 className="text-sm font-bold text-ink">Exportar Dados Brutos</h3>
+        <h4 className="text-sm font-bold text-ink">Exportar Dados Brutos</h4>
         <div className="grid grid-cols-2 gap-4 max-w-md">
           <a
             href={`/api/c/${companyId}/export/sales`}

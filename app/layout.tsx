@@ -4,14 +4,14 @@ import "./globals.css";
 
 const merriweather = Merriweather({
   variable: "--font-merriweather",
-  weight: ["400", "900"],
+  weight: ["300", "400", "700", "900"],
   style: ["normal", "italic"],
   subsets: ["latin"],
 });
 
 const sourceSans = Source_Sans_3({
   variable: "--font-source-sans",
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin"],
 });
 
