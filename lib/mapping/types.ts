@@ -11,7 +11,8 @@ export interface PlatformMappings {
   situacaoVenda: string;
   dataVenda: string;
   valorRecebido?: string; // only required when commType === 'CALC'
-  valorLiquido?: string; // only required when commType === 'CALC'
+  valorLiquido?: string; // "Faturamento do Produtor" — only required when commType === 'CALC'
+  valorFaturamentoCoprodutor?: string; // optional extra factor for coprodução, only used when commType === 'CALC'
 }
 
 export interface PlatformConfigInput {

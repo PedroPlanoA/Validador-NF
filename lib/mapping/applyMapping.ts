@@ -21,8 +21,12 @@ export function standardizeSales(
     let comissao: number;
     if (config.commType === "CALC") {
       const recebido = parseNumber(row[mappings.valorRecebido ?? ""]);
-      const liquido = parseNumber(row[mappings.valorLiquido ?? ""]);
-      comissao = liquido > 0 ? (recebido / liquido) * 100 : 100;
+      const faturamentoProdutor = parseNumber(row[mappings.valorLiquido ?? ""]);
+      const faturamentoCoprodutor = mappings.valorFaturamentoCoprodutor
+        ? parseNumber(row[mappings.valorFaturamentoCoprodutor])
+        : 0;
+      const faturamentoTotal = faturamentoProdutor + faturamentoCoprodutor;
+      comissao = faturamentoTotal > 0 ? (recebido / faturamentoTotal) * 100 : 100;
     } else if (config.commType === "FIXED") {
       comissao = config.fixedCommValue ?? 100;
     } else {

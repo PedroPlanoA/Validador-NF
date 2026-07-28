@@ -61,9 +61,10 @@ export function UploadForm({
       setStatus("done");
       setMessage(`Importado: ${data.rowCount} linhas.`);
       router.refresh();
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setMessage("Não foi possível ler o arquivo. Verifique o formato (CSV, XLS ou XLSX).");
+      const detail = err instanceof Error ? err.message : String(err);
+      setMessage(`Não foi possível ler o arquivo (${detail}). Verifique o formato (CSV, XLS ou XLSX).`);
     }
   }
 

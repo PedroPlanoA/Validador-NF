@@ -17,6 +17,7 @@ const platformMappingsSchema = z.object({
   dataVenda: z.string().min(1),
   valorRecebido: z.string().optional(),
   valorLiquido: z.string().optional(),
+  valorFaturamentoCoprodutor: z.string().optional(),
 });
 
 export const platformConfigSchema = z

@@ -134,8 +134,12 @@ export function MappingWizard({
       // column list below; every field still starts blank and must be
       // chosen deliberately.
       dispatch({ type: "set", patch: { sampleHeaders: headers, sampleRows } });
-    } catch {
-      dispatch({ type: "set", patch: { error: "Não foi possível ler o arquivo. Verifique o formato (CSV, XLS ou XLSX)." } });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      dispatch({
+        type: "set",
+        patch: { error: `Não foi possível ler o arquivo (${detail}). Verifique o formato (CSV, XLS ou XLSX).` },
+      });
     } finally {
       setParsing(false);
     }
@@ -163,6 +167,7 @@ export function MappingWizard({
             dataVenda: state.fieldMappings.dataVenda ?? "",
             valorRecebido: state.fieldMappings.valorRecebido,
             valorLiquido: state.fieldMappings.valorLiquido,
+            valorFaturamentoCoprodutor: state.fieldMappings.valorFaturamentoCoprodutor,
           },
           commType: state.commType,
           fixedCommValue: state.commType === "FIXED" ? Number(state.fixedCommValue) : undefined,
@@ -306,7 +311,7 @@ export function MappingWizard({
                 >
                   <option value="INTEGRAL">Integral (100% do valor da venda)</option>
                   <option value="FIXED">Percentual fixo</option>
-                  <option value="CALC">Calculado (recebido / líquido)</option>
+                  <option value="CALC">Calculado (recebido / faturamento)</option>
                 </Select>
               </div>
               {state.commType === "FIXED" && (
@@ -320,22 +325,36 @@ export function MappingWizard({
                 </div>
               )}
               {state.commType === "CALC" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>Coluna Valor Recebido</Label>
-                    <Combobox
-                      value={state.fieldMappings.valorRecebido ?? ""}
-                      onChange={(value) => dispatch({ type: "setMapping", field: "valorRecebido", value })}
-                      options={state.sampleHeaders}
-                    />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Coluna Valor Recebido</Label>
+                      <Combobox
+                        value={state.fieldMappings.valorRecebido ?? ""}
+                        onChange={(value) => dispatch({ type: "setMapping", field: "valorRecebido", value })}
+                        options={state.sampleHeaders}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Coluna Faturamento do Produtor</Label>
+                      <Combobox
+                        value={state.fieldMappings.valorLiquido ?? ""}
+                        onChange={(value) => dispatch({ type: "setMapping", field: "valorLiquido", value })}
+                        options={state.sampleHeaders}
+                      />
+                    </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Coluna Valor Líquido</Label>
+                    <Label>Coluna Faturamento do Coprodutor (opcional)</Label>
                     <Combobox
-                      value={state.fieldMappings.valorLiquido ?? ""}
-                      onChange={(value) => dispatch({ type: "setMapping", field: "valorLiquido", value })}
+                      value={state.fieldMappings.valorFaturamentoCoprodutor ?? ""}
+                      onChange={(value) => dispatch({ type: "setMapping", field: "valorFaturamentoCoprodutor", value })}
                       options={state.sampleHeaders}
                     />
+                    <p className="text-[11px] text-ink/40">
+                      % de comissão = Valor Recebido / (Faturamento do Produtor + Faturamento do Coprodutor). Deixe em
+                      branco se a venda não tiver coprodução.
+                    </p>
                   </div>
                 </div>
               )}
