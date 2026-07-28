@@ -151,6 +151,7 @@ export function MappingWizard({
           mappings: {
             codigoVenda: state.fieldMappings.codigoVenda ?? "",
             comprador: state.fieldMappings.comprador ?? "",
+            produto: state.fieldMappings.produto ?? "",
             valorBase: state.fieldMappings.valorBase ?? "",
             situacaoVenda: state.fieldMappings.situacaoVenda ?? "",
             dataVenda: state.fieldMappings.dataVenda ?? "",
@@ -383,10 +384,15 @@ export function MappingWizard({
           )}
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {distinctStatusValues.map((raw) => (
-              <div key={raw} className="flex items-center justify-between gap-3 bg-paper-alt/40 rounded-input px-3 py-2">
-                <span className="text-sm font-medium text-ink truncate">{raw}</span>
+              <div
+                key={raw}
+                className="flex items-start justify-between gap-3 bg-paper-alt/40 rounded-input px-3 py-2.5"
+              >
+                <span className="text-sm font-medium text-ink break-words leading-snug pt-2" title={raw}>
+                  {raw}
+                </span>
                 <Select
-                  className="w-56"
+                  className="w-56 shrink-0"
                   value={state.statusMap[raw] ?? ""}
                   onChange={(e) => dispatch({ type: "setStatus", raw, value: e.target.value })}
                 >

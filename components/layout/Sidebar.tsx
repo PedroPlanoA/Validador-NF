@@ -9,8 +9,8 @@ import {
   FileText,
   AlertTriangle,
   SlidersHorizontal,
-  Server,
   ListChecks,
+  Package,
   Building2,
 } from "lucide-react";
 
@@ -26,15 +26,13 @@ function navItems(companyId: string): NavItem[] {
     { href: `/c/${companyId}/checklist`, label: "Checklist", icon: ListChecks },
     { href: `/c/${companyId}/imports`, label: "Importações", icon: FileSpreadsheet },
     { href: `/c/${companyId}/sales`, label: "Vendas", icon: ShoppingCart },
+    { href: `/c/${companyId}/products`, label: "Produtos", icon: Package },
     { href: `/c/${companyId}/invoices`, label: "Notas Fiscais", icon: FileText },
     { href: `/c/${companyId}/errors`, label: "Painel de Erros", icon: AlertTriangle },
   ];
 }
 
-const CONFIG_ITEMS: NavItem[] = [
-  { href: "/config/platforms", label: "Mapear Plataformas", icon: SlidersHorizontal },
-  { href: "/config/emitters", label: "Mapear Emissores", icon: Server },
-];
+const MAPEAR_ITEM: NavItem = { href: "/config/platforms", label: "Mapear", icon: SlidersHorizontal };
 
 export function Sidebar({ companyId, companyName }: { companyId: string; companyName: string }) {
   const pathname = usePathname();
@@ -69,20 +67,16 @@ export function Sidebar({ companyId, companyName }: { companyId: string; company
         ))}
 
         <div className="pt-4 mt-4 border-t border-white/10">
-          <span className="px-3 text-[10px] font-bold text-sand/50 uppercase tracking-wider block mb-2">
-            Configuração
-          </span>
-          {CONFIG_ITEMS.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-card-sm text-sm font-medium transition-colors ${
-                isActive(href) ? "bg-deep-dark text-mint-300" : "text-sand/80 hover:bg-deep-dark hover:text-white"
-              }`}
-            >
-              <Icon className="w-4 h-4 shrink-0" /> {label}
-            </Link>
-          ))}
+          <Link
+            href={MAPEAR_ITEM.href}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-card-sm text-sm font-medium transition-colors ${
+              isActive(MAPEAR_ITEM.href) || isActive("/config/emitters")
+                ? "bg-deep-dark text-mint-300"
+                : "text-sand/80 hover:bg-deep-dark hover:text-white"
+            }`}
+          >
+            <MAPEAR_ITEM.icon className="w-4 h-4 shrink-0" /> {MAPEAR_ITEM.label}
+          </Link>
         </div>
       </nav>
 

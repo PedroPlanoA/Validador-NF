@@ -17,6 +17,7 @@ export interface SaleForReconciliation {
   codigoVendaNormalized: string;
   comprador: string;
   plataforma: string;
+  produto: string;
   moeda: string;
   valorVenda: number;
   valorNf: number;
@@ -50,6 +51,7 @@ export interface ReconciliationRow {
   codigoVenda: string;
   comprador: string;
   plataforma: string;
+  produto: string;
   moeda: string;
   valorVenda: number;
   valorNfCalculado: number;
@@ -58,5 +60,9 @@ export interface ReconciliationRow {
   matchedInvoices: MatchedInvoiceRef[];
   /** Single invoice's valorNf, summed value when combined (different tipo), or null if no match. */
   valorNfFaturado: number | null;
+  /** True when there IS an invoiced value and it differs from the calculated
+   *  value by more than a cent — independent of situacaoConferencia, since a
+   *  sale can be correctly "NF Emitida" and still have the wrong amount. */
+  valorDivergente: boolean;
   competencia: string;
 }

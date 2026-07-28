@@ -5,7 +5,35 @@ import type {
   EmitterConfigInput,
   PlatformConfigInput,
   RawRow,
+  StandardizedSale,
 } from "@/lib/mapping/types";
+
+/**
+ * Applies any per-product commission overrides (set in the Produtos screen)
+ * on top of the mapping-computed commission — the accountant's manually
+ * confirmed commission for a specific product always wins over whatever the
+ * generic platform mapping would have calculated.
+ */
+async function applyProductOverrides(
+  companyId: string,
+  plataforma: string,
+  sales: StandardizedSale[],
+): Promise<StandardizedSale[]> {
+  const produtos = Array.from(new Set(sales.map((s) => s.produto)));
+  if (produtos.length === 0) return sales;
+
+  const overrides = await db.productOverride.findMany({
+    where: { companyId, plataforma, produto: { in: produtos } },
+  });
+  if (overrides.length === 0) return sales;
+
+  const overrideMap = new Map(overrides.map((o) => [o.produto, o.commissionPercent]));
+  return sales.map((s) => {
+    const pct = overrideMap.get(s.produto);
+    if (pct === undefined) return s;
+    return { ...s, comissao: pct, valorNf: s.valorVenda * (pct / 100) };
+  });
+}
 
 interface RunImportInput {
   sourceType: "PLATFORM" | "EMITTER";
@@ -42,7 +70,8 @@ export async function runImport(companyId: string, input: RunImportInput) {
       statusMap: config.statusMap as unknown as PlatformConfigInput["statusMap"],
     };
 
-    const standardized = standardizeSales(input.rawRows, configInput);
+    const standardizedRaw = standardizeSales(input.rawRows, configInput);
+    const standardized = await applyProductOverrides(companyId, config.name, standardizedRaw);
     const competencias = distinctCompetencias(standardized);
 
     return db.$transaction(async (tx) => {
@@ -153,7 +182,8 @@ export async function reanalyzeBatch(companyId: string, batchId: string) {
       statusMap: config.statusMap as unknown as PlatformConfigInput["statusMap"],
     };
 
-    const standardized = standardizeSales(rawRows, configInput);
+    const standardizedRaw = standardizeSales(rawRows, configInput);
+    const standardized = await applyProductOverrides(companyId, config.name, standardizedRaw);
     const competencias = distinctCompetencias(standardized);
 
     return db.$transaction(async (tx) => {

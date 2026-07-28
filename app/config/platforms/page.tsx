@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listPlatformConfigs } from "@/lib/actions/platformConfigs";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { DeleteConfigButton } from "@/components/wizard/DeleteConfigButton";
 import { Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -27,12 +28,13 @@ export default async function PlatformsConfigPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {configs.map((config) => (
-            <Link key={config.id} href={`/config/platforms/${config.id}/edit`}>
-              <Card className="p-5 hover:shadow-card-hover transition-shadow">
+            <Card key={config.id} className="p-5 hover:shadow-card-hover transition-shadow relative">
+              <Link href={`/config/platforms/${config.id}/edit`} className="block pr-8">
                 <h3 className="font-serif font-black text-lg text-ink">{config.name}</h3>
                 <p className="text-xs text-ink/50 mt-1">Comissão: {config.commType}</p>
-              </Card>
-            </Link>
+              </Link>
+              <DeleteConfigButton kind="platform" configId={config.id} configName={config.name} />
+            </Card>
           ))}
         </div>
       )}

@@ -1,7 +1,11 @@
+import Link from "next/link";
 import { getReconciliationRows } from "@/lib/actions/reconciliation";
+import { getVerifiedKeys } from "@/lib/actions/valueCheck";
 import { formatCurrency } from "@/lib/validation/currency";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { VerifyValueButton } from "@/components/errors/VerifyValueButton";
+import { SlidersHorizontal } from "lucide-react";
 import { ERROR_STATUSES, SITUACAO_CONFERENCIA_LABELS, SITUACAO_CONFERENCIA_TONE } from "@/lib/reconciliation/labels";
 
 export const dynamic = "force-dynamic";
@@ -18,8 +22,14 @@ export default async function ErrorsPage({
   const { companyId } = await params;
   const { competencia } = await searchParams;
 
-  const rows = await getReconciliationRows(companyId, competencia);
-  const errorRows = rows.filter((r) => (ATTENTION_STATUSES as readonly string[]).includes(r.situacaoConferencia));
+  const [rows, verifiedKeys] = await Promise.all([
+    getReconciliationRows(companyId, competencia),
+    getVerifiedKeys(companyId),
+  ]);
+
+  const errorRows = rows.filter(
+    (r) => (ATTENTION_STATUSES as readonly string[]).includes(r.situacaoConferencia) || r.valorDivergente,
+  );
 
   return (
     <div className="space-y-6">
@@ -35,36 +45,70 @@ export default async function ErrorsPage({
               <tr>
                 <th className="py-3 px-5">Código Venda</th>
                 <th className="py-3 px-5">Comprador</th>
-                <th className="py-3 px-5">Plataforma</th>
-                <th className="py-3 px-5">Status Venda</th>
-                <th className="py-3 px-5 text-right">Valor Venda</th>
+                <th className="py-3 px-5">Plataforma / Produto</th>
                 <th className="py-3 px-5">Situação da Reconciliação</th>
+                <th className="py-3 px-5 text-right">Valor Calc. NF</th>
+                <th className="py-3 px-5 text-right">Valor Faturado</th>
                 <th className="py-3 px-5">Notas Vinculadas</th>
+                <th className="py-3 px-5">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ink/5 font-medium text-ink">
-              {errorRows.map((r) => (
-                <tr key={r.saleId}>
-                  <td className="py-3 px-5">{r.codigoVenda}</td>
-                  <td className="py-3 px-5">{r.comprador}</td>
-                  <td className="py-3 px-5">{r.plataforma}</td>
-                  <td className="py-3 px-5">{r.situacaoVenda}</td>
-                  <td className="py-3 px-5 text-right">{formatCurrency(r.valorVenda, r.moeda)}</td>
-                  <td className="py-3 px-5">
-                    <Badge tone={SITUACAO_CONFERENCIA_TONE[r.situacaoConferencia]}>
-                      {SITUACAO_CONFERENCIA_LABELS[r.situacaoConferencia]}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-5">
-                    {r.matchedInvoices.length === 0
-                      ? "—"
-                      : r.matchedInvoices.map((i) => `${i.tipo} #${i.numero} (${i.situacaoNf})`).join(", ")}
-                  </td>
-                </tr>
-              ))}
+              {errorRows.map((r) => {
+                const isVerified = verifiedKeys.has(`${r.codigoVenda}|${r.competencia}`);
+                return (
+                  <tr key={r.saleId}>
+                    <td className="py-3 px-5">{r.codigoVenda}</td>
+                    <td className="py-3 px-5">{r.comprador}</td>
+                    <td className="py-3 px-5">
+                      <div>{r.plataforma}</div>
+                      <div className="text-ink/40 font-normal">{r.produto}</div>
+                    </td>
+                    <td className="py-3 px-5">
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge tone={SITUACAO_CONFERENCIA_TONE[r.situacaoConferencia]}>
+                          {SITUACAO_CONFERENCIA_LABELS[r.situacaoConferencia]}
+                        </Badge>
+                        {r.valorDivergente && (
+                          <Badge tone={isVerified ? "neutral" : "warning-warm"}>
+                            {isVerified ? "Divergência (verificada)" : "Divergência de Valor"}
+                          </Badge>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-5 text-right">{formatCurrency(r.valorNfCalculado, r.moeda)}</td>
+                    <td className="py-3 px-5 text-right">
+                      {r.valorNfFaturado === null ? "—" : formatCurrency(r.valorNfFaturado, r.moeda)}
+                    </td>
+                    <td className="py-3 px-5">
+                      {r.matchedInvoices.length === 0
+                        ? "—"
+                        : r.matchedInvoices.map((i) => `${i.tipo} #${i.numero} (${i.situacaoNf})`).join(", ")}
+                    </td>
+                    <td className="py-3 px-5">
+                      {r.valorDivergente && (
+                        <div className="flex flex-col items-start gap-1.5">
+                          <VerifyValueButton
+                            companyId={companyId}
+                            codigoVenda={r.codigoVenda}
+                            competencia={r.competencia}
+                            initialVerified={isVerified}
+                          />
+                          <Link
+                            href={`/c/${companyId}/products?plataforma=${encodeURIComponent(r.plataforma)}&produto=${encodeURIComponent(r.produto)}`}
+                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-status-info hover:opacity-80"
+                          >
+                            <SlidersHorizontal className="w-3.5 h-3.5" /> Ajustar % Comissão
+                          </Link>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
               {errorRows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-ink/40 italic">
+                  <td colSpan={8} className="py-8 text-center text-ink/40 italic">
                     Nenhum erro reportado! Tudo reconciliado.
                   </td>
                 </tr>

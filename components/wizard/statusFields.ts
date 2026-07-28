@@ -16,6 +16,7 @@ export const EMITTER_STATUS_OPTIONS = [
 export const PLATFORM_REQUIRED_FIELDS: { key: string; label: string }[] = [
   { key: "codigoVenda", label: "Código da Venda" },
   { key: "comprador", label: "Comprador" },
+  { key: "produto", label: "Produto" },
   { key: "valorBase", label: "Valor da Venda" },
   { key: "situacaoVenda", label: "Situação da Venda" },
   { key: "dataVenda", label: "Data da Venda" },

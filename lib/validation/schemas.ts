@@ -11,6 +11,7 @@ export type CompanyInput = z.infer<typeof companySchema>;
 const platformMappingsSchema = z.object({
   codigoVenda: z.string().min(1),
   comprador: z.string().min(1),
+  produto: z.string().min(1),
   valorBase: z.string().min(1),
   situacaoVenda: z.string().min(1),
   dataVenda: z.string().min(1),

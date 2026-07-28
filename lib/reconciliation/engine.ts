@@ -17,17 +17,24 @@ function toRef(inv: InvoiceForReconciliation): MatchedInvoiceRef {
   };
 }
 
+/** Anything smaller than this is treated as float/rounding noise, not a real divergence. */
+const VALUE_DIVERGENCE_TOLERANCE = 0.01;
+
 function buildRow(
   sale: SaleForReconciliation,
   matched: InvoiceForReconciliation[],
   situacaoConferencia: ReconciliationRow["situacaoConferencia"],
   valorNfFaturado: number | null,
 ): ReconciliationRow {
+  const valorDivergente =
+    valorNfFaturado !== null && Math.abs(sale.valorNf - valorNfFaturado) > VALUE_DIVERGENCE_TOLERANCE;
+
   return {
     saleId: sale.id,
     codigoVenda: sale.codigoVenda,
     comprador: sale.comprador,
     plataforma: sale.plataforma,
+    produto: sale.produto,
     moeda: sale.moeda,
     valorVenda: sale.valorVenda,
     valorNfCalculado: sale.valorNf,
@@ -35,6 +42,7 @@ function buildRow(
     situacaoConferencia,
     matchedInvoices: matched.map(toRef),
     valorNfFaturado,
+    valorDivergente,
     competencia: sale.competencia,
   };
 }

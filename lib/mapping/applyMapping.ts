@@ -46,6 +46,7 @@ export function standardizeSales(
       codigoVenda: rawCodigo,
       codigoVendaNormalized: normalizeCode(rawCodigo, config.cleanupChars),
       comprador: String(row[mappings.comprador] ?? "").trim() || "Comprador Desconhecido",
+      produto: String(row[mappings.produto] ?? "").trim() || "Não Identificado",
       plataforma: config.name,
       moeda,
       valorVenda: valorBase,

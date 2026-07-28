@@ -6,6 +6,7 @@ export type CurrencyMode = "FIXED" | "COL" | "NONE";
 export interface PlatformMappings {
   codigoVenda: string;
   comprador: string;
+  produto: string;
   valorBase: string;
   situacaoVenda: string;
   dataVenda: string;
@@ -50,6 +51,7 @@ export interface StandardizedSale {
   codigoVendaNormalized: string;
   comprador: string;
   plataforma: string;
+  produto: string;
   moeda: string;
   valorVenda: number;
   comissao: number;
