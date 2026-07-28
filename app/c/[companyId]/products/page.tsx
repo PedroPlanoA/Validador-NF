@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listCompanyPlatforms, listProductsForPlatform } from "@/lib/actions/products";
 import { Card } from "@/components/ui/Card";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { ProductsTable } from "@/components/products/ProductsTable";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export default async function ProductsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-base font-bold text-ink">Produtos</h1>
+        <PageTitle>Produtos</PageTitle>
         <p className="text-xs text-ink/50 mt-1">
           Produtos identificados nos relatórios de vendas importados desta empresa, por plataforma.
         </p>

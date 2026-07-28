@@ -79,6 +79,9 @@ export const importRequestSchema = z.object({
   configId: z.string().min(1),
   filename: z.string().min(1),
   rawRows: z.array(z.record(z.string(), z.string())).min(1, "Arquivo vazio"),
+  /** Manual reference competência (YYYY-MM) — for locating the file on the
+   *  Importações screen only, never used for analysis. */
+  referenceCompetencia: z.string().min(1, "Informe a competência de referência"),
 });
 
 export type ImportRequestInput = z.infer<typeof importRequestSchema>;

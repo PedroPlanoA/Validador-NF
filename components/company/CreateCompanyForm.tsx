@@ -7,15 +7,21 @@ import { Input, Label } from "@/components/ui/Input";
 
 const initialState: CreateCompanyState = {};
 
-export function CreateCompanyForm() {
+export function CreateCompanyForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const [state, formAction, pending] = useActionState(createCompany, initialState);
   const formRef = useRef<HTMLFormElement>(null);
+  const wasPending = useRef(false);
 
   useEffect(() => {
-    if (!state.error && !state.fieldErrors) {
+    // Only treat as "just succeeded" on the pending(true) -> pending(false)
+    // transition — otherwise this would also fire on first mount, since
+    // the empty initialState also has no error/fieldErrors.
+    if (wasPending.current && !pending && !state.error && !state.fieldErrors) {
       formRef.current?.reset();
+      onSuccess?.();
     }
-  }, [state]);
+    wasPending.current = pending;
+  }, [pending, state, onSuccess]);
 
   return (
     <form ref={formRef} action={formAction} className="space-y-4">

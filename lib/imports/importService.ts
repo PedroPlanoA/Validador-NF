@@ -40,6 +40,7 @@ interface RunImportInput {
   configId: string;
   filename: string;
   rawRows: RawRow[];
+  referenceCompetencia: string;
 }
 
 /**
@@ -88,6 +89,7 @@ export async function runImport(companyId: string, input: RunImportInput) {
           rowCount: standardized.length,
           rawContent: rowsToCsv(input.rawRows),
           competencias,
+          referenceCompetencia: input.referenceCompetencia,
         },
       });
 
@@ -134,6 +136,7 @@ export async function runImport(companyId: string, input: RunImportInput) {
         rowCount: standardized.length,
         rawContent: rowsToCsv(input.rawRows),
         competencias,
+        referenceCompetencia: input.referenceCompetencia,
       },
     });
 
@@ -239,6 +242,9 @@ export async function reanalyzeBatch(companyId: string, batchId: string) {
   });
 }
 
+/** All active import batches for a company — deliberately unfiltered here;
+ *  the Importações screen applies fonte/competência/data filters itself so
+ *  it can also derive each filter's available options from the same list. */
 export async function listActiveBatches(companyId: string) {
   return db.importBatch.findMany({
     where: { companyId },

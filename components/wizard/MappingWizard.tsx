@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useReducer, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { parseSpreadsheet } from "@/lib/parsing/parseSpreadsheet";
 import { distinctValuesOf } from "@/lib/parsing/statusGuess";
 import { Button } from "@/components/ui/Button";
@@ -98,13 +98,17 @@ const STEP_LABELS = ["Nome", "Amostra", "Colunas", "Status", "Ajustes", "Revisar
 export function MappingWizard({
   kind,
   existingConfig,
+  basePath = "/config",
 }: {
   kind: Kind;
   existingConfig?: ExistingConfig;
+  /** Where the list pages live — "/config" when reached standalone (no
+   *  company context), or `/c/{companyId}/config` when reached from inside
+   *  a company's own shell, so saving lands back in the same shell instead
+   *  of forcing a jump out to the standalone config area. */
+  basePath?: string;
 }) {
   const router = useRouter();
-  const companyId = useSearchParams().get("companyId");
-  const backSuffix = companyId ? `?companyId=${companyId}` : "";
   const [state, dispatch] = useReducer(reducer, initialState(kind, existingConfig));
   const [parsing, setParsing] = useState(false);
 
@@ -173,7 +177,7 @@ export function MappingWizard({
         } else {
           await createPlatformConfig(input);
         }
-        router.push(`/config/platforms${backSuffix}`);
+        router.push(`${basePath}/platforms`);
       } else {
         const input = {
           name: state.name,
@@ -199,7 +203,7 @@ export function MappingWizard({
         } else {
           await createEmitterConfig(input);
         }
-        router.push(`/config/emitters${backSuffix}`);
+        router.push(`${basePath}/emitters`);
       }
     } catch (e) {
       dispatch({

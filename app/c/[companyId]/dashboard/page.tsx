@@ -1,10 +1,11 @@
-import { getReconciliationRows, listCompetencias } from "@/lib/actions/reconciliation";
+import { getReconciliationRows } from "@/lib/actions/reconciliation";
+import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
 import { formatCurrency } from "@/lib/validation/currency";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { SituacaoChart } from "@/components/dashboard/SituacaoChart";
 import { PlatformChart } from "@/components/dashboard/PlatformChart";
-import { CompetenciaFilter } from "@/components/dashboard/CompetenciaFilter";
 import { Card } from "@/components/ui/Card";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { FileSpreadsheet } from "lucide-react";
 import type { ReconciliationRow } from "@/lib/reconciliation/types";
 
@@ -16,18 +17,13 @@ function sum(rows: ReconciliationRow[], pick: (r: ReconciliationRow) => number) 
 
 export default async function DashboardPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ companyId: string }>;
-  searchParams: Promise<{ competencia?: string }>;
 }) {
   const { companyId } = await params;
-  const { competencia } = await searchParams;
+  const competencia = await getCompetenciaCookie(companyId);
 
-  const [rows, competencias] = await Promise.all([
-    getReconciliationRows(companyId, competencia),
-    listCompetencias(companyId),
-  ]);
+  const rows = await getReconciliationRows(companyId, competencia);
 
   const concluidas = rows.filter((r) => r.situacaoVenda === "CONCLUIDO");
   const emitidas = rows.filter((r) => r.situacaoConferencia === "NF_EMITIDA");
@@ -73,16 +69,13 @@ export default async function DashboardPage({
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-ink">Painel Geral</h1>
-        <div className="flex items-center gap-3">
-          <a
-            href={`/api/c/${companyId}/export/reconciliation${competencia ? `?competencia=${competencia}` : ""}`}
-            className="flex items-center gap-2 text-xs font-semibold text-positive hover:opacity-80 bg-positive/10 px-3 py-2 rounded-input border border-positive/20 transition-colors"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" /> Exportar Análise (XLSX)
-          </a>
-          <CompetenciaFilter competencias={competencias} />
-        </div>
+        <PageTitle>Painel Geral</PageTitle>
+        <a
+          href={`/api/c/${companyId}/export/reconciliation${competencia ? `?competencia=${competencia}` : ""}`}
+          className="flex items-center gap-2 text-xs font-semibold text-positive hover:opacity-80 bg-positive/10 px-3 py-2 rounded-input border border-positive/20 transition-colors"
+        >
+          <FileSpreadsheet className="w-3.5 h-3.5" /> Exportar Análise (XLSX)
+        </a>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-5">

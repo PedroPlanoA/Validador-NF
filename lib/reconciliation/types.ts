@@ -23,6 +23,7 @@ export interface SaleForReconciliation {
   valorNf: number;
   situacaoVenda: SituacaoVenda;
   competencia: string;
+  dataVenda: Date | null;
 }
 
 /** Minimal shape the engine needs from an Invoice row. */
@@ -44,6 +45,7 @@ export interface MatchedInvoiceRef {
   situacaoNf: SituacaoNf;
   valorNf: number;
   codigoServico: string;
+  competencia: string;
 }
 
 export interface ReconciliationRow {
@@ -64,5 +66,12 @@ export interface ReconciliationRow {
    *  value by more than a cent — independent of situacaoConferencia, since a
    *  sale can be correctly "NF Emitida" and still have the wrong amount. */
   valorDivergente: boolean;
+  /** Competência derivada da data de venda — mantida apenas como referência. */
   competencia: string;
+  /** Competência EFETIVA para toda análise/checklist/filtro: a da nota fiscal
+   *  emitida quando existe uma casada (é o único dado contábil confiável de
+   *  competência); cai para a competência da venda apenas quando ainda não
+   *  há nota casada (venda ainda não conferida). */
+  competenciaEfetiva: string;
+  dataVenda: Date | null;
 }

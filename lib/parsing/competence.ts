@@ -32,3 +32,31 @@ export function extractCompetence(raw: unknown): string {
 
   return SEM_COMPETENCIA;
 }
+
+/**
+ * Parses a raw date cell to day precision (unlike extractCompetence, which
+ * only needs the YYYY-MM bucket). Used to show the actual sale date, not
+ * just its competência month, on the Vendas screen. Returns null when the
+ * value can't be parsed — callers should treat that as "data desconhecida",
+ * not crash.
+ */
+export function parseFullDate(raw: unknown): Date | null {
+  if (raw === null || raw === undefined) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    const d = new Date(Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  const br = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (br) {
+    const d = new Date(Date.UTC(Number(br[3]), Number(br[2]) - 1, Number(br[1])));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  const parsed = new Date(s);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}

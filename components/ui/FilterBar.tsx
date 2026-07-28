@@ -33,14 +33,14 @@ export function FilterBar({
 
   return (
     <div className="p-5 border-b border-ink/8 bg-paper-alt/20 flex flex-wrap gap-3 items-center justify-between">
-      <div className="flex items-center gap-3 flex-1 min-w-[280px]">
-        <div className="relative flex-1">
-          <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/30" />
+      <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[320px]">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-ink/30 pointer-events-none" />
           <input
             defaultValue={searchParams.get("q") ?? ""}
             onChange={(e) => updateParam("q", e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-10 pr-4 py-2.5 text-xs border border-ink/10 rounded-input outline-none focus:ring-2 focus:ring-mint/40 bg-white"
+            className="w-full pl-11 pr-4 py-3 text-sm text-ink placeholder:text-ink/40 border border-ink/10 rounded-input outline-none focus:ring-2 focus:ring-mint/40 focus:border-mint bg-white"
           />
         </div>
         {filters.map((f) => (
@@ -48,7 +48,7 @@ export function FilterBar({
             key={f.key}
             value={searchParams.get(f.key) ?? "all"}
             onChange={(e) => updateParam(f.key, e.target.value)}
-            className="w-auto py-2.5"
+            className="w-auto py-3 text-sm"
           >
             <option value="all">{f.label}</option>
             {f.options.map((o) => (
@@ -59,7 +59,7 @@ export function FilterBar({
           </Select>
         ))}
       </div>
-      <span className="text-xs text-ink/50">Mostrando {resultCount} registros</span>
+      <span className="text-xs text-ink/50 shrink-0">Mostrando {resultCount} registros</span>
     </div>
   );
 }

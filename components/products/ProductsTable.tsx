@@ -1,8 +1,8 @@
 "use client";
 
-import { Fragment, useEffect, useState, useTransition } from "react";
+import { Fragment, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Settings2, X } from "lucide-react";
+import { Settings2, X, Search } from "lucide-react";
 import { upsertProductOverride, clearProductOverride, type ProductRow } from "@/lib/actions/products";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -34,6 +34,13 @@ export function ProductsTable({
       : "",
   );
   const [pending, startTransition] = useTransition();
+  const [search, setSearch] = useState("");
+
+  const visibleProducts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter((p) => p.produto.toLowerCase().includes(q));
+  }, [products, search]);
 
   useEffect(() => {
     if (initialOpenProduto) {
@@ -72,6 +79,18 @@ export function ProductsTable({
 
   return (
     <Card className="overflow-hidden">
+      <div className="p-5 border-b border-ink/8 bg-paper-alt/20 flex items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-ink/30 pointer-events-none" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Pesquisar produto..."
+            className="w-full pl-11 pr-4 py-3 text-sm text-ink placeholder:text-ink/40 border border-ink/10 rounded-input outline-none focus:ring-2 focus:ring-mint/40 focus:border-mint bg-white"
+          />
+        </div>
+        <span className="text-xs text-ink/50 shrink-0">Mostrando {visibleProducts.length} produtos</span>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs whitespace-nowrap">
           <thead className="bg-paper-alt/40 border-b border-ink/8 text-ink/50 font-bold uppercase tracking-wider">
@@ -84,7 +103,7 @@ export function ProductsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-ink/5 font-medium text-ink">
-            {products.map((p) => (
+            {visibleProducts.map((p) => (
               <Fragment key={p.produto}>
                 <tr id={`product-${p.produto}`} className={openProduto === p.produto ? "bg-mint/5" : ""}>
                   <td className="py-3 px-5 max-w-xs truncate" title={p.produto}>
@@ -150,10 +169,12 @@ export function ProductsTable({
                 )}
               </Fragment>
             ))}
-            {products.length === 0 && (
+            {visibleProducts.length === 0 && (
               <tr>
                 <td colSpan={5} className="py-8 text-center text-ink/40 italic">
-                  Nenhum produto encontrado para esta plataforma.
+                  {products.length === 0
+                    ? "Nenhum produto encontrado para esta plataforma."
+                    : "Nenhum produto corresponde à pesquisa."}
                 </td>
               </tr>
             )}

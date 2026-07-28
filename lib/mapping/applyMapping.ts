@@ -1,5 +1,5 @@
 import { parseNumber } from "@/lib/parsing/numberParser";
-import { extractCompetence } from "@/lib/parsing/competence";
+import { extractCompetence, parseFullDate } from "@/lib/parsing/competence";
 import { normalizeCode, normalizeInvoiceNumber } from "@/lib/mapping/normalizeCode";
 import type {
   EmitterConfigInput,
@@ -54,6 +54,7 @@ export function standardizeSales(
       valorNf: valorBase * (comissao / 100),
       situacaoVenda,
       competencia: extractCompetence(row[mappings.dataVenda]),
+      dataVenda: parseFullDate(row[mappings.dataVenda]),
     };
   });
 }

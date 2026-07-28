@@ -14,6 +14,7 @@ function toRef(inv: InvoiceForReconciliation): MatchedInvoiceRef {
     situacaoNf: inv.situacaoNf,
     valorNf: inv.valorNf,
     codigoServico: inv.codigoServico,
+    competencia: inv.competencia,
   };
 }
 
@@ -28,6 +29,12 @@ function buildRow(
 ): ReconciliationRow {
   const valorDivergente =
     valorNfFaturado !== null && Math.abs(sale.valorNf - valorNfFaturado) > VALUE_DIVERGENCE_TOLERANCE;
+
+  // Competência é um dado contábil — a única fonte confiável é a nota
+  // fiscal emitida (relatório do emissor). Uma venda ainda sem nota casada
+  // não tem competência fiscal definida ainda, então cai de volta na
+  // competência da própria venda só como provisório até ser conferida.
+  const competenciaEfetiva = matched.length > 0 ? matched[0].competencia : sale.competencia;
 
   return {
     saleId: sale.id,
@@ -44,6 +51,8 @@ function buildRow(
     valorNfFaturado,
     valorDivergente,
     competencia: sale.competencia,
+    competenciaEfetiva,
+    dataVenda: sale.dataVenda,
   };
 }
 

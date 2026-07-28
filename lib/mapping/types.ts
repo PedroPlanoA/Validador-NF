@@ -58,6 +58,9 @@ export interface StandardizedSale {
   valorNf: number;
   situacaoVenda: SituacaoVenda;
   competencia: string;
+  /** Actual sale date (day precision), parsed from the same mapped column
+   *  used for `competencia` — null when it couldn't be parsed as a date. */
+  dataVenda: Date | null;
 }
 
 /** Standardized invoice row, pre-persistence. */

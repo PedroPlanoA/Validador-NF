@@ -121,6 +121,11 @@ model ImportBatch {
   /// linha) mantendo a reanálise possível sem precisar reenviar o arquivo.
   rawContent       String
   competencias     String[]
+  /// Competência de referência informada manualmente pelo analista no
+  /// momento da importação — serve só para localizar/filtrar o arquivo na
+  /// tela de Importações. NÃO é usada para nenhuma análise/checklist: a
+  /// competência que realmente conta vem da nota fiscal do emissor.
+  referenceCompetencia String?
   importedAt       DateTime          @default(now())
   replacedBatchId  String?
 
@@ -151,6 +156,10 @@ model Sale {
   valorNf               Float
   situacaoVenda         SituacaoVenda
   competencia           String
+  /// Data real da venda (dia/mês/ano), a partir da mesma coluna usada para
+  /// calcular `competencia` — exibida como referência na tela de Vendas.
+  /// Nula quando a coluna mapeada não pôde ser interpretada como data.
+  dataVenda             DateTime?
   createdAt             DateTime      @default(now())
 
   @@index([companyId, competencia])

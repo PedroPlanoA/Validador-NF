@@ -16,5 +16,5 @@ export async function saveChecklistState(companyId: string, competencia: string,
     create: { companyId, competencia, itemsJson },
     update: { itemsJson },
   });
-  revalidatePath(`/c/${companyId}/checklist/${competencia}`);
+  revalidatePath(`/c/${companyId}/checklist`);
 }

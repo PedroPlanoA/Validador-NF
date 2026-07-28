@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { getReconciliationRows } from "@/lib/actions/reconciliation";
+import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
 import { getVerifiedKeys } from "@/lib/actions/valueCheck";
 import { formatCurrency } from "@/lib/validation/currency";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { VerifyValueButton } from "@/components/errors/VerifyValueButton";
 import { SlidersHorizontal } from "lucide-react";
 import { ERROR_STATUSES, SITUACAO_CONFERENCIA_LABELS, SITUACAO_CONFERENCIA_TONE } from "@/lib/reconciliation/labels";
@@ -14,13 +16,11 @@ const ATTENTION_STATUSES = [...ERROR_STATUSES, "MULTIPLAS_NOTAS_REVISAO"] as con
 
 export default async function ErrorsPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ companyId: string }>;
-  searchParams: Promise<{ competencia?: string }>;
 }) {
   const { companyId } = await params;
-  const { competencia } = await searchParams;
+  const competencia = await getCompetenciaCookie(companyId);
 
   const [rows, verifiedKeys] = await Promise.all([
     getReconciliationRows(companyId, competencia),
@@ -34,7 +34,7 @@ export default async function ErrorsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-base font-bold text-ink">Painel de Erros</h1>
+        <PageTitle>Painel de Erros</PageTitle>
         <p className="text-xs text-ink/50 mt-1">{errorRows.length} venda(s) precisam de atenção.</p>
       </div>
 
@@ -55,7 +55,7 @@ export default async function ErrorsPage({
             </thead>
             <tbody className="divide-y divide-ink/5 font-medium text-ink">
               {errorRows.map((r) => {
-                const isVerified = verifiedKeys.has(`${r.codigoVenda}|${r.competencia}`);
+                const isVerified = verifiedKeys.has(`${r.codigoVenda}|${r.competenciaEfetiva}`);
                 return (
                   <tr key={r.saleId}>
                     <td className="py-3 px-5">{r.codigoVenda}</td>
@@ -91,7 +91,7 @@ export default async function ErrorsPage({
                           <VerifyValueButton
                             companyId={companyId}
                             codigoVenda={r.codigoVenda}
-                            competencia={r.competencia}
+                            competencia={r.competenciaEfetiva}
                             initialVerified={isVerified}
                           />
                           <Link

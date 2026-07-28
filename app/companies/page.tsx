@@ -1,9 +1,5 @@
-import Link from "next/link";
 import { listCompanies } from "@/lib/actions/companies";
-import { CreateCompanyForm } from "@/components/company/CreateCompanyForm";
-import { DeleteCompanyButton } from "@/components/company/DeleteCompanyButton";
-import { Card } from "@/components/ui/Card";
-import { SlidersHorizontal } from "lucide-react";
+import { CompaniesManager } from "@/components/company/CompaniesManager";
 
 export const dynamic = "force-dynamic";
 
@@ -12,47 +8,24 @@ export default async function CompaniesPage() {
 
   return (
     <main className="min-h-full bg-paper">
-      <div className="max-w-5xl mx-auto px-6 py-12 space-y-10">
-        <header className="flex items-start justify-between gap-6">
-          <div>
-            <img src="/logo-fundo-claro.png" alt="Plano A Contabilidade" className="h-24 w-auto mb-5" />
-            <h1 className="font-serif text-3xl font-black text-ink">Conferência Fiscal</h1>
-            <p className="text-sm text-ink/60 mt-1">Selecione uma empresa ou adicione uma nova para começar.</p>
+      {/* Faixa de marca — igual ao topo do site institucional */}
+      <div className="bg-deep px-8 py-6 flex items-center gap-4">
+        <img src="/simbolo-cores.png" alt="" className="h-12 w-12 object-contain shrink-0" />
+        <div>
+          <div className="font-serif font-black text-2xl text-white leading-none">Plano A</div>
+          <div className="font-sans font-medium text-[11px] tracking-[.24em] text-mint-300 uppercase mt-1.5">
+            Contabilidade
           </div>
-          <Link
-            href="/config/platforms"
-            className="flex items-center gap-2 text-xs font-semibold text-ink/60 hover:text-mint bg-white border border-ink/10 px-4 py-2.5 rounded-input shrink-0 transition-colors"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" /> Mapeamentos Globais
-          </Link>
-        </header>
+        </div>
+      </div>
 
-        <Card className="p-6">
-          <h2 className="text-sm font-bold text-ink mb-4">Adicionar Empresa</h2>
-          <CreateCompanyForm />
-        </Card>
+      <div className="max-w-6xl mx-auto px-6 py-12 space-y-8">
+        <div>
+          <h1 className="font-serif text-2xl font-black text-ink">Conferência Fiscal</h1>
+          <p className="text-sm text-ink/60 mt-1">Selecione uma empresa para começar.</p>
+        </div>
 
-        <section className="space-y-3">
-          <h2 className="text-sm font-bold text-ink/70 uppercase tracking-wide">Empresas cadastradas</h2>
-          {companies.length === 0 ? (
-            <p className="text-sm text-ink/50 italic">Nenhuma empresa cadastrada ainda.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {companies.map((company) => (
-                <Card key={company.id} className="p-5 hover:shadow-card-hover transition-shadow relative">
-                  <Link href={`/c/${company.id}/dashboard`} className="block pr-8">
-                    <span className="text-[10px] text-ink/40 font-bold uppercase tracking-wider">
-                      Código {company.codigo}
-                    </span>
-                    <h3 className="font-serif font-black text-lg text-ink mt-1">{company.nome}</h3>
-                    <span className="text-xs text-ink/50 block mt-1">{company.cnpj}</span>
-                  </Link>
-                  <DeleteCompanyButton companyId={company.id} companyName={company.nome} />
-                </Card>
-              ))}
-            </div>
-          )}
-        </section>
+        <CompaniesManager companies={companies} />
       </div>
     </main>
   );

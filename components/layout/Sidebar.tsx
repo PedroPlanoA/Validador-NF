@@ -13,6 +13,7 @@ import {
   Package,
   Building2,
 } from "lucide-react";
+import { CompetenciaSidebarSelect } from "@/components/layout/CompetenciaSidebarSelect";
 
 interface NavItem {
   href: string;
@@ -40,7 +41,17 @@ const NAV_LINK_BASE =
 const NAV_LINK_ACTIVE = "border-l-mint bg-mint/12 text-white font-semibold";
 const NAV_LINK_INACTIVE = "border-l-transparent text-sand/80 hover:bg-white/5 hover:text-white font-medium";
 
-export function Sidebar({ companyId, companyName }: { companyId: string; companyName: string }) {
+export function Sidebar({
+  companyId,
+  companyName,
+  competencias,
+  currentCompetencia,
+}: {
+  companyId: string;
+  companyName: string;
+  competencias: string[];
+  currentCompetencia?: string;
+}) {
   const pathname = usePathname();
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -57,6 +68,14 @@ export function Sidebar({ companyId, companyName }: { companyId: string; company
         </div>
       </div>
 
+      <div className="pt-4 border-b border-white/10">
+        <CompetenciaSidebarSelect
+          companyId={companyId}
+          competencias={competencias}
+          current={currentCompetencia}
+        />
+      </div>
+
       <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         {navItems(companyId).map(({ href, label, icon: Icon }) => (
           <Link
@@ -70,12 +89,8 @@ export function Sidebar({ companyId, companyName }: { companyId: string; company
 
         <div className="pt-4 mt-4 border-t border-white/10">
           <Link
-            href={`/config/platforms?companyId=${companyId}`}
-            className={`${NAV_LINK_BASE} ${
-              isActive("/config/platforms") || isActive("/config/emitters")
-                ? NAV_LINK_ACTIVE
-                : NAV_LINK_INACTIVE
-            }`}
+            href={`/c/${companyId}/config/platforms`}
+            className={`${NAV_LINK_BASE} ${isActive(`/c/${companyId}/config`) ? NAV_LINK_ACTIVE : NAV_LINK_INACTIVE}`}
           >
             <SlidersHorizontal className="w-4 h-4 shrink-0" /> Mapear
           </Link>

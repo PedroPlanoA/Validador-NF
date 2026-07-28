@@ -37,8 +37,17 @@ export async function createCompany(
   return {};
 }
 
+/** Ordered by código, descending — numeric-aware (falls back to plain
+ *  string compare for non-numeric codes) so "010" sorts above "002" and
+ *  above any stray alphabetic test code. */
 export async function listCompanies() {
-  return db.company.findMany({ orderBy: { createdAt: "desc" } });
+  const companies = await db.company.findMany();
+  return companies.sort((a, b) => {
+    const na = Number(a.codigo);
+    const nb = Number(b.codigo);
+    if (!Number.isNaN(na) && !Number.isNaN(nb)) return nb - na;
+    return b.codigo.localeCompare(a.codigo);
+  });
 }
 
 /**
@@ -48,5 +57,11 @@ export async function listCompanies() {
  */
 export async function deleteCompany(companyId: string) {
   await db.company.delete({ where: { id: companyId } });
+  revalidatePath("/companies");
+}
+
+/** Bulk variant for the multi-select delete flow on the companies screen. */
+export async function deleteCompanies(companyIds: string[]) {
+  await db.company.deleteMany({ where: { id: { in: companyIds } } });
   revalidatePath("/companies");
 }

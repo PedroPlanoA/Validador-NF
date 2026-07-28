@@ -1,26 +1,34 @@
 import { getReconciliationRows } from "@/lib/actions/reconciliation";
+import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
 import { formatCurrency } from "@/lib/validation/currency";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Pagination } from "@/components/ui/Pagination";
+import { PageTitle } from "@/components/ui/PageTitle";
 import { SITUACAO_CONFERENCIA_LABELS, SITUACAO_CONFERENCIA_TONE } from "@/lib/reconciliation/labels";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 10;
 
+function formatDate(d: Date | null): string {
+  if (!d) return "—";
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(d);
+}
+
 export default async function SalesPage({
   params,
   searchParams,
 }: {
   params: Promise<{ companyId: string }>;
-  searchParams: Promise<{ q?: string; plataforma?: string; status?: string; competencia?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; plataforma?: string; status?: string; page?: string }>;
 }) {
   const { companyId } = await params;
   const sp = await searchParams;
+  const competencia = await getCompetenciaCookie(companyId);
 
-  const allRows = await getReconciliationRows(companyId, sp.competencia);
+  const allRows = await getReconciliationRows(companyId, competencia);
 
   const platformOptions = Array.from(new Set(allRows.map((r) => r.plataforma))).sort();
   const statusOptions = Array.from(new Set(allRows.map((r) => r.situacaoConferencia)))
@@ -43,6 +51,7 @@ export default async function SalesPage({
 
   return (
     <div className="space-y-6">
+      <PageTitle>Vendas</PageTitle>
       <Card className="overflow-hidden">
         <FilterBar
           searchPlaceholder="Pesquisar por código, comprador..."
@@ -59,6 +68,7 @@ export default async function SalesPage({
                 <th className="py-3 px-5">Código Venda</th>
                 <th className="py-3 px-5">Comprador</th>
                 <th className="py-3 px-5">Plataforma</th>
+                <th className="py-3 px-5">Data da Venda</th>
                 <th className="py-3 px-5 text-right">Valor Venda</th>
                 <th className="py-3 px-5 text-right">Valor Calc. NF</th>
                 <th className="py-3 px-5">Conferência</th>
@@ -70,6 +80,7 @@ export default async function SalesPage({
                   <td className="py-3 px-5">{r.codigoVenda}</td>
                   <td className="py-3 px-5">{r.comprador}</td>
                   <td className="py-3 px-5">{r.plataforma}</td>
+                  <td className="py-3 px-5">{formatDate(r.dataVenda)}</td>
                   <td className="py-3 px-5 text-right">{formatCurrency(r.valorVenda, r.moeda)}</td>
                   <td className="py-3 px-5 text-right">{formatCurrency(r.valorNfCalculado, r.moeda)}</td>
                   <td className="py-3 px-5">
@@ -81,7 +92,7 @@ export default async function SalesPage({
               ))}
               {pageRows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-ink/40 italic">
+                  <td colSpan={7} className="py-8 text-center text-ink/40 italic">
                     Nenhuma venda encontrada.
                   </td>
                 </tr>

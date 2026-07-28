@@ -1,9 +1,12 @@
 import { db } from "@/lib/db";
+import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
 import { formatCurrency } from "@/lib/validation/currency";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Pagination } from "@/components/ui/Pagination";
+import { PageTitle } from "@/components/ui/PageTitle";
+import { formatCompetencia } from "@/lib/format/competencia";
 import type { BadgeTone } from "@/components/ui/Badge";
 import type { SituacaoNf } from "@/lib/mapping/types";
 
@@ -32,14 +35,15 @@ export default async function InvoicesPage({
   searchParams,
 }: {
   params: Promise<{ companyId: string }>;
-  searchParams: Promise<{ q?: string; status?: string; competencia?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 }) {
   const { companyId } = await params;
   const sp = await searchParams;
+  const competencia = await getCompetenciaCookie(companyId);
 
   const baseWhere = {
     companyId,
-    ...(sp.competencia ? { competencia: sp.competencia } : {}),
+    ...(competencia ? { competencia } : {}),
   };
 
   const allForFilters = await db.invoice.findMany({ where: baseWhere, select: { situacaoNf: true } });
@@ -73,6 +77,7 @@ export default async function InvoicesPage({
 
   return (
     <div className="space-y-6">
+      <PageTitle>Notas Fiscais</PageTitle>
       <Card className="overflow-hidden">
         <FilterBar
           searchPlaceholder="Pesquisar por código, comprador, NF..."
@@ -103,7 +108,7 @@ export default async function InvoicesPage({
                     <Badge tone={NF_TONE[inv.situacaoNf]}>{NF_LABELS[inv.situacaoNf]}</Badge>
                   </td>
                   <td className="py-3 px-5 text-right">{formatCurrency(inv.valorNf, "BRL")}</td>
-                  <td className="py-3 px-5">{inv.competencia}</td>
+                  <td className="py-3 px-5">{formatCompetencia(inv.competencia)}</td>
                   <td className="py-3 px-5">{inv.tipo}</td>
                   <td className="py-3 px-5">{inv.codigoServico}</td>
                 </tr>
