@@ -12,12 +12,7 @@ export default async function CompanyConfigLayout({
 
   return (
     <div className="space-y-6">
-      <div>
-        <PageTitle>Mapear</PageTitle>
-        <p className="text-xs text-ink/50 mt-1">
-          Mapeamentos são globais — o que você configurar aqui vale para a importação de qualquer empresa.
-        </p>
-      </div>
+      <PageTitle>Mapear</PageTitle>
       <ConfigTabs basePath={`/c/${companyId}/config`} />
       <div className="pt-2">{children}</div>
     </div>

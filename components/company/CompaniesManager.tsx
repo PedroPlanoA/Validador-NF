@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Settings, Plus, Trash2, X, Check, SlidersHorizontal } from "lucide-react";
+import { Settings, Plus, Trash2, X, Check, SlidersHorizontal, Search, Building2 } from "lucide-react";
 import { deleteCompanies } from "@/lib/actions/companies";
 import { CreateCompanyForm } from "@/components/company/CreateCompanyForm";
 import { Card } from "@/components/ui/Card";
@@ -16,6 +16,8 @@ interface CompanyItem {
   cnpj: string;
 }
 
+const OPEN_ANIMATION_MS = 200;
+
 export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
   const router = useRouter();
   const [fabOpen, setFabOpen] = useState(false);
@@ -24,6 +26,28 @@ export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [search, setSearch] = useState("");
+  const [openingId, setOpeningId] = useState<string | null>(null);
+
+  const visibleCompanies = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return companies;
+    const qDigits = q.replace(/\D/g, "");
+    return companies.filter((c) => {
+      const cnpjDigits = c.cnpj.replace(/\D/g, "");
+      return (
+        c.codigo.toLowerCase().includes(q) ||
+        c.nome.toLowerCase().includes(q) ||
+        (qDigits && cnpjDigits.includes(qDigits))
+      );
+    });
+  }, [companies, search]);
+
+  function openCompany(e: React.MouseEvent, href: string, id: string) {
+    e.preventDefault();
+    setOpeningId(id);
+    setTimeout(() => router.push(href), OPEN_ANIMATION_MS);
+  }
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -55,43 +79,71 @@ export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
       {companies.length === 0 ? (
         <p className="text-sm text-ink/50 italic">Nenhuma empresa cadastrada ainda.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {companies.map((company) => {
-            const isSelected = selected.has(company.id);
-            const cardBody = (
-              <Card
-                className={`p-5 relative transition-shadow ${
-                  mode === "delete" ? "cursor-pointer" : "hover:shadow-card-hover"
-                } ${isSelected ? "ring-2 ring-danger border-danger/30" : ""}`}
-              >
-                {mode === "delete" && (
-                  <div
-                    className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      isSelected ? "bg-danger border-danger" : "border-ink/20 bg-white"
-                    }`}
-                  >
-                    {isSelected && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                )}
-                <span className="text-[10px] text-ink/40 font-bold uppercase tracking-wider">
-                  Código {company.codigo}
-                </span>
-                <h3 className="font-serif font-black text-lg text-ink mt-1 pr-6">{company.nome}</h3>
-                <span className="text-xs text-ink/50 block mt-1">{company.cnpj}</span>
-              </Card>
-            );
+        <>
+          {mode === "view" && (
+            <div className="relative max-w-md">
+              <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-ink/30 pointer-events-none" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Pesquisar por código, nome ou CNPJ..."
+                className="w-full pl-11 pr-4 py-3 text-sm text-ink placeholder:text-ink/40 border border-ink/10 rounded-input outline-none focus:ring-2 focus:ring-mint/40 focus:border-mint bg-white"
+              />
+            </div>
+          )}
 
-            return mode === "delete" ? (
-              <button key={company.id} type="button" onClick={() => toggleSelect(company.id)} className="text-left">
-                {cardBody}
-              </button>
-            ) : (
-              <Link key={company.id} href={`/c/${company.id}/dashboard`}>
-                {cardBody}
-              </Link>
-            );
-          })}
-        </div>
+          {visibleCompanies.length === 0 ? (
+            <p className="text-sm text-ink/50 italic">Nenhuma empresa corresponde à pesquisa.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {visibleCompanies.map((company) => {
+                const isSelected = selected.has(company.id);
+                const isOpening = openingId === company.id;
+                const isDimmed = openingId !== null && !isOpening;
+                const href = `/c/${company.id}/dashboard`;
+                const cardBody = (
+                  <Card
+                    className={`p-5 relative transition-all duration-200 ${
+                      mode === "delete" ? "cursor-pointer" : "hover:shadow-card-hover"
+                    } ${isSelected ? "ring-2 ring-danger border-danger/30" : ""} ${
+                      isOpening ? "scale-105 shadow-card-hover" : ""
+                    } ${isDimmed ? "opacity-40" : ""}`}
+                  >
+                    {mode === "delete" && (
+                      <div
+                        className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          isSelected ? "bg-danger border-danger" : "border-ink/20 bg-white"
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                    )}
+                    <span className="text-[10px] text-ink/40 font-bold uppercase tracking-wider">
+                      Código {company.codigo}
+                    </span>
+                    <h3 className="font-serif font-black text-lg text-ink mt-1 pr-6">{company.nome}</h3>
+                    <span className="text-xs text-ink/50 block mt-1">{company.cnpj}</span>
+                  </Card>
+                );
+
+                return mode === "delete" ? (
+                  <button
+                    key={company.id}
+                    type="button"
+                    onClick={() => toggleSelect(company.id)}
+                    className="text-left"
+                  >
+                    {cardBody}
+                  </button>
+                ) : (
+                  <Link key={company.id} href={href} onClick={(e) => openCompany(e, href, company.id)}>
+                    {cardBody}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {mode === "delete" && (
@@ -109,6 +161,13 @@ export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
           <button onClick={cancelDeleteMode} className="text-ink/40 hover:text-ink p-1" title="Fechar seleção">
             <X className="w-4 h-4" />
           </button>
+        </div>
+      )}
+
+      {mode === "view" && (
+        <div className="fixed bottom-6 left-6 z-30 hidden sm:flex items-center gap-2 bg-white border border-ink/10 shadow-card rounded-pill px-4 py-2.5 text-xs font-semibold text-ink/60">
+          <Building2 className="w-3.5 h-3.5 text-primary" />
+          {companies.length} {companies.length === 1 ? "empresa cadastrada" : "empresas cadastradas"}
         </div>
       )}
 

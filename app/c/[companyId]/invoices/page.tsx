@@ -35,7 +35,7 @@ export default async function InvoicesPage({
   searchParams,
 }: {
   params: Promise<{ companyId: string }>;
-  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; codigoServico?: string; page?: string }>;
 }) {
   const { companyId } = await params;
   const sp = await searchParams;
@@ -46,12 +46,17 @@ export default async function InvoicesPage({
     ...(competencia ? { competencia } : {}),
   };
 
-  const allForFilters = await db.invoice.findMany({ where: baseWhere, select: { situacaoNf: true } });
+  const allForFilters = await db.invoice.findMany({
+    where: baseWhere,
+    select: { situacaoNf: true, codigoServico: true },
+  });
   const statusOptions = Array.from(new Set(allForFilters.map((i) => NF_LABELS[i.situacaoNf]))).sort();
+  const servicoOptions = Array.from(new Set(allForFilters.map((i) => i.codigoServico).filter(Boolean))).sort();
 
   const where = {
     ...baseWhere,
     ...(sp.status ? { situacaoNf: (Object.keys(NF_LABELS) as SituacaoNf[]).find((k) => NF_LABELS[k] === sp.status) } : {}),
+    ...(sp.codigoServico ? { codigoServico: sp.codigoServico } : {}),
     ...(sp.q
       ? {
           OR: [
@@ -81,7 +86,10 @@ export default async function InvoicesPage({
       <Card className="overflow-hidden">
         <FilterBar
           searchPlaceholder="Pesquisar por código, comprador, NF..."
-          filters={[{ key: "status", label: "Todos os Status NF", options: statusOptions }]}
+          filters={[
+            { key: "status", label: "Todos os Status NF", options: statusOptions },
+            { key: "codigoServico", label: "Todos os Serviços", options: servicoOptions },
+          ]}
           resultCount={total}
         />
         <div className="overflow-x-auto">

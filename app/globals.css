@@ -81,19 +81,22 @@ body {
 
 /* Tipografia — serifa pesada para títulos (assinatura da marca), sans para
    tudo mais. h1/h2 sempre 900, h3 sempre 700 — nunca deixe o navegador
-   escolher o peso padrão. */
-h1,
-h2,
-h3 {
-  font-family: var(--font-serif);
-  color: var(--color-ink);
-  letter-spacing: -0.015em;
-  line-height: 1.15;
-}
-h1,
-h2 {
-  font-weight: 900;
-}
-h3 {
-  font-weight: 700;
+   escolher o peso padrão. Em @layer base para que utilities do Tailwind
+   (ex: text-white) continuem podendo sobrescrever a cor default. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    color: var(--color-ink);
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+  }
+  h1,
+  h2 {
+    font-weight: 900;
+  }
+  h3 {
+    font-weight: 700;
+  }
 }

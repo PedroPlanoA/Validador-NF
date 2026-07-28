@@ -20,8 +20,8 @@ export function ConfigTabs({ basePath = "/config" }: { basePath?: string }) {
           <Link
             key={href}
             href={href}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
-              active ? "border-mint text-ink" : "border-transparent text-ink/45 hover:text-ink"
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 -mb-px transition-colors ${
+              active ? "border-mint text-deep" : "border-transparent text-ink/45 hover:text-ink"
             }`}
           >
             <Icon className="w-4 h-4" /> {label}

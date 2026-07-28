@@ -12,6 +12,7 @@ import {
   ListChecks,
   Package,
   Building2,
+  ArrowLeftRight,
 } from "lucide-react";
 import { CompetenciaSidebarSelect } from "@/components/layout/CompetenciaSidebarSelect";
 
@@ -60,12 +61,7 @@ export function Sidebar({
     <aside className="w-64 bg-deep text-white flex flex-col shrink-0">
       <div className="h-16 flex items-center px-6 border-b border-white/10 gap-3">
         <img src="/simbolo-cores.png" alt="Plano A" className="h-9 w-9 object-contain shrink-0" />
-        <div className="min-w-0">
-          <h1 className="font-serif font-black text-base leading-tight truncate">{companyName}</h1>
-          <Link href="/companies" className="text-[10px] text-mint-300 hover:text-mint-200 uppercase tracking-wide">
-            Trocar empresa
-          </Link>
-        </div>
+        <h1 className="font-serif font-black text-base leading-tight truncate text-white min-w-0">{companyName}</h1>
       </div>
 
       <div className="pt-4 border-b border-white/10">
@@ -97,8 +93,16 @@ export function Sidebar({
         </div>
       </nav>
 
-      <div className="p-4 border-t border-white/10 text-xs text-sand/50 flex items-center gap-2">
-        <Building2 className="w-3.5 h-3.5" /> Plano A Contabilidade
+      <div className="p-4 border-t border-white/10 space-y-3">
+        <Link
+          href="/companies"
+          className="flex items-center justify-center gap-2 text-sm font-semibold text-white bg-white/8 hover:bg-white/15 border border-white/15 rounded-input px-3 py-2.5 transition-colors"
+        >
+          <ArrowLeftRight className="w-4 h-4" /> Trocar Empresa
+        </Link>
+        <div className="text-xs text-sand/50 flex items-center gap-2 px-0.5">
+          <Building2 className="w-3.5 h-3.5" /> Plano A Contabilidade
+        </div>
       </div>
     </aside>
   );

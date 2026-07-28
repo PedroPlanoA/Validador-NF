@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getReconciliationRows } from "@/lib/actions/reconciliation";
 import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
 import { formatCurrency } from "@/lib/validation/currency";
@@ -7,6 +8,7 @@ import { PlatformChart } from "@/components/dashboard/PlatformChart";
 import { Card } from "@/components/ui/Card";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { FileSpreadsheet } from "lucide-react";
+import { SITUACAO_CONFERENCIA_LABELS } from "@/lib/reconciliation/labels";
 import type { ReconciliationRow } from "@/lib/reconciliation/types";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +33,6 @@ export default async function DashboardPage({
   const nfAusente = rows.filter((r) => r.situacaoConferencia === "NF_NAO_EMITIDA");
   const erroCancelamento = rows.filter((r) => r.situacaoConferencia === "ERRO_DE_CANCELAMENTO");
   const nfCanceladas = rows.filter((r) => r.situacaoConferencia === "NF_CANCELADA");
-  const multiplasNotas = rows.filter((r) => r.situacaoConferencia === "MULTIPLAS_NOTAS_REVISAO");
 
   const situacaoCounts = rows.reduce<Record<string, number>>((acc, r) => {
     acc[r.situacaoConferencia] = (acc[r.situacaoConferencia] ?? 0) + 1;
@@ -78,40 +79,49 @@ export default async function DashboardPage({
         </a>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
         <KpiCard
           label="Total Vendas (Concluídas)"
           value={concluidas.length}
           sub={formatCurrency(sum(concluidas, (r) => r.valorVenda), "BRL")}
           accent="primary"
+          href={`/c/${companyId}/sales`}
         />
         <KpiCard
           label="Notas Emitidas"
           value={emitidas.length}
           sub={formatCurrency(sum(emitidas, (r) => r.valorNfFaturado ?? 0), "BRL")}
           accent="positive"
+          href={`/c/${companyId}/sales?status=${encodeURIComponent(SITUACAO_CONFERENCIA_LABELS.NF_EMITIDA)}`}
         />
-        <KpiCard label="Erros de Emissão" value={errosEmissao.length} sub="Pendentes de reenvio" accent="danger" />
+        <KpiCard
+          label="Erros de Emissão"
+          value={errosEmissao.length}
+          sub="Pendentes de reenvio"
+          accent="danger"
+          href={`/c/${companyId}/sales?status=${encodeURIComponent(SITUACAO_CONFERENCIA_LABELS.ERRO_DE_EMISSAO)}`}
+        />
         <KpiCard
           label="NF Não Emitida"
           value={nfAusente.length}
           sub={`${formatCurrency(sum(nfAusente, (r) => r.valorNfCalculado), "BRL")} pendentes`}
           accent="attention"
+          href={`/c/${companyId}/sales?status=${encodeURIComponent(SITUACAO_CONFERENCIA_LABELS.NF_NAO_EMITIDA)}`}
         />
-        <KpiCard label="Erro Cancelamento" value={erroCancelamento.length} sub="Conflito de status" accent="danger" />
         <KpiCard
-          label="Múltiplas Notas"
-          value={multiplasNotas.length}
-          sub="Aguardando revisão manual"
-          accent="attention"
+          label="Erro Cancelamento"
+          value={erroCancelamento.length}
+          sub="Conflito de status"
+          accent="danger"
+          href={`/c/${companyId}/sales?status=${encodeURIComponent(SITUACAO_CONFERENCIA_LABELS.ERRO_DE_CANCELAMENTO)}`}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <Card className="p-6 flex flex-col">
-          <h4 className="text-sm font-bold text-ink mb-4">Situação da Conferência</h4>
+          <h4 className="text-sm font-bold text-ink mb-4">Situação NF</h4>
           <div className="flex-1 min-h-[240px]">
-            <SituacaoChart counts={situacaoCounts} />
+            <SituacaoChart counts={situacaoCounts} companyId={companyId} />
           </div>
         </Card>
 
@@ -124,19 +134,23 @@ export default async function DashboardPage({
 
         <Card className="overflow-hidden flex flex-col">
           <div className="px-6 py-4 border-b border-ink/8 bg-paper-alt/40">
-            <h4 className="text-sm font-bold text-ink">Notas Emitidas por Cód. Serviço</h4>
+            <h4 className="text-sm font-bold text-ink">Faturamento por Serviço</h4>
           </div>
           <div className="divide-y divide-ink/5 overflow-y-auto max-h-[260px] flex-1">
             {serviceRows.length === 0 ? (
               <div className="p-4 text-center text-xs text-ink/40">Nenhuma nota emitida para este período.</div>
             ) : (
               serviceRows.map(([code, v]) => (
-                <div key={code} className="flex justify-between px-4 py-2.5 text-xs">
+                <Link
+                  key={code}
+                  href={`/c/${companyId}/invoices?codigoServico=${encodeURIComponent(code)}`}
+                  className="flex justify-between px-4 py-2.5 text-xs hover:bg-paper-alt/60 transition-colors"
+                >
                   <span className="font-medium text-ink">{code}</span>
                   <span className="text-ink/50">
                     {v.count} · {formatCurrency(v.valor, "BRL")}
                   </span>
-                </div>
+                </Link>
               ))
             )}
           </div>
@@ -145,17 +159,21 @@ export default async function DashboardPage({
 
       <Card className="overflow-hidden">
         <div className="px-6 py-4 border-b border-ink/8 bg-paper-alt/40">
-          <h4 className="text-sm font-bold text-ink">Resumo por Moeda (Notas Emitidas)</h4>
+          <h4 className="text-sm font-bold text-ink">Resumo por Moeda</h4>
         </div>
         <div className="divide-y divide-ink/5">
           {currencyRows.length === 0 ? (
             <div className="p-4 text-center text-xs text-ink/40">Nenhum dado importado para esta competência.</div>
           ) : (
             currencyRows.map(([moeda, total]) => (
-              <div key={moeda} className="flex justify-between px-6 py-3 text-sm">
+              <Link
+                key={moeda}
+                href={`/c/${companyId}/sales?moeda=${encodeURIComponent(moeda)}&status=${encodeURIComponent(SITUACAO_CONFERENCIA_LABELS.NF_EMITIDA)}`}
+                className="flex justify-between px-6 py-3 text-sm hover:bg-paper-alt/60 transition-colors"
+              >
                 <span className="font-semibold text-ink">{moeda}</span>
                 <span className="text-positive font-semibold">{formatCurrency(total, moeda)}</span>
-              </div>
+              </Link>
             ))
           )}
         </div>

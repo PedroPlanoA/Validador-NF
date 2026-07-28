@@ -27,11 +27,16 @@ export async function EmittersListView({ basePath }: { basePath: string }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {configs.map((config) => (
             <Card key={config.id} className="p-5 hover:shadow-card-hover transition-shadow relative">
-              <Link href={`${basePath}/emitters/${config.id}/edit`} className="block pr-8">
+              <div className="pr-16">
                 <h3 className="font-serif font-black text-lg text-ink">{config.name}</h3>
                 <p className="text-xs text-ink/50 mt-1">Serviço padrão: {config.fallbackService || "—"}</p>
-              </Link>
-              <DeleteConfigButton kind="emitter" configId={config.id} configName={config.name} />
+              </div>
+              <DeleteConfigButton
+                kind="emitter"
+                configId={config.id}
+                configName={config.name}
+                editHref={`${basePath}/emitters/${config.id}/edit`}
+              />
             </Card>
           ))}
         </div>

@@ -22,7 +22,7 @@ export default async function SalesPage({
   searchParams,
 }: {
   params: Promise<{ companyId: string }>;
-  searchParams: Promise<{ q?: string; plataforma?: string; status?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; plataforma?: string; status?: string; moeda?: string; page?: string }>;
 }) {
   const { companyId } = await params;
   const sp = await searchParams;
@@ -34,10 +34,12 @@ export default async function SalesPage({
   const statusOptions = Array.from(new Set(allRows.map((r) => r.situacaoConferencia)))
     .map((s) => SITUACAO_CONFERENCIA_LABELS[s])
     .sort();
+  const moedaOptions = Array.from(new Set(allRows.map((r) => r.moeda))).sort();
 
   let rows = allRows;
   if (sp.plataforma) rows = rows.filter((r) => r.plataforma === sp.plataforma);
   if (sp.status) rows = rows.filter((r) => SITUACAO_CONFERENCIA_LABELS[r.situacaoConferencia] === sp.status);
+  if (sp.moeda) rows = rows.filter((r) => r.moeda === sp.moeda);
   if (sp.q) {
     const q = sp.q.toLowerCase();
     rows = rows.filter(
@@ -58,6 +60,7 @@ export default async function SalesPage({
           filters={[
             { key: "plataforma", label: "Todas as Plataformas", options: platformOptions },
             { key: "status", label: "Todos os Status", options: statusOptions },
+            { key: "moeda", label: "Todas as Moedas", options: moedaOptions },
           ]}
           resultCount={rows.length}
         />
