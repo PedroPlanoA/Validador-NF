@@ -9,8 +9,8 @@ export default async function UploadPage({
 }) {
   const { companyId } = await params;
   const [platformConfigs, emitterConfigs] = await Promise.all([
-    listPlatformConfigs(companyId),
-    listEmitterConfigs(companyId),
+    listPlatformConfigs(),
+    listEmitterConfigs(),
   ]);
 
   return (

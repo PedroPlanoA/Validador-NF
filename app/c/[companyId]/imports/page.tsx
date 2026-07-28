@@ -3,6 +3,7 @@ import { listActiveBatches } from "@/lib/imports/importService";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ReanalyzeButton } from "@/components/wizard/ReanalyzeButton";
+import { DeleteBatchButton } from "@/components/wizard/DeleteBatchButton";
 import { Upload, Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +64,14 @@ export default async function ImportsPage({
                   <td className="py-3 px-5 text-right">{batch.rowCount}</td>
                   <td className="py-3 px-5">{new Date(batch.importedAt).toLocaleString("pt-BR")}</td>
                   <td className="py-3 px-5">
-                    <ReanalyzeButton companyId={companyId} batchId={batch.id} />
+                    <div className="flex items-center gap-4">
+                      <ReanalyzeButton companyId={companyId} batchId={batch.id} />
+                      <DeleteBatchButton
+                        companyId={companyId}
+                        batchId={batch.id}
+                        filename={batch.originalFilename}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}

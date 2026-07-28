@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { standardizeInvoices, standardizeSales, distinctCompetencias } from "@/lib/mapping/applyMapping";
+import { rowsToCsv, csvToRows } from "@/lib/parsing/csvRows";
 import type {
   EmitterConfigInput,
   PlatformConfigInput,
@@ -19,12 +20,14 @@ interface RunImportInput {
  * new file — re-uploading July's Hotmart report never touches June's
  * Hotmart rows. Scoped strictly to this configId, so importing one emitter
  * never wipes another emitter's data (the bug the old prototype had).
+ *
+ * Mapping configs (platform/emitter) are global — shared across every
+ * company — so they are looked up without a companyId filter; only the
+ * resulting Sale/Invoice/ImportBatch rows are scoped to this company.
  */
 export async function runImport(companyId: string, input: RunImportInput) {
   if (input.sourceType === "PLATFORM") {
-    const config = await db.platformConfig.findUnique({
-      where: { id: input.configId, companyId },
-    });
+    const config = await db.platformConfig.findUnique({ where: { id: input.configId } });
     if (!config) throw new Error("Configuração de plataforma não encontrada");
 
     const configInput: PlatformConfigInput = {
@@ -54,7 +57,7 @@ export async function runImport(companyId: string, input: RunImportInput) {
           platformConfigId: config.id,
           originalFilename: input.filename,
           rowCount: standardized.length,
-          rawRows: input.rawRows,
+          rawContent: rowsToCsv(input.rawRows),
           competencias,
         },
       });
@@ -74,9 +77,7 @@ export async function runImport(companyId: string, input: RunImportInput) {
     });
   }
 
-  const config = await db.emitterConfig.findUnique({
-    where: { id: input.configId, companyId },
-  });
+  const config = await db.emitterConfig.findUnique({ where: { id: input.configId } });
   if (!config) throw new Error("Configuração de emissor não encontrada");
 
   const configInput: EmitterConfigInput = {
@@ -102,7 +103,7 @@ export async function runImport(companyId: string, input: RunImportInput) {
         emitterConfigId: config.id,
         originalFilename: input.filename,
         rowCount: standardized.length,
-        rawRows: input.rawRows,
+        rawContent: rowsToCsv(input.rawRows),
         competencias,
       },
     });
@@ -126,11 +127,14 @@ export async function runImport(companyId: string, input: RunImportInput) {
  * Re-runs standardization for an already-imported batch using the CURRENT
  * mapping config (which may have been edited since the original import).
  * This is what makes config edits actually take effect, instead of only
- * affecting the next file upload.
+ * affecting the next file upload. Rows are recovered from the stored CSV
+ * text (rawContent), not re-uploaded by the user.
  */
 export async function reanalyzeBatch(companyId: string, batchId: string) {
   const batch = await db.importBatch.findUnique({ where: { id: batchId, companyId } });
   if (!batch) throw new Error("Lote de importação não encontrado");
+
+  const rawRows = csvToRows(batch.rawContent);
 
   if (batch.sourceType === "PLATFORM") {
     if (!batch.platformConfigId) throw new Error("Lote sem plataforma associada");
@@ -149,7 +153,7 @@ export async function reanalyzeBatch(companyId: string, batchId: string) {
       statusMap: config.statusMap as unknown as PlatformConfigInput["statusMap"],
     };
 
-    const standardized = standardizeSales(batch.rawRows as RawRow[], configInput);
+    const standardized = standardizeSales(rawRows, configInput);
     const competencias = distinctCompetencias(standardized);
 
     return db.$transaction(async (tx) => {
@@ -183,7 +187,7 @@ export async function reanalyzeBatch(companyId: string, batchId: string) {
     statusMap: config.statusMap as unknown as EmitterConfigInput["statusMap"],
   };
 
-  const standardized = standardizeInvoices(batch.rawRows as RawRow[], configInput);
+  const standardized = standardizeInvoices(rawRows, configInput);
   const competencias = distinctCompetencias(standardized);
 
   return db.$transaction(async (tx) => {
@@ -211,4 +215,9 @@ export async function listActiveBatches(companyId: string) {
     include: { platformConfig: true, emitterConfig: true },
     orderBy: { importedAt: "desc" },
   });
+}
+
+/** Deletes an import batch and (via cascade) every Sale/Invoice row it produced. */
+export async function deleteBatch(companyId: string, batchId: string) {
+  await db.importBatch.delete({ where: { id: batchId, companyId } });
 }

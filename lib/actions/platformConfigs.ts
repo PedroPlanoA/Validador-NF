@@ -4,11 +4,10 @@ import { db } from "@/lib/db";
 import { platformConfigSchema, type PlatformConfigFormInput } from "@/lib/validation/schemas";
 import { revalidatePath } from "next/cache";
 
-export async function createPlatformConfig(companyId: string, input: PlatformConfigFormInput) {
+export async function createPlatformConfig(input: PlatformConfigFormInput) {
   const parsed = platformConfigSchema.parse(input);
   const config = await db.platformConfig.create({
     data: {
-      companyId,
       name: parsed.name,
       mappings: parsed.mappings,
       commType: parsed.commType,
@@ -20,18 +19,14 @@ export async function createPlatformConfig(companyId: string, input: PlatformCon
       statusMap: parsed.statusMap,
     },
   });
-  revalidatePath(`/c/${companyId}/config/platforms`);
+  revalidatePath(`/config/platforms`);
   return config;
 }
 
-export async function updatePlatformConfig(
-  companyId: string,
-  configId: string,
-  input: PlatformConfigFormInput,
-) {
+export async function updatePlatformConfig(configId: string, input: PlatformConfigFormInput) {
   const parsed = platformConfigSchema.parse(input);
   const config = await db.platformConfig.update({
-    where: { id: configId, companyId },
+    where: { id: configId },
     data: {
       name: parsed.name,
       mappings: parsed.mappings,
@@ -44,14 +39,14 @@ export async function updatePlatformConfig(
       statusMap: parsed.statusMap,
     },
   });
-  revalidatePath(`/c/${companyId}/config/platforms`);
+  revalidatePath(`/config/platforms`);
   return config;
 }
 
-export async function listPlatformConfigs(companyId: string) {
-  return db.platformConfig.findMany({ where: { companyId }, orderBy: { name: "asc" } });
+export async function listPlatformConfigs() {
+  return db.platformConfig.findMany({ orderBy: { name: "asc" } });
 }
 
-export async function getPlatformConfig(companyId: string, configId: string) {
-  return db.platformConfig.findUnique({ where: { id: configId, companyId } });
+export async function getPlatformConfig(configId: string) {
+  return db.platformConfig.findUnique({ where: { id: configId } });
 }

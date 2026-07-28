@@ -6,22 +6,16 @@ import { Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function EmittersConfigPage({
-  params,
-}: {
-  params: Promise<{ companyId: string }>;
-}) {
-  const { companyId } = await params;
-  const configs = await listEmitterConfigs(companyId);
+export default async function EmittersConfigPage() {
+  const configs = await listEmitterConfigs();
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-base font-bold text-ink">Mapeador de Emissores de Notas Fiscais</h1>
-          <p className="text-xs text-ink/50 mt-1">Configure mapeamento para relatórios de notas fiscais.</p>
-        </div>
-        <Link href={`/c/${companyId}/config/emitters/new`}>
+        <p className="text-xs text-ink/50 max-w-xl">
+          Estes mapeamentos valem para todas as empresas — configure uma vez, use na importação de qualquer cliente.
+        </p>
+        <Link href="/config/emitters/new">
           <Button>
             <Plus className="w-4 h-4" /> Novo Mapeamento de Emissor
           </Button>
@@ -33,7 +27,7 @@ export default async function EmittersConfigPage({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {configs.map((config) => (
-            <Link key={config.id} href={`/c/${companyId}/config/emitters/${config.id}/edit`}>
+            <Link key={config.id} href={`/config/emitters/${config.id}/edit`}>
               <Card className="p-5 hover:shadow-card-hover transition-shadow">
                 <h3 className="font-serif font-black text-lg text-ink">{config.name}</h3>
                 <p className="text-xs text-ink/50 mt-1">Serviço padrão: {config.fallbackService || "—"}</p>

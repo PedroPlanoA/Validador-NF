@@ -5,18 +5,17 @@ import { MappingWizard } from "@/components/wizard/MappingWizard";
 export default async function EditEmitterConfigPage({
   params,
 }: {
-  params: Promise<{ companyId: string; configId: string }>;
+  params: Promise<{ configId: string }>;
 }) {
-  const { companyId, configId } = await params;
-  const config = await getEmitterConfig(companyId, configId);
+  const { configId } = await params;
+  const config = await getEmitterConfig(configId);
   if (!config) notFound();
 
   return (
     <div className="space-y-6">
-      <h1 className="text-base font-bold text-ink">Editar Mapeamento — {config.name}</h1>
+      <h2 className="text-base font-bold text-ink">Editar Mapeamento — {config.name}</h2>
       <MappingWizard
         kind="emitter"
-        companyId={companyId}
         existingConfig={{
           id: config.id,
           name: config.name,

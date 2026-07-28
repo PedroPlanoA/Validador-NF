@@ -31,12 +31,10 @@ function navItems(companyId: string): NavItem[] {
   ];
 }
 
-function configItems(companyId: string): NavItem[] {
-  return [
-    { href: `/c/${companyId}/config/platforms`, label: "Mapear Plataformas", icon: SlidersHorizontal },
-    { href: `/c/${companyId}/config/emitters`, label: "Mapear Emissores", icon: Server },
-  ];
-}
+const CONFIG_ITEMS: NavItem[] = [
+  { href: "/config/platforms", label: "Mapear Plataformas", icon: SlidersHorizontal },
+  { href: "/config/emitters", label: "Mapear Emissores", icon: Server },
+];
 
 export function Sidebar({ companyId, companyName }: { companyId: string; companyName: string }) {
   const pathname = usePathname();
@@ -74,7 +72,7 @@ export function Sidebar({ companyId, companyName }: { companyId: string; company
           <span className="px-3 text-[10px] font-bold text-sand/50 uppercase tracking-wider block mb-2">
             Configuração
           </span>
-          {configItems(companyId).map(({ href, label, icon: Icon }) => (
+          {CONFIG_ITEMS.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}

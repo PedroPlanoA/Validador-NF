@@ -57,18 +57,17 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  platformConfigs PlatformConfig[]
-  emitterConfigs  EmitterConfig[]
   importBatches   ImportBatch[]
   sales           Sale[]
   invoices        Invoice[]
   checklistStates ChecklistState[]
 }
 
+/// Mapeamentos de plataforma são globais (compartilhados por todas as
+/// empresas) — decisão do usuário, já que as mesmas plataformas de venda se
+/// repetem entre clientes da contabilidade.
 model PlatformConfig {
   id             String       @id @default(cuid())
-  companyId      String
-  company        Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   name           String
   mappings       Json
   commType       CommType
@@ -84,14 +83,12 @@ model PlatformConfig {
   importBatches ImportBatch[]
   sales         Sale[]
 
-  @@unique([companyId, name])
-  @@index([companyId])
+  @@unique([name])
 }
 
+/// Mapeamentos de emissor também são globais — ver PlatformConfig.
 model EmitterConfig {
   id              String   @id @default(cuid())
-  companyId       String
-  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   name            String
   mappings        Json
   cleanupChars    String   @default("")
@@ -103,8 +100,7 @@ model EmitterConfig {
   importBatches ImportBatch[]
   invoices      Invoice[]
 
-  @@unique([companyId, name])
-  @@index([companyId])
+  @@unique([name])
 }
 
 model ImportBatch {
@@ -118,7 +114,10 @@ model ImportBatch {
   emitterConfig    EmitterConfig?    @relation(fields: [emitterConfigId], references: [id])
   originalFilename String
   rowCount         Int
-  rawRows          Json
+  /// Linhas originais em texto delimitado (CSV), não JSON — muito mais
+  /// compacto para armazenar no banco (sem repetir nomes de campo a cada
+  /// linha) mantendo a reanálise possível sem precisar reenviar o arquivo.
+  rawContent       String
   competencias     String[]
   importedAt       DateTime          @default(now())
   replacedBatchId  String?

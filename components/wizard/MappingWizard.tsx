@@ -3,10 +3,10 @@
 import { useMemo, useReducer, useState } from "react";
 import { useRouter } from "next/navigation";
 import { parseSpreadsheet } from "@/lib/parsing/parseSpreadsheet";
-import { guessColumn } from "@/lib/parsing/guessColumn";
-import { distinctValuesOf, guessPlatformStatusMap, guessEmitterStatusMap } from "@/lib/parsing/statusGuess";
+import { distinctValuesOf } from "@/lib/parsing/statusGuess";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Select } from "@/components/ui/Input";
+import { Combobox } from "@/components/ui/Combobox";
 import { Card } from "@/components/ui/Card";
 import {
   EMITTER_OPTIONAL_FIELDS,
@@ -97,11 +97,9 @@ const STEP_LABELS = ["Nome", "Amostra", "Colunas", "Status", "Ajustes", "Revisar
 
 export function MappingWizard({
   kind,
-  companyId,
   existingConfig,
 }: {
   kind: Kind;
-  companyId: string;
   existingConfig?: ExistingConfig;
 }) {
   const router = useRouter();
@@ -124,33 +122,12 @@ export function MappingWizard({
     try {
       const { headers, rows } = await parseSpreadsheet(file);
       const sampleRows = rows.slice(0, 200);
-
-      const guessedMappings: Record<string, string> = { ...state.fieldMappings };
-      for (const f of [...requiredFields, ...optionalFields]) {
-        if (!guessedMappings[f.key]) {
-          const guess = guessColumn(f.key, headers);
-          if (guess) guessedMappings[f.key] = guess;
-        }
-      }
-      if (kind === "platform" && state.commType === "CALC") {
-        for (const key of ["valorRecebido", "valorLiquido"]) {
-          if (!guessedMappings[key]) {
-            const guess = guessColumn(key, headers);
-            if (guess) guessedMappings[key] = guess;
-          }
-        }
-      }
-
-      let statusMap = state.statusMap;
-      const statusCol = guessedMappings[statusField];
-      if (statusCol) {
-        const distinct = distinctValuesOf(sampleRows, statusCol);
-        const guessed =
-          kind === "platform" ? guessPlatformStatusMap(distinct) : guessEmitterStatusMap(distinct);
-        statusMap = { ...guessed, ...statusMap };
-      }
-
-      dispatch({ type: "set", patch: { sampleHeaders: headers, sampleRows, fieldMappings: guessedMappings, statusMap } });
+      // Intentionally NOT auto-guessing column mappings or status values here
+      // — pre-filled guesses were confusing analysts into trusting a value
+      // they hadn't actually checked. The sample only powers the searchable
+      // column list below; every field still starts blank and must be
+      // chosen deliberately.
+      dispatch({ type: "set", patch: { sampleHeaders: headers, sampleRows } });
     } catch {
       dispatch({ type: "set", patch: { error: "Não foi possível ler o arquivo. Verifique o formato (CSV, XLS ou XLSX)." } });
     } finally {
@@ -189,11 +166,11 @@ export function MappingWizard({
           statusMap: state.statusMap as Record<string, "CONCLUIDO" | "CANCELADO" | "INCOMPLETO" | "OUTRO">,
         };
         if (existingConfig) {
-          await updatePlatformConfig(companyId, existingConfig.id, input);
+          await updatePlatformConfig(existingConfig.id, input);
         } else {
-          await createPlatformConfig(companyId, input);
+          await createPlatformConfig(input);
         }
-        router.push(`/c/${companyId}/config/platforms`);
+        router.push("/config/platforms");
       } else {
         const input = {
           name: state.name,
@@ -215,11 +192,11 @@ export function MappingWizard({
           >,
         };
         if (existingConfig) {
-          await updateEmitterConfig(companyId, existingConfig.id, input);
+          await updateEmitterConfig(existingConfig.id, input);
         } else {
-          await createEmitterConfig(companyId, input);
+          await createEmitterConfig(input);
         }
-        router.push(`/c/${companyId}/config/emitters`);
+        router.push("/config/emitters");
       }
     } catch (e) {
       dispatch({
@@ -276,7 +253,7 @@ export function MappingWizard({
       {state.step === 1 && (
         <div className="space-y-4">
           <p className="text-sm text-ink/60">
-            Envie um arquivo de amostra (CSV, XLS ou XLSX) para detectar as colunas automaticamente.
+            Envie um arquivo de amostra (CSV, XLS ou XLSX) para listar as colunas disponíveis na próxima etapa.
             {existingConfig && " Se preferir manter o mapeamento atual, pode pular esta etapa."}
           </p>
           <input
@@ -296,31 +273,19 @@ export function MappingWizard({
 
       {state.step === 2 && (
         <div className="space-y-4">
+          <p className="text-xs text-ink/50">
+            Digite para pesquisar o nome exato da coluna no arquivo. Nenhum campo vem preenchido automaticamente —
+            confira e escolha cada um manualmente.
+          </p>
           {[...requiredFields, ...optionalFields].map((f) => (
             <div key={f.key} className="space-y-1.5">
               <Label>{f.label}</Label>
-              {state.sampleHeaders.length > 0 ? (
-                <Select
-                  value={state.fieldMappings[f.key] ?? ""}
-                  onChange={(e) => dispatch({ type: "setMapping", field: f.key, value: e.target.value })}
-                >
-                  <option value="">Selecione a coluna...</option>
-                  {state.fieldMappings[f.key] && !state.sampleHeaders.includes(state.fieldMappings[f.key]) && (
-                    <option value={state.fieldMappings[f.key]}>{state.fieldMappings[f.key]} (atual)</option>
-                  )}
-                  {state.sampleHeaders.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </Select>
-              ) : (
-                <Input
-                  value={state.fieldMappings[f.key] ?? ""}
-                  onChange={(e) => dispatch({ type: "setMapping", field: f.key, value: e.target.value })}
-                  placeholder="nome exato da coluna no arquivo"
-                />
-              )}
+              <Combobox
+                value={state.fieldMappings[f.key] ?? ""}
+                onChange={(value) => dispatch({ type: "setMapping", field: f.key, value })}
+                options={state.sampleHeaders}
+                placeholder="nome exato da coluna no arquivo"
+              />
             </div>
           ))}
 
@@ -351,31 +316,19 @@ export function MappingWizard({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label>Coluna Valor Recebido</Label>
-                    <Select
+                    <Combobox
                       value={state.fieldMappings.valorRecebido ?? ""}
-                      onChange={(e) => dispatch({ type: "setMapping", field: "valorRecebido", value: e.target.value })}
-                    >
-                      <option value="">Selecione...</option>
-                      {state.sampleHeaders.map((h) => (
-                        <option key={h} value={h}>
-                          {h}
-                        </option>
-                      ))}
-                    </Select>
+                      onChange={(value) => dispatch({ type: "setMapping", field: "valorRecebido", value })}
+                      options={state.sampleHeaders}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Coluna Valor Líquido</Label>
-                    <Select
+                    <Combobox
                       value={state.fieldMappings.valorLiquido ?? ""}
-                      onChange={(e) => dispatch({ type: "setMapping", field: "valorLiquido", value: e.target.value })}
-                    >
-                      <option value="">Selecione...</option>
-                      {state.sampleHeaders.map((h) => (
-                        <option key={h} value={h}>
-                          {h}
-                        </option>
-                      ))}
-                    </Select>
+                      onChange={(value) => dispatch({ type: "setMapping", field: "valorLiquido", value })}
+                      options={state.sampleHeaders}
+                    />
                   </div>
                 </div>
               )}
@@ -404,17 +357,11 @@ export function MappingWizard({
               {state.currencyMode === "COL" && (
                 <div className="space-y-1.5">
                   <Label>Coluna de Moeda</Label>
-                  <Select
+                  <Combobox
                     value={state.currencyCol}
-                    onChange={(e) => dispatch({ type: "set", patch: { currencyCol: e.target.value } })}
-                  >
-                    <option value="">Selecione...</option>
-                    {state.sampleHeaders.map((h) => (
-                      <option key={h} value={h}>
-                        {h}
-                      </option>
-                    ))}
-                  </Select>
+                    onChange={(value) => dispatch({ type: "set", patch: { currencyCol: value } })}
+                    options={state.sampleHeaders}
+                  />
                 </div>
               )}
             </>
@@ -425,8 +372,8 @@ export function MappingWizard({
       {state.step === 3 && (
         <div className="space-y-3">
           <p className="text-sm text-ink/60">
-            Confira como cada valor encontrado na amostra deve ser interpretado. Ajuste manualmente se a sugestão
-            estiver errada.
+            Confira como cada valor encontrado na amostra deve ser interpretado. Nada vem pré-selecionado — escolha o
+            status correto para cada valor.
           </p>
           {distinctStatusValues.length === 0 && (
             <p className="text-xs text-ink/40 italic">
@@ -440,9 +387,12 @@ export function MappingWizard({
                 <span className="text-sm font-medium text-ink truncate">{raw}</span>
                 <Select
                   className="w-56"
-                  value={state.statusMap[raw] ?? "OUTRO"}
+                  value={state.statusMap[raw] ?? ""}
                   onChange={(e) => dispatch({ type: "setStatus", raw, value: e.target.value })}
                 >
+                  <option value="" disabled>
+                    Selecione...
+                  </option>
                   {statusOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
