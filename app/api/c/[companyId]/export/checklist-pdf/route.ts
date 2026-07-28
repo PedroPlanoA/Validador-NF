@@ -37,6 +37,7 @@ export async function GET(
     ChecklistPdfDocument({
       companyName: company.nome,
       competencia,
+      logoUrl: `${request.nextUrl.origin}/logo-fundo-claro.png`,
       vendasConcluidas: concluidas.reduce((a, r) => a + r.valorVenda, 0),
       notasEmitidas: emitidas.reduce((a, r) => a + (r.valorNfFaturado ?? 0), 0),
       nfNaoEmitidas: ausentes.reduce((a, r) => a + r.valorNfCalculado, 0),
@@ -47,6 +48,7 @@ export async function GET(
         codigoVenda: r.codigoVenda,
         comprador: r.comprador,
         situacao: SITUACAO_CONFERENCIA_LABELS[r.situacaoConferencia],
+        statusKey: r.situacaoConferencia,
       })),
     }),
   );

@@ -1,13 +1,11 @@
-import Link from "next/link";
 import { ConfigTabs } from "@/components/layout/ConfigTabs";
+import { ConfigBackLink } from "@/components/layout/ConfigBackLink";
 
 export default function ConfigLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-full w-full overflow-hidden flex-1 flex-col bg-paper">
       <header className="h-16 flex items-center px-8 border-b border-ink/8 bg-white shrink-0 gap-6">
-        <Link href="/companies" className="text-xs font-semibold text-ink/50 hover:text-mint transition-colors">
-          ← Empresas
-        </Link>
+        <ConfigBackLink />
         <div className="h-6 w-px bg-ink/10" />
         <h1 className="font-serif font-black text-base text-ink">Configuração Global de Mapeamentos</h1>
       </header>

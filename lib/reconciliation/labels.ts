@@ -12,12 +12,12 @@ export const SITUACAO_CONFERENCIA_LABELS: Record<SituacaoConferencia, string> = 
 };
 
 export const SITUACAO_CONFERENCIA_TONE: Record<SituacaoConferencia, BadgeTone> = {
-  NF_EMITIDA: "success",
-  NF_NAO_EMITIDA: "error",
-  ERRO_DE_EMISSAO: "warning",
-  ERRO_DE_CANCELAMENTO: "warning-warm",
+  NF_EMITIDA: "positive",
+  NF_NAO_EMITIDA: "attention",
+  ERRO_DE_EMISSAO: "danger",
+  ERRO_DE_CANCELAMENTO: "danger",
   NF_CANCELADA: "neutral",
-  MULTIPLAS_NOTAS_REVISAO: "warning-warm",
+  MULTIPLAS_NOTAS_REVISAO: "attention",
   OUTRO: "neutral",
 };
 

@@ -35,7 +35,7 @@ export function DeleteBatchButton({
     <button
       onClick={handleClick}
       disabled={loading}
-      className="inline-flex items-center gap-1.5 text-xs font-semibold text-status-error hover:opacity-80 disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 text-xs font-semibold text-danger hover:opacity-80 disabled:opacity-50"
       title="Excluir este arquivo importado"
     >
       <Trash2 className="w-3.5 h-3.5" /> Excluir

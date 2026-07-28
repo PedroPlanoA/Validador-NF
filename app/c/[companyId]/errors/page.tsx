@@ -70,7 +70,7 @@ export default async function ErrorsPage({
                           {SITUACAO_CONFERENCIA_LABELS[r.situacaoConferencia]}
                         </Badge>
                         {r.valorDivergente && (
-                          <Badge tone={isVerified ? "neutral" : "warning-warm"}>
+                          <Badge tone={isVerified ? "neutral" : "attention"}>
                             {isVerified ? "Divergência (verificada)" : "Divergência de Valor"}
                           </Badge>
                         )}
@@ -96,7 +96,7 @@ export default async function ErrorsPage({
                           />
                           <Link
                             href={`/c/${companyId}/products?plataforma=${encodeURIComponent(r.plataforma)}&produto=${encodeURIComponent(r.produto)}`}
-                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-status-info hover:opacity-80"
+                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:opacity-80"
                           >
                             <SlidersHorizontal className="w-3.5 h-3.5" /> Ajustar % Comissão
                           </Link>

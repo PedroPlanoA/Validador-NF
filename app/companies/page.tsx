@@ -15,10 +15,8 @@ export default async function CompaniesPage() {
       <div className="max-w-5xl mx-auto px-6 py-12 space-y-10">
         <header className="flex items-start justify-between gap-6">
           <div>
-            <span className="inline-flex items-center gap-3 text-mint-700 text-xs font-semibold uppercase tracking-[.28em]">
-              <span className="w-6 h-px bg-mint-500/70" /> Plano A
-            </span>
-            <h1 className="font-serif text-3xl font-black text-ink mt-3">Conferência Fiscal</h1>
+            <img src="/logo-fundo-claro.png" alt="Plano A Contabilidade" className="h-24 w-auto mb-5" />
+            <h1 className="font-serif text-3xl font-black text-ink">Conferência Fiscal</h1>
             <p className="text-sm text-ink/60 mt-1">Selecione uma empresa ou adicione uma nova para começar.</p>
           </div>
           <Link

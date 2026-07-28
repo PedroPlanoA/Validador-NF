@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { getPlatformConfig } from "@/lib/actions/platformConfigs";
 import { MappingWizard } from "@/components/wizard/MappingWizard";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditPlatformConfigPage({
   params,
 }: {

@@ -1,14 +1,13 @@
 import { ReactNode } from "react";
 
-export type BadgeTone = "success" | "error" | "warning" | "warning-warm" | "info" | "neutral";
+export type BadgeTone = "positive" | "attention" | "danger" | "primary" | "neutral";
 
 const TONE_CLASSES: Record<BadgeTone, string> = {
-  success: "bg-status-success/12 text-status-success",
-  error: "bg-status-error/12 text-status-error",
-  warning: "bg-status-warning/12 text-status-warning",
-  "warning-warm": "bg-status-warning-warm/15 text-status-warning-warm",
-  info: "bg-status-info/12 text-status-info",
-  neutral: "bg-ink/8 text-ink/60",
+  positive: "bg-positive/14 text-mint-700",
+  attention: "bg-attention/14 text-clay-700",
+  danger: "bg-danger/12 text-danger",
+  primary: "bg-primary/12 text-teal",
+  neutral: "bg-ink/7 text-ink/60",
 };
 
 export function Badge({ tone = "neutral", children }: { tone?: BadgeTone; children: ReactNode }) {

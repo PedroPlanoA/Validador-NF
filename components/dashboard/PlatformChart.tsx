@@ -17,7 +17,7 @@ export function PlatformChart({ data }: { data: { plataforma: string; total: num
         datasets: [
           {
             data: data.map((d) => d.total),
-            backgroundColor: "#6366f1",
+            backgroundColor: "#007878",
             borderRadius: 6,
             maxBarThickness: 36,
           },

@@ -20,10 +20,10 @@ const NF_LABELS: Record<SituacaoNf, string> = {
 };
 
 const NF_TONE: Record<SituacaoNf, BadgeTone> = {
-  EMITIDO: "success",
+  EMITIDO: "positive",
   CANCELADO: "neutral",
-  ERRO_DE_EMISSAO: "error",
-  EM_EMISSAO: "info",
+  ERRO_DE_EMISSAO: "danger",
+  EM_EMISSAO: "primary",
   OUTRO: "neutral",
 };
 

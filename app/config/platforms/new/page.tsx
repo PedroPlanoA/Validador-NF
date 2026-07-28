@@ -1,10 +1,15 @@
+import { Suspense } from "react";
 import { MappingWizard } from "@/components/wizard/MappingWizard";
+
+export const dynamic = "force-dynamic";
 
 export default function NewPlatformConfigPage() {
   return (
     <div className="space-y-6">
-      <h2 className="text-base font-bold text-ink">Novo Mapeamento de Plataforma</h2>
-      <MappingWizard kind="platform" />
+      <h2 className="text-base font-bold text-ink">Novo Mapeamento</h2>
+      <Suspense>
+        <MappingWizard kind="platform" />
+      </Suspense>
     </div>
   );
 }

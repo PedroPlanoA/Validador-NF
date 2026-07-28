@@ -39,8 +39,8 @@ export function DeleteCompanyButton({
       title={confirming ? "Clique novamente para confirmar" : `Excluir ${companyName}`}
       className={`absolute top-4 right-4 flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-input transition-colors disabled:opacity-50 ${
         confirming
-          ? "bg-status-error text-white"
-          : "text-ink/30 hover:text-status-error hover:bg-status-error/10"
+          ? "bg-danger text-white"
+          : "text-ink/30 hover:text-danger hover:bg-danger/10"
       }`}
     >
       <Trash2 className="w-3.5 h-3.5" />

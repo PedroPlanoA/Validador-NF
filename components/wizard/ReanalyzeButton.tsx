@@ -22,7 +22,7 @@ export function ReanalyzeButton({ companyId, batchId }: { companyId: string; bat
     <button
       onClick={handleClick}
       disabled={loading}
-      className="inline-flex items-center gap-1.5 text-xs font-semibold text-status-info hover:opacity-80 disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:opacity-80 disabled:opacity-50"
       title="Reprocessar este lote com o mapeamento atual"
     >
       <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Reanalisar

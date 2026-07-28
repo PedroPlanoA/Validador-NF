@@ -84,7 +84,7 @@ export function ChecklistForm({
               onClick={() => setErrorsOpen((v) => !v)}
               className="text-ink/40 hover:text-ink/60 p-1 flex items-center gap-1 text-xs font-bold"
             >
-              <span className="bg-status-error/12 text-status-error px-2 py-0.5 rounded-pill text-[10px]">
+              <span className="bg-danger/12 text-danger px-2 py-0.5 rounded-pill text-[10px]">
                 {errorRows.length} erro(s)
               </span>
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${errorsOpen ? "rotate-180" : ""}`} />
@@ -143,7 +143,7 @@ export function ChecklistForm({
           <div className="flex-1 flex justify-between items-center">
             <span className="text-xs font-semibold text-ink">Ajustado acumulador para serviços diferentes</span>
             {multiServiceDetected && (
-              <span className="text-[9px] bg-status-warning-warm/15 text-status-warning-warm font-bold px-2 py-0.5 rounded-pill">
+              <span className="text-[9px] bg-attention/15 text-attention font-bold px-2 py-0.5 rounded-pill">
                 Múltiplos Serviços Detectados
               </span>
             )}

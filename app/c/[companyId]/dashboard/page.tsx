@@ -77,7 +77,7 @@ export default async function DashboardPage({
         <div className="flex items-center gap-3">
           <a
             href={`/api/c/${companyId}/export/reconciliation${competencia ? `?competencia=${competencia}` : ""}`}
-            className="flex items-center gap-2 text-xs font-semibold text-status-success hover:opacity-80 bg-status-success/10 px-3 py-2 rounded-input border border-status-success/20 transition-colors"
+            className="flex items-center gap-2 text-xs font-semibold text-positive hover:opacity-80 bg-positive/10 px-3 py-2 rounded-input border border-positive/20 transition-colors"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" /> Exportar Análise (XLSX)
           </a>
@@ -90,27 +90,27 @@ export default async function DashboardPage({
           label="Total Vendas (Concluídas)"
           value={concluidas.length}
           sub={formatCurrency(sum(concluidas, (r) => r.valorVenda), "BRL")}
-          accent="indigo"
+          accent="primary"
         />
         <KpiCard
           label="Notas Emitidas"
           value={emitidas.length}
           sub={formatCurrency(sum(emitidas, (r) => r.valorNfFaturado ?? 0), "BRL")}
-          accent="emerald"
+          accent="positive"
         />
-        <KpiCard label="Erros de Emissão" value={errosEmissao.length} sub="Pendentes de reenvio" accent="amber" />
+        <KpiCard label="Erros de Emissão" value={errosEmissao.length} sub="Pendentes de reenvio" accent="danger" />
         <KpiCard
           label="NF Não Emitida"
           value={nfAusente.length}
           sub={`${formatCurrency(sum(nfAusente, (r) => r.valorNfCalculado), "BRL")} pendentes`}
-          accent="rose"
+          accent="attention"
         />
-        <KpiCard label="Erro Cancelamento" value={erroCancelamento.length} sub="Conflito de status" accent="clay" />
+        <KpiCard label="Erro Cancelamento" value={erroCancelamento.length} sub="Conflito de status" accent="danger" />
         <KpiCard
           label="Múltiplas Notas"
           value={multiplasNotas.length}
           sub="Aguardando revisão manual"
-          accent="clay"
+          accent="attention"
         />
       </div>
 
@@ -161,7 +161,7 @@ export default async function DashboardPage({
             currencyRows.map(([moeda, total]) => (
               <div key={moeda} className="flex justify-between px-6 py-3 text-sm">
                 <span className="font-semibold text-ink">{moeda}</span>
-                <span className="text-status-success font-semibold">{formatCurrency(total, moeda)}</span>
+                <span className="text-positive font-semibold">{formatCurrency(total, moeda)}</span>
               </div>
             ))
           )}

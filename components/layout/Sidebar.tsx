@@ -32,7 +32,13 @@ function navItems(companyId: string): NavItem[] {
   ];
 }
 
-const MAPEAR_ITEM: NavItem = { href: "/config/platforms", label: "Mapear", icon: SlidersHorizontal };
+/** Pattern from plano-a-ux/references/components.md `.side a` — border-left
+ *  indicator instead of a full-width fill, so the active item reads clearly
+ *  without competing with the dark sidebar background. */
+const NAV_LINK_BASE =
+  "w-full flex items-center gap-3 px-3 py-2.5 pl-3 border-l-[3px] rounded-r-card-sm text-sm transition-colors";
+const NAV_LINK_ACTIVE = "border-l-mint bg-mint/12 text-white font-semibold";
+const NAV_LINK_INACTIVE = "border-l-transparent text-sand/80 hover:bg-white/5 hover:text-white font-medium";
 
 export function Sidebar({ companyId, companyName }: { companyId: string; companyName: string }) {
   const pathname = usePathname();
@@ -42,9 +48,7 @@ export function Sidebar({ companyId, companyName }: { companyId: string; company
   return (
     <aside className="w-64 bg-deep text-white flex flex-col shrink-0">
       <div className="h-16 flex items-center px-6 border-b border-white/10 gap-3">
-        <div className="w-8 h-8 rounded-lg bg-mint flex items-center justify-center shadow-md shrink-0">
-          <span className="text-deep font-black text-lg font-serif">A</span>
-        </div>
+        <img src="/simbolo-cores.png" alt="Plano A" className="h-9 w-9 object-contain shrink-0" />
         <div className="min-w-0">
           <h1 className="font-serif font-black text-base leading-tight truncate">{companyName}</h1>
           <Link href="/companies" className="text-[10px] text-mint-300 hover:text-mint-200 uppercase tracking-wide">
@@ -58,9 +62,7 @@ export function Sidebar({ companyId, companyName }: { companyId: string; company
           <Link
             key={href}
             href={href}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-card-sm text-sm font-medium transition-colors ${
-              isActive(href) ? "bg-deep-dark text-mint-300" : "text-sand/80 hover:bg-deep-dark hover:text-white"
-            }`}
+            className={`${NAV_LINK_BASE} ${isActive(href) ? NAV_LINK_ACTIVE : NAV_LINK_INACTIVE}`}
           >
             <Icon className="w-4 h-4 shrink-0" /> {label}
           </Link>
@@ -68,14 +70,14 @@ export function Sidebar({ companyId, companyName }: { companyId: string; company
 
         <div className="pt-4 mt-4 border-t border-white/10">
           <Link
-            href={MAPEAR_ITEM.href}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-card-sm text-sm font-medium transition-colors ${
-              isActive(MAPEAR_ITEM.href) || isActive("/config/emitters")
-                ? "bg-deep-dark text-mint-300"
-                : "text-sand/80 hover:bg-deep-dark hover:text-white"
+            href={`/config/platforms?companyId=${companyId}`}
+            className={`${NAV_LINK_BASE} ${
+              isActive("/config/platforms") || isActive("/config/emitters")
+                ? NAV_LINK_ACTIVE
+                : NAV_LINK_INACTIVE
             }`}
           >
-            <MAPEAR_ITEM.icon className="w-4 h-4 shrink-0" /> {MAPEAR_ITEM.label}
+            <SlidersHorizontal className="w-4 h-4 shrink-0" /> Mapear
           </Link>
         </div>
       </nav>

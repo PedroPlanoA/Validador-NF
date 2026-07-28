@@ -39,8 +39,8 @@ export function VerifyValueButton({
       disabled={pending}
       className={`inline-flex items-center gap-1.5 text-[11px] font-semibold rounded-input px-2.5 py-1.5 transition-colors disabled:opacity-50 ${
         verified
-          ? "bg-status-success/10 text-status-success"
-          : "text-ink/45 hover:text-status-success hover:bg-status-success/10"
+          ? "bg-positive/10 text-positive"
+          : "text-ink/45 hover:text-positive hover:bg-positive/10"
       }`}
       title={verified ? "Verificado — clique para desmarcar" : "Marcar como verificado (não remove o alerta)"}
     >

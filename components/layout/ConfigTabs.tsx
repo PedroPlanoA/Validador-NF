@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { SlidersHorizontal, Server } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { DollarSign, FileText } from "lucide-react";
 
 const TABS = [
-  { href: "/config/platforms", label: "Plataformas de Venda", icon: SlidersHorizontal },
-  { href: "/config/emitters", label: "Emissores de Nota Fiscal", icon: Server },
+  { href: "/config/platforms", label: "Plataformas de Venda", icon: DollarSign },
+  { href: "/config/emitters", label: "Emissores de Nota Fiscal", icon: FileText },
 ];
 
 export function ConfigTabs() {
   const pathname = usePathname();
+  const companyId = useSearchParams().get("companyId");
+  const suffix = companyId ? `?companyId=${companyId}` : "";
 
   return (
     <div className="flex items-center gap-2 border-b border-ink/8">
@@ -19,7 +21,7 @@ export function ConfigTabs() {
         return (
           <Link
             key={href}
-            href={href}
+            href={`${href}${suffix}`}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
               active ? "border-mint text-ink" : "border-transparent text-ink/45 hover:text-ink"
             }`}

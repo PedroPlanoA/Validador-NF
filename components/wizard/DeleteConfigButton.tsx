@@ -53,14 +53,14 @@ export function DeleteConfigButton({
         disabled={pending}
         title={confirming ? "Clique novamente para confirmar" : `Excluir ${configName}`}
         className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-input transition-colors disabled:opacity-50 shrink-0 ${
-          confirming ? "bg-status-error text-white" : "text-ink/30 hover:text-status-error hover:bg-status-error/10"
+          confirming ? "bg-danger text-white" : "text-ink/30 hover:text-danger hover:bg-danger/10"
         }`}
       >
         <Trash2 className="w-3.5 h-3.5" />
         {confirming && (pending ? "Excluindo..." : "Confirmar")}
       </button>
       {error && (
-        <p className="text-[10px] text-status-error bg-status-error/10 rounded-input px-2 py-1.5 text-right">
+        <p className="text-[10px] text-danger bg-danger/10 rounded-input px-2 py-1.5 text-right">
           {error}
         </p>
       )}

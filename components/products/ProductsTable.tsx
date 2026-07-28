@@ -94,7 +94,7 @@ export function ProductsTable({
                   <td className="py-3 px-5 text-right">{formatCurrency(p.valorMedio, "BRL")}</td>
                   <td className="py-3 px-5">
                     {p.overrideCommissionPercent != null ? (
-                      <Badge tone="info">Fixado: {p.overrideCommissionPercent}%</Badge>
+                      <Badge tone="primary">Fixado: {p.overrideCommissionPercent}%</Badge>
                     ) : (
                       <span className="text-ink/50">
                         Padrão do mapeamento (méd. aplicada: {p.comissaoMediaAplicada.toFixed(1)}%)
@@ -104,7 +104,7 @@ export function ProductsTable({
                   <td className="py-3 px-5">
                     <button
                       onClick={() => (openProduto === p.produto ? setOpenProduto(null) : openEditor(p))}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-status-info hover:opacity-80"
+                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:opacity-80"
                     >
                       <Settings2 className="w-3.5 h-3.5" /> Configurar
                     </button>

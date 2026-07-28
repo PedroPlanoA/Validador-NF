@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useReducer, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { parseSpreadsheet } from "@/lib/parsing/parseSpreadsheet";
 import { distinctValuesOf } from "@/lib/parsing/statusGuess";
 import { Button } from "@/components/ui/Button";
@@ -103,6 +103,8 @@ export function MappingWizard({
   existingConfig?: ExistingConfig;
 }) {
   const router = useRouter();
+  const companyId = useSearchParams().get("companyId");
+  const backSuffix = companyId ? `?companyId=${companyId}` : "";
   const [state, dispatch] = useReducer(reducer, initialState(kind, existingConfig));
   const [parsing, setParsing] = useState(false);
 
@@ -171,7 +173,7 @@ export function MappingWizard({
         } else {
           await createPlatformConfig(input);
         }
-        router.push("/config/platforms");
+        router.push(`/config/platforms${backSuffix}`);
       } else {
         const input = {
           name: state.name,
@@ -197,7 +199,7 @@ export function MappingWizard({
         } else {
           await createEmitterConfig(input);
         }
-        router.push("/config/emitters");
+        router.push(`/config/emitters${backSuffix}`);
       }
     } catch (e) {
       dispatch({
@@ -232,7 +234,7 @@ export function MappingWizard({
       </div>
 
       {state.error && (
-        <div className="mb-4 text-sm text-status-error bg-status-error/10 rounded-input px-4 py-2.5">
+        <div className="mb-4 text-sm text-danger bg-danger/10 rounded-input px-4 py-2.5">
           {state.error}
         </div>
       )}
@@ -265,7 +267,7 @@ export function MappingWizard({
           />
           {parsing && <p className="text-xs text-ink/50">Lendo arquivo...</p>}
           {state.sampleHeaders.length > 0 && (
-            <p className="text-xs text-status-success">
+            <p className="text-xs text-positive">
               {state.sampleHeaders.length} colunas detectadas, {state.sampleRows.length} linhas de amostra.
             </p>
           )}

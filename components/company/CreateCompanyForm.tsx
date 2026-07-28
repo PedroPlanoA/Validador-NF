@@ -24,21 +24,21 @@ export function CreateCompanyForm() {
           <Label>Código</Label>
           <Input name="codigo" placeholder="ex: 001" required />
           {state.fieldErrors?.codigo && (
-            <p className="text-xs text-status-error">{state.fieldErrors.codigo}</p>
+            <p className="text-xs text-danger">{state.fieldErrors.codigo}</p>
           )}
         </div>
         <div className="space-y-1.5">
           <Label>Nome da empresa</Label>
           <Input name="nome" placeholder="ex: Cliente Exemplo LTDA" required />
           {state.fieldErrors?.nome && (
-            <p className="text-xs text-status-error">{state.fieldErrors.nome}</p>
+            <p className="text-xs text-danger">{state.fieldErrors.nome}</p>
           )}
         </div>
         <div className="space-y-1.5">
           <Label>CNPJ</Label>
           <Input name="cnpj" placeholder="00.000.000/0000-00" required />
           {state.fieldErrors?.cnpj && (
-            <p className="text-xs text-status-error">{state.fieldErrors.cnpj}</p>
+            <p className="text-xs text-danger">{state.fieldErrors.cnpj}</p>
           )}
         </div>
       </div>

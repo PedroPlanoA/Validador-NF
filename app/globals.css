@@ -5,7 +5,9 @@
   --foreground: #141414;
 }
 
-/* Plano A Contabilidade — design tokens (ver skill plano-a-design-system) */
+/* Plano A Contabilidade — design tokens (skill: plano-a-ux)
+   Contexto SISTEMA: fundo --paper, cards em --surface (branco), densidade
+   compacta. Ver ~/.claude/skills/plano-a-ux/references/tokens.md */
 @theme {
   --color-deep: #00323c;
   --color-deep-dark: #042a32;
@@ -41,14 +43,21 @@
   --color-paper: #f4f1ea;
   --color-paper-alt: #ece7dc;
 
-  /* Cores semânticas de status — convenção universal de dashboard, não são
-     cores de marca. Use com modificador de opacidade para o fundo do badge,
-     ex: bg-status-success/15 text-status-success */
-  --color-status-success: #10b981;
-  --color-status-error: #f43f5e;
-  --color-status-warning: #f59e0b;
-  --color-status-warning-warm: #d97d54;
-  --color-status-info: #6366f1;
+  /* Semântica do contexto Sistema (dashboards/telas internas) — mapeadas
+     diretamente para tokens da marca, conforme plano-a-ux/tokens.md:
+     --primary = teal (ação secundária/informativa em fundo claro)
+     --positive = mint (sucesso, concluído, ok)
+     --attention = clay (pendente, em análise, precisa de atenção)
+     --danger = vermelho terroso dedicado (só para erro/exclusão real) */
+  --color-primary: #007878;
+  --color-positive: #14b4a0;
+  --color-attention: #d97d54;
+  --color-danger: #c0453b;
+
+  --color-surface: #ffffff;
+  --color-border: rgba(20, 20, 20, 0.1);
+  --color-text-2: #4a4a4a;
+  --color-text-3: #7a7a7a;
 
   --font-serif: var(--font-merriweather), Georgia, serif;
   --font-sans: var(--font-source-sans), system-ui, sans-serif;
@@ -58,7 +67,7 @@
   --radius-card-sm: 16px;
   --radius-input: 12px;
 
-  --shadow-card: 0 12px 30px -12px rgba(0, 50, 60, 0.18);
+  --shadow-card: 0 8px 20px -10px rgba(0, 50, 60, 0.25);
   --shadow-card-hover: 0 30px 60px -30px rgba(0, 50, 60, 0.4);
 }
 
@@ -66,4 +75,25 @@ body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tipografia — serifa pesada para títulos (assinatura da marca), sans para
+   tudo mais. h1/h2 sempre 900, h3 sempre 700 — nunca deixe o navegador
+   escolher o peso padrão. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  color: var(--color-ink);
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+h1,
+h2 {
+  font-weight: 900;
+}
+h3 {
+  font-weight: 700;
 }

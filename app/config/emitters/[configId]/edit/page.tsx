@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { getEmitterConfig } from "@/lib/actions/emitterConfigs";
 import { MappingWizard } from "@/components/wizard/MappingWizard";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditEmitterConfigPage({
   params,
 }: {

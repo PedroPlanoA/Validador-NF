@@ -85,13 +85,13 @@ export default async function ImportsPage({
         <div className="grid grid-cols-2 gap-4 max-w-md">
           <a
             href={`/api/c/${companyId}/export/sales`}
-            className="py-2.5 px-4 border border-status-success/25 hover:bg-status-success/10 text-status-success text-xs font-bold rounded-input flex items-center justify-center gap-2 transition-colors"
+            className="py-2.5 px-4 border border-positive/25 hover:bg-positive/10 text-positive text-xs font-bold rounded-input flex items-center justify-center gap-2 transition-colors"
           >
             <Download className="w-3.5 h-3.5" /> Baixar Vendas (XLSX)
           </a>
           <a
             href={`/api/c/${companyId}/export/invoices`}
-            className="py-2.5 px-4 border border-status-success/25 hover:bg-status-success/10 text-status-success text-xs font-bold rounded-input flex items-center justify-center gap-2 transition-colors"
+            className="py-2.5 px-4 border border-positive/25 hover:bg-positive/10 text-positive text-xs font-bold rounded-input flex items-center justify-center gap-2 transition-colors"
           >
             <Download className="w-3.5 h-3.5" /> Baixar Notas (XLSX)
           </a>

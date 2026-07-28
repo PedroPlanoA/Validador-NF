@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Merriweather, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
@@ -18,6 +18,14 @@ const sourceSans = Source_Sans_3({
 export const metadata: Metadata = {
   title: "Plano A — Conferência Fiscal",
   description: "Validador de regularização entre vendas e emissões de notas fiscais",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#00323C",
 };
 
 export default function RootLayout({

@@ -95,7 +95,7 @@ export function UploadForm({
             ))}
           </Select>
           {options.length === 0 && (
-            <p className="text-xs text-status-warning-warm">
+            <p className="text-xs text-attention">
               Nenhum mapeamento cadastrado ainda para este tipo de fonte.
             </p>
           )}
@@ -118,7 +118,7 @@ export function UploadForm({
         </p>
 
         {message && (
-          <p className={`text-sm ${status === "error" ? "text-status-error" : "text-status-success"}`}>{message}</p>
+          <p className={`text-sm ${status === "error" ? "text-danger" : "text-positive"}`}>{message}</p>
         )}
 
         <Button type="submit" disabled={!file || !configId || status === "parsing" || status === "uploading"}>

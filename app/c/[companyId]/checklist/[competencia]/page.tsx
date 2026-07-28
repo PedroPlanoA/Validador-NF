@@ -82,13 +82,13 @@ export default async function ChecklistPage({
           </div>
           <div className="bg-white/5 p-3 rounded-input border border-white/10">
             <span className="text-[10px] text-sand/50 font-bold uppercase">NF Não Emitidas</span>
-            <div className="text-lg font-black text-status-error mt-0.5">
+            <div className="text-lg font-black text-attention mt-0.5">
               {formatCurrency(ausentes.reduce((a, r) => a + r.valorNfCalculado, 0), "BRL")}
             </div>
           </div>
           <div className="bg-white/5 p-3 rounded-input border border-white/10">
             <span className="text-[10px] text-sand/50 font-bold uppercase">Erros Identificados</span>
-            <div className="text-lg font-black text-status-warning mt-0.5">{erros.length}</div>
+            <div className="text-lg font-black text-danger mt-0.5">{erros.length}</div>
           </div>
         </div>
       </div>
