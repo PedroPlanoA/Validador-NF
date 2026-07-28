@@ -34,15 +34,11 @@ export function DeleteConfigButton({
     }
 
     startTransition(async () => {
-      try {
-        if (kind === "platform") {
-          await deletePlatformConfig(configId);
-        } else {
-          await deleteEmitterConfig(configId);
-        }
+      const result = kind === "platform" ? await deletePlatformConfig(configId) : await deleteEmitterConfig(configId);
+      if (result.ok) {
         router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao excluir mapeamento.");
+      } else {
+        setError(result.error);
         setConfirming(false);
       }
     });

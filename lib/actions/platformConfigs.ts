@@ -57,14 +57,21 @@ export async function getPlatformConfig(configId: string) {
  * cascade to that data (Sale.platformConfigId is a required, RESTRICT FK).
  * The user must delete the related import batches first if they really
  * want to remove the config.
+ *
+ * Returns a result object instead of throwing: Next.js redacts thrown Error
+ * messages from Server Actions in production (treating them as uncaught
+ * exceptions), so an expected/validation-style failure like "still in use"
+ * must be modeled as a return value to reach the client intact.
  */
-export async function deletePlatformConfig(configId: string) {
+export async function deletePlatformConfig(configId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const usageCount = await db.sale.count({ where: { platformConfigId: configId } });
   if (usageCount > 0) {
-    throw new Error(
-      `Não é possível excluir: ${usageCount} venda(s) importada(s) usam este mapeamento. Exclua as importações relacionadas primeiro.`,
-    );
+    return {
+      ok: false,
+      error: `Não é possível excluir: ${usageCount} venda(s) importada(s) usam este mapeamento. Exclua as importações relacionadas primeiro.`,
+    };
   }
   await db.platformConfig.delete({ where: { id: configId } });
   revalidatePath(`/config/platforms`);
+  return { ok: true };
 }

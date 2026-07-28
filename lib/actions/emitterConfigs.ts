@@ -43,14 +43,20 @@ export async function getEmitterConfig(configId: string) {
   return db.emitterConfig.findUnique({ where: { id: configId } });
 }
 
-/** Deletes an emitter mapping — refused if any invoice uses it, same reasoning as deletePlatformConfig. */
-export async function deleteEmitterConfig(configId: string) {
+/**
+ * Deletes an emitter mapping — refused if any invoice uses it, same
+ * reasoning as deletePlatformConfig. Returns a result object instead of
+ * throwing (see the comment there for why).
+ */
+export async function deleteEmitterConfig(configId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const usageCount = await db.invoice.count({ where: { emitterConfigId: configId } });
   if (usageCount > 0) {
-    throw new Error(
-      `Não é possível excluir: ${usageCount} nota(s) importada(s) usam este mapeamento. Exclua as importações relacionadas primeiro.`,
-    );
+    return {
+      ok: false,
+      error: `Não é possível excluir: ${usageCount} nota(s) importada(s) usam este mapeamento. Exclua as importações relacionadas primeiro.`,
+    };
   }
   await db.emitterConfig.delete({ where: { id: configId } });
   revalidatePath(`/config/emitters`);
+  return { ok: true };
 }
