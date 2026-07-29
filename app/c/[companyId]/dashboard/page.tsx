@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { db } from "@/lib/db";
 import { getReconciliationRows } from "@/lib/actions/reconciliation";
 import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
 import { formatCurrency } from "@/lib/validation/currency";
@@ -8,12 +9,12 @@ import { PlatformChart } from "@/components/dashboard/PlatformChart";
 import { Card } from "@/components/ui/Card";
 import { PageTitle } from "@/components/ui/PageTitle";
 import { FileSpreadsheet } from "lucide-react";
-import { SITUACAO_CONFERENCIA_LABELS } from "@/lib/reconciliation/labels";
+import { SITUACAO_CONFERENCIA_LABELS, SITUACAO_NF_LABELS } from "@/lib/reconciliation/labels";
 import type { ReconciliationRow } from "@/lib/reconciliation/types";
 
 export const dynamic = "force-dynamic";
 
-function sum(rows: ReconciliationRow[], pick: (r: ReconciliationRow) => number) {
+function sum<T>(rows: T[], pick: (r: T) => number) {
   return rows.reduce((acc, r) => acc + pick(r), 0);
 }
 
@@ -25,20 +26,21 @@ export default async function DashboardPage({
   const { companyId } = await params;
   const competencia = await getCompetenciaCookie(companyId);
 
-  const rows = await getReconciliationRows(companyId, competencia);
+  // Unfiltered — each section below decides for itself whether/how the
+  // selected competência applies (vendas-based sections filter by the
+  // sale's own competência; notas-based sections filter by the nota's own
+  // competência; the erro-de-reconciliação KPIs are never filtered, they
+  // always surface every discrepancy found).
+  const [allRows, allInvoices, allSales] = await Promise.all([
+    getReconciliationRows(companyId),
+    db.invoice.findMany({ where: { companyId } }),
+    db.sale.findMany({ where: { companyId }, select: { codigoVendaNormalized: true, moeda: true } }),
+  ]);
 
-  const concluidas = rows.filter((r) => r.situacaoVenda === "CONCLUIDO");
-  const emitidas = rows.filter((r) => r.situacaoConferencia === "NF_EMITIDA");
-  const errosEmissao = rows.filter((r) => r.situacaoConferencia === "ERRO_DE_EMISSAO");
-  const nfAusente = rows.filter((r) => r.situacaoConferencia === "NF_NAO_EMITIDA");
-  const erroCancelamento = rows.filter((r) => r.situacaoConferencia === "ERRO_DE_CANCELAMENTO");
-  const nfCanceladas = rows.filter((r) => r.situacaoConferencia === "NF_CANCELADA");
-
-  const situacaoCounts = rows.reduce<Record<string, number>>((acc, r) => {
-    acc[r.situacaoConferencia] = (acc[r.situacaoConferencia] ?? 0) + 1;
-    return acc;
-  }, {});
-
+  // --- Vendas-based (relatório de vendas), competência = data da venda ---
+  const concluidas = allRows.filter(
+    (r: ReconciliationRow) => r.situacaoVenda === "CONCLUIDO" && (!competencia || r.competencia === competencia),
+  );
   const platformTotals = Object.entries(
     concluidas.reduce<Record<string, number>>((acc, r) => {
       acc[r.plataforma] = (acc[r.plataforma] ?? 0) + r.valorVenda;
@@ -48,21 +50,39 @@ export default async function DashboardPage({
     .map(([plataforma, total]) => ({ plataforma, total }))
     .sort((a, b) => b.total - a.total);
 
+  // --- Análise de erros (venda x nota) — nunca filtrado por competência ---
+  const errosEmissao = allRows.filter((r) => r.situacaoConferencia === "ERRO_DE_EMISSAO");
+  const nfAusente = allRows.filter((r) => r.situacaoConferencia === "NF_NAO_EMITIDA");
+  const erroCancelamento = allRows.filter((r) => r.situacaoConferencia === "ERRO_DE_CANCELAMENTO");
+
+  // --- Notas-based (relatório de notas fiscais), competência = da nota ---
+  const invoicesNaCompetencia = allInvoices.filter((i) => !competencia || i.competencia === competencia);
+  const notasEmitidas = invoicesNaCompetencia.filter((i) => i.situacaoNf === "EMITIDO");
+
+  const situacaoNfCounts = invoicesNaCompetencia.reduce<Record<string, number>>((acc, i) => {
+    acc[i.situacaoNf] = (acc[i.situacaoNf] ?? 0) + 1;
+    return acc;
+  }, {});
+
   const serviceRows = Object.entries(
-    emitidas.reduce<Record<string, { count: number; valor: number }>>((acc, r) => {
-      for (const inv of r.matchedInvoices) {
-        const key = inv.codigoServico;
-        acc[key] = acc[key] ?? { count: 0, valor: 0 };
-        acc[key].count += 1;
-        acc[key].valor += inv.valorNf;
-      }
+    invoicesNaCompetencia.reduce<Record<string, { count: number; valor: number }>>((acc, i) => {
+      const key = i.codigoServico;
+      acc[key] = acc[key] ?? { count: 0, valor: 0 };
+      acc[key].count += 1;
+      acc[key].valor += i.valorNf;
       return acc;
     }, {}),
   ).sort((a, b) => b[1].valor - a[1].valor);
 
+  // Notas fiscais não têm moeda própria — é sempre a do relatório de vendas,
+  // recuperada pelo código da venda casado. Sem casamento, fica explícito
+  // que a moeda não pôde ser identificada em vez de assumir BRL.
+  const moedaPorCodigoVenda = new Map(allSales.map((s) => [s.codigoVendaNormalized, s.moeda]));
+  const MOEDA_NAO_IDENTIFICADA = "Moeda Não Identificada";
   const currencyRows = Object.entries(
-    emitidas.reduce<Record<string, number>>((acc, r) => {
-      acc[r.moeda] = (acc[r.moeda] ?? 0) + (r.valorNfFaturado ?? 0);
+    invoicesNaCompetencia.reduce<Record<string, number>>((acc, i) => {
+      const moeda = moedaPorCodigoVenda.get(i.codigoVendaNormalized) ?? MOEDA_NAO_IDENTIFICADA;
+      acc[moeda] = (acc[moeda] ?? 0) + i.valorNf;
       return acc;
     }, {}),
   ).sort((a, b) => b[1] - a[1]);
@@ -89,10 +109,10 @@ export default async function DashboardPage({
         />
         <KpiCard
           label="Notas Emitidas"
-          value={emitidas.length}
-          sub={formatCurrency(sum(emitidas, (r) => r.valorNfFaturado ?? 0), "BRL")}
+          value={notasEmitidas.length}
+          sub={formatCurrency(sum(notasEmitidas, (i) => i.valorNf), "BRL")}
           accent="positive"
-          href={`/c/${companyId}/sales?status=${encodeURIComponent(SITUACAO_CONFERENCIA_LABELS.NF_EMITIDA)}`}
+          href={`/c/${companyId}/invoices?status=${encodeURIComponent(SITUACAO_NF_LABELS.EMITIDO)}`}
         />
         <KpiCard
           label="Erros de Emissão"
@@ -121,7 +141,7 @@ export default async function DashboardPage({
         <Card className="p-6 flex flex-col">
           <h4 className="text-sm font-bold text-ink mb-4">Situação NF</h4>
           <div className="flex-1 min-h-[240px]">
-            <SituacaoChart counts={situacaoCounts} companyId={companyId} />
+            <SituacaoChart counts={situacaoNfCounts} companyId={companyId} />
           </div>
         </Card>
 
@@ -165,16 +185,23 @@ export default async function DashboardPage({
           {currencyRows.length === 0 ? (
             <div className="p-4 text-center text-xs text-ink/40">Nenhum dado importado para esta competência.</div>
           ) : (
-            currencyRows.map(([moeda, total]) => (
-              <Link
-                key={moeda}
-                href={`/c/${companyId}/sales?moeda=${encodeURIComponent(moeda)}&status=${encodeURIComponent(SITUACAO_CONFERENCIA_LABELS.NF_EMITIDA)}`}
-                className="flex justify-between px-6 py-3 text-sm hover:bg-paper-alt/60 transition-colors"
-              >
-                <span className="font-semibold text-ink">{moeda}</span>
-                <span className="text-positive font-semibold">{formatCurrency(total, moeda)}</span>
-              </Link>
-            ))
+            currencyRows.map(([moeda, total]) =>
+              moeda === MOEDA_NAO_IDENTIFICADA ? (
+                <div key={moeda} className="flex justify-between px-6 py-3 text-sm">
+                  <span className="font-semibold text-ink/50">{moeda}</span>
+                  <span className="text-ink/50 font-semibold">{formatCurrency(total, "BRL")}</span>
+                </div>
+              ) : (
+                <Link
+                  key={moeda}
+                  href={`/c/${companyId}/sales?moeda=${encodeURIComponent(moeda)}`}
+                  className="flex justify-between px-6 py-3 text-sm hover:bg-paper-alt/60 transition-colors"
+                >
+                  <span className="font-semibold text-ink">{moeda}</span>
+                  <span className="text-positive font-semibold">{formatCurrency(total, moeda)}</span>
+                </Link>
+              ),
+            )
           )}
         </div>
       </Card>

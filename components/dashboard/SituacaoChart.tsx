@@ -6,25 +6,26 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, type ChartEvent, type Ac
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
+/* Baseado na situação da própria nota fiscal (relatório de notas), não na
+   reconciliação venda x nota — reflete todas as notas lidas, mesmo sem
+   venda casada. */
 const LABELS: Record<string, string> = {
-  NF_EMITIDA: "NF Emitida",
-  NF_NAO_EMITIDA: "NF Não Emitida",
+  EMITIDO: "Emitido",
+  CANCELADO: "Cancelado",
   ERRO_DE_EMISSAO: "Erro de Emissão",
-  ERRO_DE_CANCELAMENTO: "Erro Cancelamento",
-  NF_CANCELADA: "NF Cancelada",
-  MULTIPLAS_NOTAS_REVISAO: "Múltiplas Notas",
+  EM_EMISSAO: "Em Emissão",
+  PENDENTE: "Pendente",
   OUTRO: "Outro",
 };
 
 /* Paleta da marca (plano-a-ux) — cada status recebe uma cor distinta da
    própria paleta oficial, não tons genéricos de biblioteca de gráficos. */
 const COLORS: Record<string, string> = {
-  NF_EMITIDA: "#14B4A0", // mint / positive
-  NF_NAO_EMITIDA: "#D97D54", // clay / attention
+  EMITIDO: "#14B4A0", // mint / positive
+  CANCELADO: "#B7B2A3", // neutro quente
   ERRO_DE_EMISSAO: "#C0453B", // danger
-  ERRO_DE_CANCELAMENTO: "#00323C", // deep
-  NF_CANCELADA: "#B7B2A3", // neutro quente
-  MULTIPLAS_NOTAS_REVISAO: "#007878", // teal / primary
+  EM_EMISSAO: "#007878", // teal / primary
+  PENDENTE: "#D97D54", // clay / attention
   OUTRO: "#DCDCDC", // sand
 };
 
@@ -38,7 +39,7 @@ export function SituacaoChart({ counts, companyId }: { counts: Record<string, nu
   function goToStatus(index: number) {
     const [key] = entries[index];
     const label = LABELS[key] ?? key;
-    router.push(`/c/${companyId}/sales?status=${encodeURIComponent(label)}`);
+    router.push(`/c/${companyId}/invoices?status=${encodeURIComponent(label)}`);
   }
 
   return (
