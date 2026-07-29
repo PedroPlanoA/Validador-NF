@@ -1,8 +1,16 @@
 import { db } from "@/lib/db";
-import { standardizeInvoices, standardizeSales, distinctCompetencias } from "@/lib/mapping/applyMapping";
+import {
+  extractMappedInvoiceRows,
+  extractMappedSaleRows,
+  standardizeMappedInvoices,
+  standardizeMappedSales,
+  distinctCompetencias,
+} from "@/lib/mapping/applyMapping";
 import { rowsToCsv, csvToRows } from "@/lib/parsing/csvRows";
 import type {
   EmitterConfigInput,
+  MappedInvoiceRow,
+  MappedSaleRow,
   PlatformConfigInput,
   RawRow,
   StandardizedSale,
@@ -77,7 +85,8 @@ export async function runImport(companyId: string, input: RunImportInput) {
       statusMap: config.statusMap as unknown as PlatformConfigInput["statusMap"],
     };
 
-    const standardizedRaw = standardizeSales(input.rawRows, configInput);
+    const mappedRows = extractMappedSaleRows(input.rawRows, configInput);
+    const standardizedRaw = standardizeMappedSales(mappedRows, configInput);
     const standardized = await applyProductOverrides(companyId, config.name, standardizedRaw);
     const competencias = distinctCompetencias(standardized);
 
@@ -94,7 +103,9 @@ export async function runImport(companyId: string, input: RunImportInput) {
             platformConfigId: config.id,
             originalFilename: input.filename,
             rowCount: standardized.length,
-            rawContent: rowsToCsv(input.rawRows),
+            // Only the mapped columns (not the original file) — see
+            // MappedSaleRow's doc comment for why.
+            rawContent: rowsToCsv(mappedRows),
             competencias,
             referenceCompetencia: input.referenceCompetencia,
           },
@@ -128,7 +139,8 @@ export async function runImport(companyId: string, input: RunImportInput) {
     statusMap: config.statusMap as unknown as EmitterConfigInput["statusMap"],
   };
 
-  const standardized = standardizeInvoices(input.rawRows, configInput);
+  const mappedRows = extractMappedInvoiceRows(input.rawRows, configInput);
+  const standardized = standardizeMappedInvoices(mappedRows, configInput);
   const competencias = distinctCompetencias(standardized);
 
   return db.$transaction(
@@ -144,7 +156,7 @@ export async function runImport(companyId: string, input: RunImportInput) {
           emitterConfigId: config.id,
           originalFilename: input.filename,
           rowCount: standardized.length,
-          rawContent: rowsToCsv(input.rawRows),
+          rawContent: rowsToCsv(mappedRows),
           competencias,
           referenceCompetencia: input.referenceCompetencia,
         },
@@ -171,14 +183,16 @@ export async function runImport(companyId: string, input: RunImportInput) {
  * Re-runs standardization for an already-imported batch using the CURRENT
  * mapping config (which may have been edited since the original import).
  * This is what makes config edits actually take effect, instead of only
- * affecting the next file upload. Rows are recovered from the stored CSV
- * text (rawContent), not re-uploaded by the user.
+ * affecting the next file upload. Rows are recovered from the stored,
+ * already-mapped history (rawContent) — this only recomputes rules
+ * (commission type, status mapping, currency, etc.) on top of values
+ * extracted at import time, so it stays safe to run even if the source
+ * platform's report format (original column names) has since changed;
+ * it never needs to look those original column names up again.
  */
 export async function reanalyzeBatch(companyId: string, batchId: string) {
   const batch = await db.importBatch.findUnique({ where: { id: batchId, companyId } });
   if (!batch) throw new Error("Lote de importação não encontrado");
-
-  const rawRows = csvToRows(batch.rawContent);
 
   if (batch.sourceType === "PLATFORM") {
     if (!batch.platformConfigId) throw new Error("Lote sem plataforma associada");
@@ -197,7 +211,8 @@ export async function reanalyzeBatch(companyId: string, batchId: string) {
       statusMap: config.statusMap as unknown as PlatformConfigInput["statusMap"],
     };
 
-    const standardizedRaw = standardizeSales(rawRows, configInput);
+    const mappedRows = csvToRows<MappedSaleRow>(batch.rawContent);
+    const standardizedRaw = standardizeMappedSales(mappedRows, configInput);
     const standardized = await applyProductOverrides(companyId, config.name, standardizedRaw);
     const competencias = distinctCompetencias(standardized);
 
@@ -235,7 +250,8 @@ export async function reanalyzeBatch(companyId: string, batchId: string) {
     statusMap: config.statusMap as unknown as EmitterConfigInput["statusMap"],
   };
 
-  const standardized = standardizeInvoices(rawRows, configInput);
+  const mappedRows = csvToRows<MappedInvoiceRow>(batch.rawContent);
+  const standardized = standardizeMappedInvoices(mappedRows, configInput);
   const competencias = distinctCompetencias(standardized);
 
   return db.$transaction(

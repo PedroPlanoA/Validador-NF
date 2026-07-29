@@ -7,14 +7,14 @@ import type { RawRow } from "@/lib/mapping/types";
  * on every row, which is the bulk of the storage cost for wide reports with
  * thousands of rows. Works identically on the server (Node) and client.
  */
-export function rowsToCsv(rows: RawRow[]): string {
+export function rowsToCsv<T extends Record<string, string>>(rows: T[]): string {
   if (rows.length === 0) return "";
   return Papa.unparse(rows);
 }
 
 /** Reverses rowsToCsv — used when reanalyzing a batch without a re-upload. */
-export function csvToRows(csv: string): RawRow[] {
+export function csvToRows<T extends Record<string, string> = RawRow>(csv: string): T[] {
   if (!csv.trim()) return [];
-  const result = Papa.parse<RawRow>(csv, { header: true, skipEmptyLines: true });
+  const result = Papa.parse<T>(csv, { header: true, skipEmptyLines: true });
   return result.data;
 }

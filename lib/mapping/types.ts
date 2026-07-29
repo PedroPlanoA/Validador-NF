@@ -78,3 +78,39 @@ export interface StandardizedInvoice {
 }
 
 export type RawRow = Record<string, string>;
+
+/**
+ * A sale row after column-mapping lookup but before standardization — raw
+ * string values, keyed by standard field name instead of the source file's
+ * original column names. This (not the original file) is what gets stored
+ * as import history: it keeps only the handful of columns the mapping
+ * actually uses, and lets a batch be reanalyzed later without ever needing
+ * to re-look-up original column names (which may no longer exist if the
+ * source platform's report format changed since).
+ */
+export interface MappedSaleRow {
+  [key: string]: string;
+  codigoVenda: string;
+  comprador: string;
+  produto: string;
+  valorBase: string;
+  situacaoVenda: string;
+  dataVenda: string;
+  valorRecebido: string;
+  valorLiquido: string;
+  valorFaturamentoCoprodutor: string;
+  moedaCol: string;
+}
+
+/** Invoice equivalent of MappedSaleRow — see its comment. */
+export interface MappedInvoiceRow {
+  [key: string]: string;
+  codigoVenda: string;
+  comprador: string;
+  situacaoNf: string;
+  competencia: string;
+  valorNf: string;
+  numero: string;
+  tipo: string;
+  codigoServico: string;
+}

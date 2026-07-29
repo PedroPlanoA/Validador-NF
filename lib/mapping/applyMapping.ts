@@ -3,28 +3,56 @@ import { extractCompetence, parseFullDate } from "@/lib/parsing/competence";
 import { normalizeCode, normalizeInvoiceNumber } from "@/lib/mapping/normalizeCode";
 import type {
   EmitterConfigInput,
+  MappedInvoiceRow,
+  MappedSaleRow,
   PlatformConfigInput,
   RawRow,
   StandardizedInvoice,
   StandardizedSale,
 } from "@/lib/mapping/types";
 
-export function standardizeSales(
-  rawRows: RawRow[],
-  config: PlatformConfigInput,
-): StandardizedSale[] {
+/**
+ * Column-mapping lookup only — pulls the raw string values the config cares
+ * about out of the source file's original columns, keyed by standard field
+ * name. This is the only step that ever needs to know the source file's own
+ * column names; its output (not the original file) is what gets persisted
+ * as import history, see MappedSaleRow's doc comment.
+ */
+export function extractMappedSaleRows(rawRows: RawRow[], config: PlatformConfigInput): MappedSaleRow[] {
   const { mappings } = config;
 
-  return rawRows.map((row) => {
-    const valorBase = parseNumber(row[mappings.valorBase]);
+  return rawRows.map((row) => ({
+    codigoVenda: String(row[mappings.codigoVenda] ?? ""),
+    comprador: String(row[mappings.comprador] ?? ""),
+    produto: String(row[mappings.produto] ?? ""),
+    valorBase: String(row[mappings.valorBase] ?? ""),
+    situacaoVenda: String(row[mappings.situacaoVenda] ?? ""),
+    dataVenda: String(row[mappings.dataVenda] ?? ""),
+    valorRecebido: mappings.valorRecebido ? String(row[mappings.valorRecebido] ?? "") : "",
+    valorLiquido: mappings.valorLiquido ? String(row[mappings.valorLiquido] ?? "") : "",
+    valorFaturamentoCoprodutor: mappings.valorFaturamentoCoprodutor
+      ? String(row[mappings.valorFaturamentoCoprodutor] ?? "")
+      : "",
+    moedaCol: config.currencyCol ? String(row[config.currencyCol] ?? "") : "",
+  }));
+}
+
+/**
+ * Everything after column lookup: parsing, commission math, status
+ * resolution, normalization. Takes already-extracted MappedSaleRow values,
+ * so it can re-run against the CURRENT config (e.g. after editing the
+ * mapping) without ever needing the source file's original column names —
+ * safe to use on rows extracted under a since-changed report format.
+ */
+export function standardizeMappedSales(rows: MappedSaleRow[], config: PlatformConfigInput): StandardizedSale[] {
+  return rows.map((row) => {
+    const valorBase = parseNumber(row.valorBase);
 
     let comissao: number;
     if (config.commType === "CALC") {
-      const recebido = parseNumber(row[mappings.valorRecebido ?? ""]);
-      const faturamentoProdutor = parseNumber(row[mappings.valorLiquido ?? ""]);
-      const faturamentoCoprodutor = mappings.valorFaturamentoCoprodutor
-        ? parseNumber(row[mappings.valorFaturamentoCoprodutor])
-        : 0;
+      const recebido = parseNumber(row.valorRecebido);
+      const faturamentoProdutor = parseNumber(row.valorLiquido);
+      const faturamentoCoprodutor = parseNumber(row.valorFaturamentoCoprodutor);
       const faturamentoTotal = faturamentoProdutor + faturamentoCoprodutor;
       comissao = faturamentoTotal > 0 ? (recebido / faturamentoTotal) * 100 : 100;
     } else if (config.commType === "FIXED") {
@@ -37,54 +65,63 @@ export function standardizeSales(
     if (config.currencyMode === "FIXED") {
       moeda = config.fixedCurrency || "BRL";
     } else if (config.currencyMode === "COL" && config.currencyCol) {
-      moeda = row[config.currencyCol] || "BRL";
+      moeda = row.moedaCol || "BRL";
     } else {
       moeda = "BRL";
     }
 
-    const rawCodigo = String(row[mappings.codigoVenda] ?? "").trim();
-    const situacaoRaw = row[mappings.situacaoVenda];
-    const situacaoVenda = config.statusMap[situacaoRaw] ?? "OUTRO";
+    const rawCodigo = row.codigoVenda.trim();
+    const situacaoVenda = config.statusMap[row.situacaoVenda] ?? "OUTRO";
 
     return {
       codigoVenda: rawCodigo,
       codigoVendaNormalized: normalizeCode(rawCodigo, config.cleanupChars),
-      comprador: String(row[mappings.comprador] ?? "").trim() || "Comprador Desconhecido",
-      produto: String(row[mappings.produto] ?? "").trim() || "Não Identificado",
+      comprador: row.comprador.trim() || "Comprador Desconhecido",
+      produto: row.produto.trim() || "Não Identificado",
       plataforma: config.name,
       moeda,
       valorVenda: valorBase,
       comissao,
       valorNf: valorBase * (comissao / 100),
       situacaoVenda,
-      competencia: extractCompetence(row[mappings.dataVenda]),
-      dataVenda: parseFullDate(row[mappings.dataVenda]),
+      competencia: extractCompetence(row.dataVenda),
+      dataVenda: parseFullDate(row.dataVenda),
     };
   });
 }
 
-export function standardizeInvoices(
-  rawRows: RawRow[],
-  config: EmitterConfigInput,
-): StandardizedInvoice[] {
+/** Invoice equivalent of extractMappedSaleRows — see its comment. */
+export function extractMappedInvoiceRows(rawRows: RawRow[], config: EmitterConfigInput): MappedInvoiceRow[] {
   const { mappings } = config;
 
-  return rawRows.map((row) => {
-    const rawCodigo = String(row[mappings.codigoVenda] ?? "").trim();
-    const situacaoRaw = row[mappings.situacaoNf];
-    const situacaoNf = config.statusMap[situacaoRaw] ?? "OUTRO";
-    const codigoServicoRaw = mappings.codigoServico ? row[mappings.codigoServico] : "";
+  return rawRows.map((row) => ({
+    codigoVenda: String(row[mappings.codigoVenda] ?? ""),
+    comprador: String(row[mappings.comprador] ?? ""),
+    situacaoNf: String(row[mappings.situacaoNf] ?? ""),
+    competencia: String(row[mappings.competencia] ?? ""),
+    valorNf: String(row[mappings.valorNf] ?? ""),
+    numero: String(row[mappings.numero] ?? ""),
+    tipo: String(row[mappings.tipo] ?? ""),
+    codigoServico: mappings.codigoServico ? String(row[mappings.codigoServico] ?? "") : "",
+  }));
+}
+
+/** Invoice equivalent of standardizeMappedSales — see its comment. */
+export function standardizeMappedInvoices(rows: MappedInvoiceRow[], config: EmitterConfigInput): StandardizedInvoice[] {
+  return rows.map((row) => {
+    const rawCodigo = row.codigoVenda.trim();
+    const situacaoNf = config.statusMap[row.situacaoNf] ?? "OUTRO";
 
     return {
       codigoVenda: rawCodigo,
       codigoVendaNormalized: normalizeCode(rawCodigo, config.cleanupChars),
-      comprador: String(row[mappings.comprador] ?? "").trim() || "Desconhecido",
+      comprador: row.comprador.trim() || "Desconhecido",
       situacaoNf,
-      competencia: extractCompetence(row[mappings.competencia]),
-      valorNf: parseNumber(row[mappings.valorNf]),
-      numero: normalizeInvoiceNumber(row[mappings.numero]),
-      tipo: String(row[mappings.tipo] ?? "").trim() || "NF-e",
-      codigoServico: (codigoServicoRaw || config.fallbackService || "Sem Código").trim() || "Sem Código",
+      competencia: extractCompetence(row.competencia),
+      valorNf: parseNumber(row.valorNf),
+      numero: normalizeInvoiceNumber(row.numero),
+      tipo: row.tipo.trim() || "NF-e",
+      codigoServico: (row.codigoServico || config.fallbackService || "Sem Código").trim() || "Sem Código",
     };
   });
 }
