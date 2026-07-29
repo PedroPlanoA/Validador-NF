@@ -64,8 +64,11 @@ export default async function DashboardPage({
     return acc;
   }, {});
 
+  // Faturamento e moeda são sobre notas efetivamente emitidas — uma nota
+  // cancelada/com erro/pendente não é faturamento real, então não deve
+  // inflar esses dois totais (mesmo comportamento de antes da reforma).
   const serviceRows = Object.entries(
-    invoicesNaCompetencia.reduce<Record<string, { count: number; valor: number }>>((acc, i) => {
+    notasEmitidas.reduce<Record<string, { count: number; valor: number }>>((acc, i) => {
       const key = i.codigoServico;
       acc[key] = acc[key] ?? { count: 0, valor: 0 };
       acc[key].count += 1;
@@ -80,7 +83,7 @@ export default async function DashboardPage({
   const moedaPorCodigoVenda = new Map(allSales.map((s) => [s.codigoVendaNormalized, s.moeda]));
   const MOEDA_NAO_IDENTIFICADA = "Moeda Não Identificada";
   const currencyRows = Object.entries(
-    invoicesNaCompetencia.reduce<Record<string, number>>((acc, i) => {
+    notasEmitidas.reduce<Record<string, number>>((acc, i) => {
       const moeda = moedaPorCodigoVenda.get(i.codigoVendaNormalized) ?? MOEDA_NAO_IDENTIFICADA;
       acc[moeda] = (acc[moeda] ?? 0) + i.valorNf;
       return acc;
