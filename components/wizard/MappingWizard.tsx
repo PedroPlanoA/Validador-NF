@@ -414,11 +414,12 @@ export function MappingWizard({
             </p>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <Input
               value={manualStatusInput}
               onChange={(e) => setManualStatusInput(e.target.value)}
               placeholder="Digite um valor que não apareceu automaticamente"
+              className="min-w-0"
               onKeyDown={(e) => {
                 if (e.key !== "Enter") return;
                 e.preventDefault();
@@ -431,6 +432,7 @@ export function MappingWizard({
             <Button
               type="button"
               variant="ghost"
+              className="shrink-0 px-4"
               onClick={() => {
                 const value = manualStatusInput.trim();
                 if (!value) return;
@@ -442,17 +444,17 @@ export function MappingWizard({
             </Button>
           </div>
 
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-2 max-h-96 overflow-y-auto overflow-x-hidden">
             {distinctStatusValues.map((raw) => (
               <div
                 key={raw}
                 className="flex items-start justify-between gap-3 bg-paper-alt/40 rounded-input px-3 py-2.5"
               >
-                <span className="text-sm font-medium text-ink break-words leading-snug pt-2" title={raw}>
+                <span className="text-sm font-medium text-ink break-words leading-snug pt-2 min-w-0 flex-1" title={raw}>
                   {raw}
                 </span>
                 <Select
-                  className="w-56 shrink-0"
+                  className="w-36 shrink-0"
                   value={state.statusMap[raw] ?? ""}
                   onChange={(e) => dispatch({ type: "setStatus", raw, value: e.target.value })}
                 >

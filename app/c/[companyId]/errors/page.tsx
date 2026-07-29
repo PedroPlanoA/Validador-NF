@@ -101,6 +101,7 @@ export default async function ErrorsPage({
                 <th className="py-3 px-5">Código Venda</th>
                 <th className="py-3 px-5">Comprador</th>
                 <th className="py-3 px-5">Plataforma / Produto</th>
+                <th className="py-3 px-5">Situação da Venda (Original)</th>
                 <th className="py-3 px-5">Situação da Reconciliação</th>
                 <th className="py-3 px-5 text-right">Valor Calc. NF</th>
                 <th className="py-3 px-5 text-right">Valor Faturado</th>
@@ -119,6 +120,7 @@ export default async function ErrorsPage({
                       <div>{r.plataforma}</div>
                       <div className="text-ink/40 font-normal">{r.produto}</div>
                     </td>
+                    <td className="py-3 px-5">{r.situacaoVendaOriginal || "—"}</td>
                     <td className="py-3 px-5">
                       <div className="flex flex-wrap gap-1.5">
                         <Badge tone={SITUACAO_CONFERENCIA_TONE[r.situacaoConferencia]}>
@@ -163,7 +165,7 @@ export default async function ErrorsPage({
               })}
               {errorRows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-ink/40 italic">
+                  <td colSpan={9} className="py-8 text-center text-ink/40 italic">
                     Nenhum erro reportado! Tudo reconciliado.
                   </td>
                 </tr>

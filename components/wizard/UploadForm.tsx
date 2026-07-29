@@ -129,6 +129,7 @@ export function UploadForm({
             type="month"
             value={referenceCompetencia}
             onChange={(e) => setReferenceCompetencia(e.target.value)}
+            onClick={(e) => e.currentTarget.showPicker?.()}
             required
           />
           <p className="text-[11px] text-ink/40">
