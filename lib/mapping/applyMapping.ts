@@ -84,6 +84,7 @@ export function standardizeMappedSales(rows: MappedSaleRow[], config: PlatformCo
       comissao,
       valorNf: valorBase * (comissao / 100),
       situacaoVenda,
+      situacaoVendaOriginal: row.situacaoVenda.trim(),
       competencia: extractCompetence(row.dataVenda),
       dataVenda: parseFullDate(row.dataVenda),
     };

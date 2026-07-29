@@ -6,8 +6,9 @@ import { PageTitle } from "@/components/ui/PageTitle";
 import { ReanalyzeButton } from "@/components/wizard/ReanalyzeButton";
 import { DeleteBatchButton } from "@/components/wizard/DeleteBatchButton";
 import { ImportsFilterBar } from "@/components/imports/ImportsFilterBar";
+import { ExportRawDataButton } from "@/components/ui/ExportRawDataButton";
 import { formatCompetencia } from "@/lib/format/competencia";
-import { Upload, Download } from "lucide-react";
+import { Upload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +59,15 @@ export default async function ImportsPage({
         </Link>
       </div>
 
-      <ImportsFilterBar fontes={fontes} competencias={competencias} />
+      <div className="flex items-center gap-3">
+        <ImportsFilterBar fontes={fontes} competencias={competencias} />
+        <ExportRawDataButton
+          options={[
+            { label: "Baixar Vendas (XLSX)", href: `/api/c/${companyId}/export/sales` },
+            { label: "Baixar Notas (XLSX)", href: `/api/c/${companyId}/export/invoices` },
+          ]}
+        />
+      </div>
 
       {batches.length === 0 ? (
         <p className="text-sm text-ink/40 italic">
@@ -105,24 +114,6 @@ export default async function ImportsPage({
           </table>
         </Card>
       )}
-
-      <Card className="p-6 space-y-4">
-        <h4 className="text-sm font-bold text-ink">Exportar Dados Brutos</h4>
-        <div className="grid grid-cols-2 gap-4 max-w-md">
-          <a
-            href={`/api/c/${companyId}/export/sales`}
-            className="py-2.5 px-4 border border-positive/25 hover:bg-positive/10 text-positive text-xs font-bold rounded-input flex items-center justify-center gap-2 transition-colors"
-          >
-            <Download className="w-3.5 h-3.5" /> Baixar Vendas (XLSX)
-          </a>
-          <a
-            href={`/api/c/${companyId}/export/invoices`}
-            className="py-2.5 px-4 border border-positive/25 hover:bg-positive/10 text-positive text-xs font-bold rounded-input flex items-center justify-center gap-2 transition-colors"
-          >
-            <Download className="w-3.5 h-3.5" /> Baixar Notas (XLSX)
-          </a>
-        </div>
-      </Card>
     </div>
   );
 }

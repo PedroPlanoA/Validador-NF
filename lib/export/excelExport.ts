@@ -40,7 +40,9 @@ export function buildSalesWorkbook(sales: Sale[]): Buffer {
       "Valor Venda": s.valorVenda,
       Comissão: s.comissao,
       "Valor Calc. NF": s.valorNf,
+      "Data da Venda": s.dataVenda ? s.dataVenda.toISOString().slice(0, 10) : "",
       "Situação Venda": s.situacaoVenda,
+      "Situação Venda (Original)": s.situacaoVendaOriginal,
       Competência: s.competencia,
     })),
   );

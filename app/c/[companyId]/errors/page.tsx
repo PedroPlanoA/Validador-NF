@@ -6,9 +6,17 @@ import { formatCurrency } from "@/lib/validation/currency";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { PageTitle } from "@/components/ui/PageTitle";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { VerifyValueButton } from "@/components/errors/VerifyValueButton";
 import { SlidersHorizontal } from "lucide-react";
-import { ERROR_STATUSES, SITUACAO_CONFERENCIA_LABELS, SITUACAO_CONFERENCIA_TONE } from "@/lib/reconciliation/labels";
+import { combineStatus } from "@/lib/reconciliation/classify";
+import {
+  ERROR_STATUSES,
+  SITUACAO_CONFERENCIA_LABELS,
+  SITUACAO_CONFERENCIA_TONE,
+  SITUACAO_NF_LABELS,
+  SITUACAO_VENDA_LABELS,
+} from "@/lib/reconciliation/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -16,29 +24,76 @@ const ATTENTION_STATUSES = [...ERROR_STATUSES, "MULTIPLAS_NOTAS_REVISAO"] as con
 
 export default async function ErrorsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ companyId: string }>;
+  searchParams: Promise<{
+    q?: string;
+    plataforma?: string;
+    situacaoNf?: string;
+    produto?: string;
+    situacaoVenda?: string;
+    situacaoConferencia?: string;
+  }>;
 }) {
   const { companyId } = await params;
+  const sp = await searchParams;
   const competencia = await getCompetenciaCookie(companyId);
 
-  const [rows, verifiedKeys] = await Promise.all([
+  const [allRows, verifiedKeys] = await Promise.all([
     getReconciliationRows(companyId, competencia),
     getVerifiedKeys(companyId),
   ]);
 
-  const errorRows = rows.filter(
+  const allErrorRows = allRows.filter(
     (r) => (ATTENTION_STATUSES as readonly string[]).includes(r.situacaoConferencia) || r.valorDivergente,
   );
+
+  const situacaoNfOf = (r: (typeof allErrorRows)[number]) =>
+    r.matchedInvoices.length > 0 ? SITUACAO_NF_LABELS[combineStatus(r.matchedInvoices.map((i) => i.situacaoNf))] : null;
+
+  const platformOptions = Array.from(new Set(allErrorRows.map((r) => r.plataforma))).sort();
+  const produtoOptions = Array.from(new Set(allErrorRows.map((r) => r.produto))).sort();
+  const situacaoNfOptions = Array.from(new Set(allErrorRows.map(situacaoNfOf).filter((v): v is string => !!v))).sort();
+  const situacaoVendaOptions = Array.from(new Set(allErrorRows.map((r) => SITUACAO_VENDA_LABELS[r.situacaoVenda]))).sort();
+  const situacaoConferenciaOptions = Array.from(
+    new Set(allErrorRows.map((r) => SITUACAO_CONFERENCIA_LABELS[r.situacaoConferencia])),
+  ).sort();
+
+  let errorRows = allErrorRows;
+  if (sp.plataforma) errorRows = errorRows.filter((r) => r.plataforma === sp.plataforma);
+  if (sp.produto) errorRows = errorRows.filter((r) => r.produto === sp.produto);
+  if (sp.situacaoNf) errorRows = errorRows.filter((r) => situacaoNfOf(r) === sp.situacaoNf);
+  if (sp.situacaoVenda) errorRows = errorRows.filter((r) => SITUACAO_VENDA_LABELS[r.situacaoVenda] === sp.situacaoVenda);
+  if (sp.situacaoConferencia) {
+    errorRows = errorRows.filter((r) => SITUACAO_CONFERENCIA_LABELS[r.situacaoConferencia] === sp.situacaoConferencia);
+  }
+  if (sp.q) {
+    const q = sp.q.toLowerCase();
+    errorRows = errorRows.filter(
+      (r) => r.codigoVenda.toLowerCase().includes(q) || r.comprador.toLowerCase().includes(q),
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <PageTitle>Painel de Erros</PageTitle>
-        <p className="text-xs text-ink/50 mt-1">{errorRows.length} venda(s) precisam de atenção.</p>
+        <p className="text-xs text-ink/50 mt-1">{allErrorRows.length} venda(s) precisam de atenção.</p>
       </div>
 
       <Card className="overflow-hidden">
+        <FilterBar
+          searchPlaceholder="Pesquisar por código, comprador..."
+          filters={[
+            { key: "plataforma", label: "Todas as Plataformas", options: platformOptions },
+            { key: "situacaoNf", label: "Todas as Situações NF", options: situacaoNfOptions },
+            { key: "produto", label: "Todos os Produtos", options: produtoOptions },
+            { key: "situacaoVenda", label: "Todas as Situações da Venda", options: situacaoVendaOptions },
+            { key: "situacaoConferencia", label: "Todas as Situações da Reconciliação", options: situacaoConferenciaOptions },
+          ]}
+          resultCount={errorRows.length}
+        />
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs whitespace-nowrap">
             <thead className="bg-paper-alt/40 border-b border-ink/8 text-ink/50 font-bold uppercase tracking-wider">

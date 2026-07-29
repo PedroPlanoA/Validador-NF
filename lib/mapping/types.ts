@@ -1,5 +1,5 @@
 export type SituacaoVenda = "CONCLUIDO" | "CANCELADO" | "INCOMPLETO" | "OUTRO";
-export type SituacaoNf = "EMITIDO" | "CANCELADO" | "ERRO_DE_EMISSAO" | "EM_EMISSAO" | "OUTRO";
+export type SituacaoNf = "EMITIDO" | "CANCELADO" | "ERRO_DE_EMISSAO" | "EM_EMISSAO" | "PENDENTE" | "OUTRO";
 export type CommType = "INTEGRAL" | "FIXED" | "CALC";
 export type CurrencyMode = "FIXED" | "COL" | "NONE";
 
@@ -58,6 +58,10 @@ export interface StandardizedSale {
   comissao: number;
   valorNf: number;
   situacaoVenda: SituacaoVenda;
+  /** Raw status text exactly as it appeared in the source file, before
+   *  mapping to the standardized enum — shown as a reference alongside the
+   *  classified status, never used for logic. */
+  situacaoVendaOriginal: string;
   competencia: string;
   /** Actual sale date (day precision), parsed from the same mapped column
    *  used for `competencia` — null when it couldn't be parsed as a date. */

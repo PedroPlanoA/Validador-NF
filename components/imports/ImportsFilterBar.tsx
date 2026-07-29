@@ -4,37 +4,56 @@ import { useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Filter, X } from "lucide-react";
 import { Select } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { DateRangePicker } from "@/components/imports/DateRangePicker";
 import { formatCompetencia } from "@/lib/format/competencia";
+
+const FILTER_KEYS = ["fonte", "competenciaRef", "dataInicio"];
 
 export function ImportsFilterBar({ fontes, competencias }: { fontes: string[]; competencias: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<{ fonte: string; competenciaRef: string; dataInicio?: string; dataFim?: string }>(
+    { fonte: "all", competenciaRef: "all" },
+  );
 
-  const activeCount = ["fonte", "competenciaRef", "dataInicio"].filter((k) => searchParams.get(k)).length;
+  const activeCount = FILTER_KEYS.filter((k) => searchParams.get(k)).length;
 
-  function update(key: string, value: string | undefined) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (!value) params.delete(key);
-    else params.set(key, value);
-    router.push(`${pathname}?${params.toString()}`);
+  function openModal() {
+    setDraft({
+      fonte: searchParams.get("fonte") ?? "all",
+      competenciaRef: searchParams.get("competenciaRef") ?? "all",
+      dataInicio: searchParams.get("dataInicio") ?? undefined,
+      dataFim: searchParams.get("dataFim") ?? undefined,
+    });
+    setOpen(true);
   }
 
-  function updateRange(dataInicio?: string, dataFim?: string) {
+  function applyFilters() {
     const params = new URLSearchParams(searchParams.toString());
-    if (dataInicio) params.set("dataInicio", dataInicio);
+    if (draft.fonte === "all") params.delete("fonte");
+    else params.set("fonte", draft.fonte);
+    if (draft.competenciaRef === "all") params.delete("competenciaRef");
+    else params.set("competenciaRef", draft.competenciaRef);
+    if (draft.dataInicio) params.set("dataInicio", draft.dataInicio);
     else params.delete("dataInicio");
-    if (dataFim) params.set("dataFim", dataFim);
+    if (draft.dataFim) params.set("dataFim", draft.dataFim);
     else params.delete("dataFim");
     router.push(`${pathname}?${params.toString()}`);
+    setOpen(false);
+  }
+
+  function clearFilters() {
+    router.push(pathname);
+    setOpen(false);
   }
 
   return (
-    <div className="mb-4">
+    <div>
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={openModal}
         className="flex items-center gap-2 text-sm font-semibold text-ink/70 border border-ink/10 rounded-input px-4 py-2.5 bg-white hover:border-mint transition-colors"
       >
         <Filter className="w-4 h-4" /> Filtros
@@ -46,44 +65,65 @@ export function ImportsFilterBar({ fontes, competencias }: { fontes: string[]; c
       </button>
 
       {open && (
-        <div className="flex flex-wrap items-center gap-3 mt-3 bg-white border border-ink/10 rounded-card-sm p-4">
-          <Select
-            value={searchParams.get("fonte") ?? "all"}
-            onChange={(e) => update("fonte", e.target.value === "all" ? undefined : e.target.value)}
-            className="w-auto py-2.5"
+        <div
+          className="fixed inset-0 z-40 bg-ink/40 flex items-center justify-center p-4"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="bg-white rounded-card-sm shadow-card-hover w-full max-w-md p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
           >
-            <option value="all">Todas as Fontes</option>
-            {fontes.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
-            ))}
-          </Select>
-          <Select
-            value={searchParams.get("competenciaRef") ?? "all"}
-            onChange={(e) => update("competenciaRef", e.target.value === "all" ? undefined : e.target.value)}
-            className="w-auto py-2.5"
-          >
-            <option value="all">Todas as Competências</option>
-            {competencias.map((c) => (
-              <option key={c} value={c}>
-                {formatCompetencia(c)}
-              </option>
-            ))}
-          </Select>
-          <DateRangePicker
-            dataInicio={searchParams.get("dataInicio") ?? undefined}
-            dataFim={searchParams.get("dataFim") ?? undefined}
-            onChange={updateRange}
-          />
-          {activeCount > 0 && (
-            <button
-              onClick={() => router.push(pathname)}
-              className="flex items-center gap-1 text-xs font-semibold text-ink/40 hover:text-ink"
-            >
-              <X className="w-3.5 h-3.5" /> Limpar filtros
-            </button>
-          )}
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif font-black text-lg text-deep">Filtros</h3>
+              <button onClick={() => setOpen(false)} className="text-ink/40 hover:text-ink">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <Select
+                value={draft.fonte}
+                onChange={(e) => setDraft((prev) => ({ ...prev, fonte: e.target.value }))}
+              >
+                <option value="all">Todas as Fontes</option>
+                {fontes.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                value={draft.competenciaRef}
+                onChange={(e) => setDraft((prev) => ({ ...prev, competenciaRef: e.target.value }))}
+              >
+                <option value="all">Todas as Competências</option>
+                {competencias.map((c) => (
+                  <option key={c} value={c}>
+                    {formatCompetencia(c)}
+                  </option>
+                ))}
+              </Select>
+              <DateRangePicker
+                dataInicio={draft.dataInicio}
+                dataFim={draft.dataFim}
+                onChange={(dataInicio, dataFim) => setDraft((prev) => ({ ...prev, dataInicio, dataFim }))}
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              {activeCount > 0 ? (
+                <button
+                  onClick={clearFilters}
+                  className="text-sm font-semibold text-ink/50 hover:text-danger transition-colors"
+                >
+                  Remover filtro
+                </button>
+              ) : (
+                <span />
+              )}
+              <Button onClick={applyFilters}>Filtrar</Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

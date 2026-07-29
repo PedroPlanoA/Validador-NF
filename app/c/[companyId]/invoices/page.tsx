@@ -6,29 +6,14 @@ import { Badge } from "@/components/ui/Badge";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Pagination } from "@/components/ui/Pagination";
 import { PageTitle } from "@/components/ui/PageTitle";
+import { ExportRawDataButton } from "@/components/ui/ExportRawDataButton";
 import { formatCompetencia } from "@/lib/format/competencia";
-import type { BadgeTone } from "@/components/ui/Badge";
+import { SITUACAO_NF_LABELS as NF_LABELS, SITUACAO_NF_TONE as NF_TONE } from "@/lib/reconciliation/labels";
 import type { SituacaoNf } from "@/lib/mapping/types";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 10;
-
-const NF_LABELS: Record<SituacaoNf, string> = {
-  EMITIDO: "Emitido",
-  CANCELADO: "Cancelado",
-  ERRO_DE_EMISSAO: "Erro de Emissão",
-  EM_EMISSAO: "Em Emissão",
-  OUTRO: "Outro",
-};
-
-const NF_TONE: Record<SituacaoNf, BadgeTone> = {
-  EMITIDO: "positive",
-  CANCELADO: "neutral",
-  ERRO_DE_EMISSAO: "danger",
-  EM_EMISSAO: "primary",
-  OUTRO: "neutral",
-};
 
 export default async function InvoicesPage({
   params,
@@ -82,7 +67,17 @@ export default async function InvoicesPage({
 
   return (
     <div className="space-y-6">
-      <PageTitle>Notas Fiscais</PageTitle>
+      <div className="flex items-center justify-between">
+        <PageTitle>Notas Fiscais</PageTitle>
+        <ExportRawDataButton
+          options={[
+            {
+              label: "Baixar Notas (XLSX)",
+              href: `/api/c/${companyId}/export/invoices${competencia ? `?competencia=${competencia}` : ""}`,
+            },
+          ]}
+        />
+      </div>
       <Card className="overflow-hidden">
         <FilterBar
           searchPlaceholder="Pesquisar por código, comprador, NF..."

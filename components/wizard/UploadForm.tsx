@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Label, Select, Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { formatCompetencia } from "@/lib/format/competencia";
+import { CheckCircle2 } from "lucide-react";
 
 interface ConfigOption {
   id: string;
@@ -30,6 +31,7 @@ export function UploadForm({
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "parsing" | "uploading" | "done" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [doneRowCount, setDoneRowCount] = useState<number | null>(null);
 
   const options = sourceType === "PLATFORM" ? platformConfigs : emitterConfigs;
 
@@ -68,8 +70,7 @@ export function UploadForm({
 
       const data = await res.json();
       setStatus("done");
-      setMessage(`Importado: ${data.rowCount} linhas.`);
-      router.refresh();
+      setDoneRowCount(data.rowCount);
     } catch (err) {
       setStatus("error");
       const detail = err instanceof Error ? err.message : String(err);
@@ -153,6 +154,24 @@ export function UploadForm({
           {status === "parsing" ? "Lendo arquivo..." : status === "uploading" ? "Importando..." : "Importar"}
         </Button>
       </form>
+
+      {status === "done" && (
+        <div className="fixed inset-0 z-50 bg-ink/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-card-sm shadow-card-hover w-full max-w-sm p-6 text-center space-y-4">
+            <CheckCircle2 className="w-12 h-12 text-positive mx-auto" />
+            <div>
+              <h3 className="font-serif font-black text-lg text-deep">Importação concluída</h3>
+              <p className="text-sm text-ink/60 mt-1">
+                {doneRowCount} linha{doneRowCount === 1 ? "" : "s"} importada{doneRowCount === 1 ? "" : "s"} com
+                sucesso.
+              </p>
+            </div>
+            <Button className="w-full justify-center" onClick={() => router.push(`/c/${companyId}/imports`)}>
+              Voltar para Importações
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

@@ -22,6 +22,7 @@ export interface SaleForReconciliation {
   valorVenda: number;
   valorNf: number;
   situacaoVenda: SituacaoVenda;
+  situacaoVendaOriginal: string;
   competencia: string;
   dataVenda: Date | null;
 }
@@ -58,6 +59,7 @@ export interface ReconciliationRow {
   valorVenda: number;
   valorNfCalculado: number;
   situacaoVenda: SituacaoVenda;
+  situacaoVendaOriginal: string;
   situacaoConferencia: SituacaoConferencia;
   matchedInvoices: MatchedInvoiceRef[];
   /** Single invoice's valorNf, summed value when combined (different tipo), or null if no match. */

@@ -10,6 +10,7 @@ export const EMITTER_STATUS_OPTIONS = [
   { value: "CANCELADO", label: "Cancelado" },
   { value: "ERRO_DE_EMISSAO", label: "Erro de Emissão" },
   { value: "EM_EMISSAO", label: "Em Emissão" },
+  { value: "PENDENTE", label: "Pendente" },
   { value: "OUTRO", label: "Outro" },
 ];
 

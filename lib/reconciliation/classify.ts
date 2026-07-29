@@ -12,6 +12,7 @@ export function combineStatus(statuses: SituacaoNf[]): SituacaoNf {
   if (statuses.includes("ERRO_DE_EMISSAO")) return "ERRO_DE_EMISSAO";
   if (statuses.includes("CANCELADO")) return "CANCELADO";
   if (statuses.includes("EM_EMISSAO")) return "EM_EMISSAO";
+  if (statuses.includes("PENDENTE")) return "PENDENTE";
   if (statuses.length > 0 && statuses.every((s) => s === "EMITIDO")) return "EMITIDO";
   return "OUTRO";
 }

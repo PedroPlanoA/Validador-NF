@@ -21,14 +21,24 @@ function toRef(inv: InvoiceForReconciliation): MatchedInvoiceRef {
 /** Anything smaller than this is treated as float/rounding noise, not a real divergence. */
 const VALUE_DIVERGENCE_TOLERANCE = 0.01;
 
+/** Notas fiscais are sempre emitidas em Real — comparar um valor calculado
+ *  em outra moeda contra o valor faturado da nota é comparar unidades
+ *  diferentes, não uma divergência real. Só sinaliza divergência quando a
+ *  venda está em Real (aceita as variações de texto usadas para configurar
+ *  a moeda fixa/coluna: "BRL", "R$", "Real"). */
+const BRL_ALIASES = new Set(["BRL", "R$", "REAL"]);
+
 function buildRow(
   sale: SaleForReconciliation,
   matched: InvoiceForReconciliation[],
   situacaoConferencia: ReconciliationRow["situacaoConferencia"],
   valorNfFaturado: number | null,
 ): ReconciliationRow {
+  const isMoedaReal = BRL_ALIASES.has(sale.moeda.trim().toUpperCase());
   const valorDivergente =
-    valorNfFaturado !== null && Math.abs(sale.valorNf - valorNfFaturado) > VALUE_DIVERGENCE_TOLERANCE;
+    isMoedaReal &&
+    valorNfFaturado !== null &&
+    Math.abs(sale.valorNf - valorNfFaturado) > VALUE_DIVERGENCE_TOLERANCE;
 
   // Competência é um dado contábil — a única fonte confiável é a nota
   // fiscal emitida (relatório do emissor). Uma venda ainda sem nota casada
@@ -46,6 +56,7 @@ function buildRow(
     valorVenda: sale.valorVenda,
     valorNfCalculado: sale.valorNf,
     situacaoVenda: sale.situacaoVenda,
+    situacaoVendaOriginal: sale.situacaoVendaOriginal,
     situacaoConferencia,
     matchedInvoices: matched.map(toRef),
     valorNfFaturado,

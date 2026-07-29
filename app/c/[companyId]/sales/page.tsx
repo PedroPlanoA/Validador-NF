@@ -6,7 +6,12 @@ import { Badge } from "@/components/ui/Badge";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Pagination } from "@/components/ui/Pagination";
 import { PageTitle } from "@/components/ui/PageTitle";
-import { SITUACAO_CONFERENCIA_LABELS, SITUACAO_CONFERENCIA_TONE } from "@/lib/reconciliation/labels";
+import { ExportRawDataButton } from "@/components/ui/ExportRawDataButton";
+import {
+  SITUACAO_CONFERENCIA_LABELS,
+  SITUACAO_CONFERENCIA_TONE,
+  SITUACAO_VENDA_LABELS,
+} from "@/lib/reconciliation/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +58,17 @@ export default async function SalesPage({
 
   return (
     <div className="space-y-6">
-      <PageTitle>Vendas</PageTitle>
+      <div className="flex items-center justify-between">
+        <PageTitle>Vendas</PageTitle>
+        <ExportRawDataButton
+          options={[
+            {
+              label: "Baixar Vendas (XLSX)",
+              href: `/api/c/${companyId}/export/sales${competencia ? `?competencia=${competencia}` : ""}`,
+            },
+          ]}
+        />
+      </div>
       <Card className="overflow-hidden">
         <FilterBar
           searchPlaceholder="Pesquisar por código, comprador..."
@@ -74,6 +89,8 @@ export default async function SalesPage({
                 <th className="py-3 px-5">Data da Venda</th>
                 <th className="py-3 px-5 text-right">Valor Venda</th>
                 <th className="py-3 px-5 text-right">Valor Calc. NF</th>
+                <th className="py-3 px-5">Situação da Venda</th>
+                <th className="py-3 px-5">Situação Original</th>
                 <th className="py-3 px-5">Conferência</th>
               </tr>
             </thead>
@@ -86,6 +103,8 @@ export default async function SalesPage({
                   <td className="py-3 px-5">{formatDate(r.dataVenda)}</td>
                   <td className="py-3 px-5 text-right">{formatCurrency(r.valorVenda, r.moeda)}</td>
                   <td className="py-3 px-5 text-right">{formatCurrency(r.valorNfCalculado, r.moeda)}</td>
+                  <td className="py-3 px-5">{SITUACAO_VENDA_LABELS[r.situacaoVenda]}</td>
+                  <td className="py-3 px-5 text-ink/50">{r.situacaoVendaOriginal || "—"}</td>
                   <td className="py-3 px-5">
                     <Badge tone={SITUACAO_CONFERENCIA_TONE[r.situacaoConferencia]}>
                       {SITUACAO_CONFERENCIA_LABELS[r.situacaoConferencia]}
@@ -95,7 +114,7 @@ export default async function SalesPage({
               ))}
               {pageRows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-ink/40 italic">
+                  <td colSpan={9} className="py-8 text-center text-ink/40 italic">
                     Nenhuma venda encontrada.
                   </td>
                 </tr>

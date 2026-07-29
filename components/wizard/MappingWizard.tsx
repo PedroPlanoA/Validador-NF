@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Label, Select } from "@/components/ui/Input";
 import { Combobox } from "@/components/ui/Combobox";
 import { Card } from "@/components/ui/Card";
+import { Plus } from "lucide-react";
 import {
   EMITTER_OPTIONAL_FIELDS,
   EMITTER_REQUIRED_FIELDS,
@@ -111,6 +112,8 @@ export function MappingWizard({
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, initialState(kind, existingConfig));
   const [parsing, setParsing] = useState(false);
+  const [manualStatuses, setManualStatuses] = useState<string[]>([]);
+  const [manualStatusInput, setManualStatusInput] = useState("");
 
   const requiredFields = kind === "platform" ? PLATFORM_REQUIRED_FIELDS : EMITTER_REQUIRED_FIELDS;
   const optionalFields = kind === "platform" ? [] : EMITTER_OPTIONAL_FIELDS;
@@ -119,9 +122,12 @@ export function MappingWizard({
 
   const distinctStatusValues = useMemo(() => {
     const col = state.fieldMappings[statusField];
-    if (!col || state.sampleRows.length === 0) return Object.keys(state.statusMap);
-    return distinctValuesOf(state.sampleRows, col);
-  }, [state.fieldMappings, state.sampleRows, statusField, state.statusMap]);
+    const fromSample = !col || state.sampleRows.length === 0 ? [] : distinctValuesOf(state.sampleRows, col);
+    // Union with already-configured keys and manually-added ones, so a
+    // status set up previously (or typed in by hand) never silently
+    // disappears from view just because it's absent from the current sample.
+    return Array.from(new Set([...fromSample, ...Object.keys(state.statusMap), ...manualStatuses]));
+  }, [state.fieldMappings, state.sampleRows, statusField, state.statusMap, manualStatuses]);
 
   async function handleFileUpload(file: File) {
     setParsing(true);
@@ -407,6 +413,35 @@ export function MappingWizard({
               status.
             </p>
           )}
+
+          <div className="flex items-center gap-2">
+            <Input
+              value={manualStatusInput}
+              onChange={(e) => setManualStatusInput(e.target.value)}
+              placeholder="Digite um valor que não apareceu automaticamente"
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                const value = manualStatusInput.trim();
+                if (!value) return;
+                setManualStatuses((prev) => (prev.includes(value) ? prev : [...prev, value]));
+                setManualStatusInput("");
+              }}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                const value = manualStatusInput.trim();
+                if (!value) return;
+                setManualStatuses((prev) => (prev.includes(value) ? prev : [...prev, value]));
+                setManualStatusInput("");
+              }}
+            >
+              <Plus className="w-4 h-4" /> Adicionar
+            </Button>
+          </div>
+
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {distinctStatusValues.map((raw) => (
               <div

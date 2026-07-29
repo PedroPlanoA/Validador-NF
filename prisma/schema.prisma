@@ -19,6 +19,7 @@ enum SituacaoNf {
   CANCELADO
   ERRO_DE_EMISSAO
   EM_EMISSAO
+  PENDENTE
   OUTRO
 }
 
@@ -155,6 +156,10 @@ model Sale {
   comissao              Float
   valorNf               Float
   situacaoVenda         SituacaoVenda
+  /// Texto original da situação como veio na planilha (ex: "Aprovado"),
+  /// antes do mapeamento para o enum padronizado — exibido como referência
+  /// ao lado da situação já classificada, nunca usado para lógica.
+  situacaoVendaOriginal String        @default("")
   competencia           String
   /// Data real da venda (dia/mês/ano), a partir da mesma coluna usada para
   /// calcular `competencia` — exibida como referência na tela de Vendas.
