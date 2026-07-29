@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getReconciliationRows } from "@/lib/actions/reconciliation";
-import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
 import { getVerifiedKeys } from "@/lib/actions/valueCheck";
 import { formatCurrency } from "@/lib/validation/currency";
 import { Card } from "@/components/ui/Card";
@@ -38,10 +37,12 @@ export default async function ErrorsPage({
 }) {
   const { companyId } = await params;
   const sp = await searchParams;
-  const competencia = await getCompetenciaCookie(companyId);
 
+  // Deliberadamente NÃO filtrado pela competência global — o Painel de
+  // Erros deve sempre mostrar todas as divergências encontradas, para não
+  // esconder um erro só porque ele caiu fora do mês selecionado alhures.
   const [allRows, verifiedKeys] = await Promise.all([
-    getReconciliationRows(companyId, competencia),
+    getReconciliationRows(companyId),
     getVerifiedKeys(companyId),
   ]);
 
@@ -95,18 +96,18 @@ export default async function ErrorsPage({
           resultCount={errorRows.length}
         />
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs whitespace-nowrap">
+          <table className="w-full text-left text-xs">
             <thead className="bg-paper-alt/40 border-b border-ink/8 text-ink/50 font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-5">Código Venda</th>
-                <th className="py-3 px-5">Comprador</th>
-                <th className="py-3 px-5">Plataforma / Produto</th>
-                <th className="py-3 px-5">Situação da Venda (Original)</th>
-                <th className="py-3 px-5">Situação da Reconciliação</th>
-                <th className="py-3 px-5 text-right">Valor Calc. NF</th>
-                <th className="py-3 px-5 text-right">Valor Faturado</th>
-                <th className="py-3 px-5">Notas Vinculadas</th>
-                <th className="py-3 px-5">Ação</th>
+                <th className="py-3 px-2 whitespace-nowrap">Código Venda</th>
+                <th className="py-3 px-2">Comprador</th>
+                <th className="py-3 px-2">Plataforma / Produto</th>
+                <th className="py-3 px-2">Situação Original</th>
+                <th className="py-3 px-2">Reconciliação</th>
+                <th className="py-3 px-2 text-right whitespace-nowrap">Valor Calc.</th>
+                <th className="py-3 px-2 text-right whitespace-nowrap">Valor Fat.</th>
+                <th className="py-3 px-2">Notas Vinculadas</th>
+                <th className="py-3 px-2 whitespace-nowrap">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ink/5 font-medium text-ink">
@@ -114,35 +115,43 @@ export default async function ErrorsPage({
                 const isVerified = verifiedKeys.has(`${r.codigoVenda}|${r.competenciaEfetiva}`);
                 return (
                   <tr key={r.saleId}>
-                    <td className="py-3 px-5">{r.codigoVenda}</td>
-                    <td className="py-3 px-5">{r.comprador}</td>
-                    <td className="py-3 px-5">
-                      <div>{r.plataforma}</div>
-                      <div className="text-ink/40 font-normal">{r.produto}</div>
+                    <td className="py-2.5 px-2 whitespace-nowrap">{r.codigoVenda}</td>
+                    <td className="py-2.5 px-2 max-w-[110px] truncate" title={r.comprador}>
+                      {r.comprador}
                     </td>
-                    <td className="py-3 px-5">{r.situacaoVendaOriginal || "—"}</td>
-                    <td className="py-3 px-5">
+                    <td className="py-2.5 px-2 max-w-[120px]">
+                      <div className="truncate">{r.plataforma}</div>
+                      <div className="text-ink/40 font-normal truncate" title={r.produto}>
+                        {r.produto}
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-2 max-w-[120px] truncate" title={r.situacaoVendaOriginal}>
+                      {r.situacaoVendaOriginal || "—"}
+                    </td>
+                    <td className="py-2.5 px-2">
                       <div className="flex flex-wrap gap-1.5">
                         <Badge tone={SITUACAO_CONFERENCIA_TONE[r.situacaoConferencia]}>
                           {SITUACAO_CONFERENCIA_LABELS[r.situacaoConferencia]}
                         </Badge>
                         {r.valorDivergente && (
                           <Badge tone={isVerified ? "neutral" : "attention"}>
-                            {isVerified ? "Divergência (verificada)" : "Divergência de Valor"}
+                            {isVerified ? "Verificada" : "Divergência"}
                           </Badge>
                         )}
                       </div>
                     </td>
-                    <td className="py-3 px-5 text-right">{formatCurrency(r.valorNfCalculado, r.moeda)}</td>
-                    <td className="py-3 px-5 text-right">
+                    <td className="py-2.5 px-2 text-right whitespace-nowrap">
+                      {formatCurrency(r.valorNfCalculado, r.moeda)}
+                    </td>
+                    <td className="py-2.5 px-2 text-right whitespace-nowrap">
                       {r.valorNfFaturado === null ? "—" : formatCurrency(r.valorNfFaturado, r.moeda)}
                     </td>
-                    <td className="py-3 px-5">
+                    <td className="py-2.5 px-2 max-w-[110px] truncate" title={r.matchedInvoices.map((i) => `${i.tipo} #${i.numero} (${i.situacaoNf})`).join(", ")}>
                       {r.matchedInvoices.length === 0
                         ? "—"
                         : r.matchedInvoices.map((i) => `${i.tipo} #${i.numero} (${i.situacaoNf})`).join(", ")}
                     </td>
-                    <td className="py-3 px-5">
+                    <td className="py-2.5 px-2">
                       {r.valorDivergente && (
                         <div className="flex flex-col items-start gap-1.5">
                           <VerifyValueButton
@@ -154,8 +163,9 @@ export default async function ErrorsPage({
                           <Link
                             href={`/c/${companyId}/products?plataforma=${encodeURIComponent(r.plataforma)}&produto=${encodeURIComponent(r.produto)}`}
                             className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:opacity-80"
+                            title="Ajustar % Comissão"
                           >
-                            <SlidersHorizontal className="w-3.5 h-3.5" /> Ajustar % Comissão
+                            <SlidersHorizontal className="w-3.5 h-3.5" />
                           </Link>
                         </div>
                       )}

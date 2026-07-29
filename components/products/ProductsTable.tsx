@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Settings2, X, Search } from "lucide-react";
 import { upsertProductOverride, clearProductOverride, type ProductRow } from "@/lib/actions/products";
@@ -49,6 +49,8 @@ export function ProductsTable({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const editingProduct = openProduto ? products.find((p) => p.produto === openProduto) : undefined;
 
   function openEditor(product: ProductRow) {
     setOpenProduto(product.produto);
@@ -99,75 +101,36 @@ export function ProductsTable({
               <th className="py-3 px-5 text-right">Nº Vendas</th>
               <th className="py-3 px-5 text-right">Valor Médio</th>
               <th className="py-3 px-5">Comissão</th>
-              <th className="py-3 px-5">Ação</th>
+              <th className="py-3 px-5 w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-ink/5 font-medium text-ink">
             {visibleProducts.map((p) => (
-              <Fragment key={p.produto}>
-                <tr id={`product-${p.produto}`} className={openProduto === p.produto ? "bg-mint/5" : ""}>
-                  <td className="py-3 px-5 max-w-xs truncate" title={p.produto}>
-                    {p.produto}
-                  </td>
-                  <td className="py-3 px-5 text-right">{p.vendaCount}</td>
-                  <td className="py-3 px-5 text-right">{formatCurrency(p.valorMedio, "BRL")}</td>
-                  <td className="py-3 px-5">
-                    {p.overrideCommissionPercent != null ? (
-                      <Badge tone="primary">Fixado: {p.overrideCommissionPercent}%</Badge>
-                    ) : (
-                      <span className="text-ink/50">
-                        Padrão do mapeamento (méd. aplicada: {p.comissaoMediaAplicada.toFixed(1)}%)
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-5">
-                    <button
-                      onClick={() => (openProduto === p.produto ? setOpenProduto(null) : openEditor(p))}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:opacity-80"
-                    >
-                      <Settings2 className="w-3.5 h-3.5" /> Configurar
-                    </button>
-                  </td>
-                </tr>
-                {openProduto === p.produto && (
-                  <tr className="bg-mint/5">
-                    <td colSpan={5} className="px-5 pb-5 pt-1">
-                      <div className="flex items-end gap-4 bg-white border border-ink/8 rounded-input p-4 max-w-lg">
-                        <div className="space-y-1.5 flex-1">
-                          <Label>Percentual de comissão/coprodução (%)</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={percentInput}
-                            onChange={(e) => setPercentInput(e.target.value)}
-                            autoFocus
-                          />
-                          <p className="text-[11px] text-ink/40">
-                            Este valor passa a valer para todas as vendas deste produto, sobrepondo o cálculo do
-                            mapeamento — reanalise as importações para aplicar a mudança aos dados já importados.
-                          </p>
-                        </div>
-                        <Button onClick={() => save(p.produto)} disabled={pending}>
-                          Salvar
-                        </Button>
-                        {p.overrideCommissionPercent != null && (
-                          <Button variant="ghost" onClick={() => clear(p.produto)} disabled={pending}>
-                            Remover
-                          </Button>
-                        )}
-                        <button
-                          onClick={() => setOpenProduto(null)}
-                          className="text-ink/40 hover:text-ink p-2.5"
-                          title="Fechar"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
+              <tr id={`product-${p.produto}`} key={p.produto}>
+                <td className="py-3 px-5 max-w-xs truncate" title={p.produto}>
+                  {p.produto}
+                </td>
+                <td className="py-3 px-5 text-right">{p.vendaCount}</td>
+                <td className="py-3 px-5 text-right">{formatCurrency(p.valorMedio, "BRL")}</td>
+                <td className="py-3 px-5">
+                  {p.overrideCommissionPercent != null ? (
+                    <Badge tone="primary">Fixado: {p.overrideCommissionPercent}%</Badge>
+                  ) : (
+                    <span className="text-ink/50">
+                      Padrão do mapeamento (méd. aplicada: {p.comissaoMediaAplicada.toFixed(1)}%)
+                    </span>
+                  )}
+                </td>
+                <td className="py-3 px-5">
+                  <button
+                    onClick={() => openEditor(p)}
+                    className="inline-flex items-center justify-center p-1.5 rounded-input text-ink/40 hover:text-primary hover:bg-primary/10 transition-colors"
+                    title="Configurar comissão"
+                  >
+                    <Settings2 className="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
             ))}
             {visibleProducts.length === 0 && (
               <tr>
@@ -181,6 +144,56 @@ export function ProductsTable({
           </tbody>
         </table>
       </div>
+
+      {editingProduct && (
+        <div
+          className="fixed inset-0 z-40 bg-ink/40 flex items-center justify-center p-4"
+          onClick={() => setOpenProduto(null)}
+        >
+          <div
+            className="bg-white rounded-card-sm shadow-card-hover w-full max-w-md p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif font-black text-lg text-deep truncate pr-4" title={editingProduct.produto}>
+                {editingProduct.produto}
+              </h3>
+              <button onClick={() => setOpenProduto(null)} className="text-ink/40 hover:text-ink shrink-0">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Percentual de comissão/coprodução (%)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={percentInput}
+                onChange={(e) => setPercentInput(e.target.value)}
+                autoFocus
+              />
+              <p className="text-[11px] text-ink/40">
+                Este valor passa a valer para todas as vendas deste produto, sobrepondo o cálculo do mapeamento —
+                reanalise as importações para aplicar a mudança aos dados já importados.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              {editingProduct.overrideCommissionPercent != null ? (
+                <Button variant="ghost" onClick={() => clear(editingProduct.produto)} disabled={pending}>
+                  Remover
+                </Button>
+              ) : (
+                <span />
+              )}
+              <Button onClick={() => save(editingProduct.produto)} disabled={pending}>
+                {pending ? "Salvando..." : "Salvar"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

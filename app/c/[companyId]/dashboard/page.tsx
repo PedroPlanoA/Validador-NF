@@ -34,21 +34,16 @@ export default async function DashboardPage({
   const [allRows, allInvoices, allSales] = await Promise.all([
     getReconciliationRows(companyId),
     db.invoice.findMany({ where: { companyId } }),
-    db.sale.findMany({ where: { companyId }, select: { codigoVendaNormalized: true, moeda: true } }),
+    db.sale.findMany({
+      where: { companyId },
+      select: { codigoVendaNormalized: true, moeda: true, plataforma: true },
+    }),
   ]);
 
   // --- Vendas-based (relatório de vendas), competência = data da venda ---
   const concluidas = allRows.filter(
     (r: ReconciliationRow) => r.situacaoVenda === "CONCLUIDO" && (!competencia || r.competencia === competencia),
   );
-  const platformTotals = Object.entries(
-    concluidas.reduce<Record<string, number>>((acc, r) => {
-      acc[r.plataforma] = (acc[r.plataforma] ?? 0) + r.valorVenda;
-      return acc;
-    }, {}),
-  )
-    .map(([plataforma, total]) => ({ plataforma, total }))
-    .sort((a, b) => b.total - a.total);
 
   // --- Análise de erros (venda x nota) — nunca filtrado por competência ---
   const errosEmissao = allRows.filter((r) => r.situacaoConferencia === "ERRO_DE_EMISSAO");
@@ -89,6 +84,21 @@ export default async function DashboardPage({
       return acc;
     }, {}),
   ).sort((a, b) => b[1] - a[1]);
+
+  // Desempenho por plataforma agora reflete notas fiscais emitidas — mais
+  // fiel à situação fiscal real — cruzando o código da venda com o
+  // relatório de vendas apenas para descobrir de qual plataforma ele veio.
+  const plataformaPorCodigoVenda = new Map(allSales.map((s) => [s.codigoVendaNormalized, s.plataforma]));
+  const PLATAFORMA_NAO_IDENTIFICADA = "Plataforma Não Identificada";
+  const platformTotals = Object.entries(
+    notasEmitidas.reduce<Record<string, number>>((acc, i) => {
+      const plataforma = plataformaPorCodigoVenda.get(i.codigoVendaNormalized) ?? PLATAFORMA_NAO_IDENTIFICADA;
+      acc[plataforma] = (acc[plataforma] ?? 0) + i.valorNf;
+      return acc;
+    }, {}),
+  )
+    .map(([plataforma, total]) => ({ plataforma, total }))
+    .sort((a, b) => b.total - a.total);
 
   return (
     <div className="space-y-8">

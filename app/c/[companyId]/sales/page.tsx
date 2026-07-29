@@ -80,32 +80,39 @@ export default async function SalesPage({
           resultCount={rows.length}
         />
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs whitespace-nowrap">
+          <table className="w-full text-left text-xs">
             <thead className="bg-paper-alt/40 border-b border-ink/8 text-ink/50 font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-5">Código Venda</th>
-                <th className="py-3 px-5">Comprador</th>
-                <th className="py-3 px-5">Plataforma</th>
-                <th className="py-3 px-5">Data da Venda</th>
-                <th className="py-3 px-5 text-right">Valor Venda</th>
-                <th className="py-3 px-5 text-right">Valor Calc. NF</th>
-                <th className="py-3 px-5">Situação da Venda</th>
-                <th className="py-3 px-5">Situação Original</th>
-                <th className="py-3 px-5">Conferência</th>
+                <th className="py-3 px-2.5 whitespace-nowrap">Código Venda</th>
+                <th className="py-3 px-2.5">Comprador</th>
+                <th className="py-3 px-2.5 whitespace-nowrap">Plataforma</th>
+                <th className="py-3 px-2.5 whitespace-nowrap">Data</th>
+                <th className="py-3 px-2.5 text-right whitespace-nowrap">Valor Venda</th>
+                <th className="py-3 px-2.5 text-right whitespace-nowrap">Valor Calc. NF</th>
+                <th className="py-3 px-2.5">Situação da Venda</th>
+                <th className="py-3 px-2.5 whitespace-nowrap">Conferência</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ink/5 font-medium text-ink">
               {pageRows.map((r) => (
                 <tr key={r.saleId}>
-                  <td className="py-3 px-5">{r.codigoVenda}</td>
-                  <td className="py-3 px-5">{r.comprador}</td>
-                  <td className="py-3 px-5">{r.plataforma}</td>
-                  <td className="py-3 px-5">{formatDate(r.dataVenda)}</td>
-                  <td className="py-3 px-5 text-right">{formatCurrency(r.valorVenda, r.moeda)}</td>
-                  <td className="py-3 px-5 text-right">{formatCurrency(r.valorNfCalculado, r.moeda)}</td>
-                  <td className="py-3 px-5">{SITUACAO_VENDA_LABELS[r.situacaoVenda]}</td>
-                  <td className="py-3 px-5 text-ink/50">{r.situacaoVendaOriginal || "—"}</td>
-                  <td className="py-3 px-5">
+                  <td className="py-2.5 px-2.5 whitespace-nowrap">{r.codigoVenda}</td>
+                  <td className="py-2.5 px-2.5 max-w-[130px] truncate" title={r.comprador}>
+                    {r.comprador}
+                  </td>
+                  <td className="py-2.5 px-2.5 whitespace-nowrap">{r.plataforma}</td>
+                  <td className="py-2.5 px-2.5 whitespace-nowrap">{formatDate(r.dataVenda)}</td>
+                  <td className="py-2.5 px-2.5 text-right whitespace-nowrap">{formatCurrency(r.valorVenda, r.moeda)}</td>
+                  <td className="py-2.5 px-2.5 text-right whitespace-nowrap">
+                    {formatCurrency(r.valorNfCalculado, r.moeda)}
+                  </td>
+                  <td className="py-2.5 px-2.5 max-w-[130px]">
+                    <div className="truncate">{SITUACAO_VENDA_LABELS[r.situacaoVenda]}</div>
+                    <div className="text-ink/40 truncate" title={r.situacaoVendaOriginal}>
+                      {r.situacaoVendaOriginal || "—"}
+                    </div>
+                  </td>
+                  <td className="py-2.5 px-2.5 whitespace-nowrap">
                     <Badge tone={SITUACAO_CONFERENCIA_TONE[r.situacaoConferencia]}>
                       {SITUACAO_CONFERENCIA_LABELS[r.situacaoConferencia]}
                     </Badge>
@@ -114,7 +121,7 @@ export default async function SalesPage({
               ))}
               {pageRows.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-ink/40 italic">
+                  <td colSpan={8} className="py-8 text-center text-ink/40 italic">
                     Nenhuma venda encontrada.
                   </td>
                 </tr>
