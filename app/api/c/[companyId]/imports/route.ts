@@ -4,6 +4,7 @@ import { runImport } from "@/lib/imports/importService";
 import { csvToRows } from "@/lib/parsing/csvRows";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest, context: { params: Promise<{ companyId: string }> }) {
   const { companyId } = await context.params;

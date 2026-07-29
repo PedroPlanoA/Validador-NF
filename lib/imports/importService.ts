@@ -8,6 +8,12 @@ import type {
   StandardizedSale,
 } from "@/lib/mapping/types";
 
+/** Prisma's default interactive-transaction timeout (5s) is too short for
+ *  large reports — the delete+createMany for a big batch can easily take
+ *  longer than that against Neon. Raised well above what even a very large
+ *  report should need, while staying under the route handlers' maxDuration. */
+const TRANSACTION_OPTIONS = { timeout: 45_000, maxWait: 10_000 };
+
 /**
  * Applies any per-product commission overrides (set in the Produtos screen)
  * on top of the mapping-computed commission — the accountant's manually
@@ -75,37 +81,40 @@ export async function runImport(companyId: string, input: RunImportInput) {
     const standardized = await applyProductOverrides(companyId, config.name, standardizedRaw);
     const competencias = distinctCompetencias(standardized);
 
-    return db.$transaction(async (tx) => {
-      await tx.sale.deleteMany({
-        where: { companyId, platformConfigId: config.id, competencia: { in: competencias } },
-      });
-
-      const batch = await tx.importBatch.create({
-        data: {
-          companyId,
-          sourceType: "PLATFORM",
-          platformConfigId: config.id,
-          originalFilename: input.filename,
-          rowCount: standardized.length,
-          rawContent: rowsToCsv(input.rawRows),
-          competencias,
-          referenceCompetencia: input.referenceCompetencia,
-        },
-      });
-
-      if (standardized.length > 0) {
-        await tx.sale.createMany({
-          data: standardized.map((s) => ({
-            ...s,
-            companyId,
-            importBatchId: batch.id,
-            platformConfigId: config.id,
-          })),
+    return db.$transaction(
+      async (tx) => {
+        await tx.sale.deleteMany({
+          where: { companyId, platformConfigId: config.id, competencia: { in: competencias } },
         });
-      }
 
-      return batch;
-    });
+        const batch = await tx.importBatch.create({
+          data: {
+            companyId,
+            sourceType: "PLATFORM",
+            platformConfigId: config.id,
+            originalFilename: input.filename,
+            rowCount: standardized.length,
+            rawContent: rowsToCsv(input.rawRows),
+            competencias,
+            referenceCompetencia: input.referenceCompetencia,
+          },
+        });
+
+        if (standardized.length > 0) {
+          await tx.sale.createMany({
+            data: standardized.map((s) => ({
+              ...s,
+              companyId,
+              importBatchId: batch.id,
+              platformConfigId: config.id,
+            })),
+          });
+        }
+
+        return batch;
+      },
+      TRANSACTION_OPTIONS,
+    );
   }
 
   const config = await db.emitterConfig.findUnique({ where: { id: input.configId } });
@@ -122,37 +131,40 @@ export async function runImport(companyId: string, input: RunImportInput) {
   const standardized = standardizeInvoices(input.rawRows, configInput);
   const competencias = distinctCompetencias(standardized);
 
-  return db.$transaction(async (tx) => {
-    await tx.invoice.deleteMany({
-      where: { companyId, emitterConfigId: config.id, competencia: { in: competencias } },
-    });
-
-    const batch = await tx.importBatch.create({
-      data: {
-        companyId,
-        sourceType: "EMITTER",
-        emitterConfigId: config.id,
-        originalFilename: input.filename,
-        rowCount: standardized.length,
-        rawContent: rowsToCsv(input.rawRows),
-        competencias,
-        referenceCompetencia: input.referenceCompetencia,
-      },
-    });
-
-    if (standardized.length > 0) {
-      await tx.invoice.createMany({
-        data: standardized.map((s) => ({
-          ...s,
-          companyId,
-          importBatchId: batch.id,
-          emitterConfigId: config.id,
-        })),
+  return db.$transaction(
+    async (tx) => {
+      await tx.invoice.deleteMany({
+        where: { companyId, emitterConfigId: config.id, competencia: { in: competencias } },
       });
-    }
 
-    return batch;
-  });
+      const batch = await tx.importBatch.create({
+        data: {
+          companyId,
+          sourceType: "EMITTER",
+          emitterConfigId: config.id,
+          originalFilename: input.filename,
+          rowCount: standardized.length,
+          rawContent: rowsToCsv(input.rawRows),
+          competencias,
+          referenceCompetencia: input.referenceCompetencia,
+        },
+      });
+
+      if (standardized.length > 0) {
+        await tx.invoice.createMany({
+          data: standardized.map((s) => ({
+            ...s,
+            companyId,
+            importBatchId: batch.id,
+            emitterConfigId: config.id,
+          })),
+        });
+      }
+
+      return batch;
+    },
+    TRANSACTION_OPTIONS,
+  );
 }
 
 /**
@@ -189,23 +201,26 @@ export async function reanalyzeBatch(companyId: string, batchId: string) {
     const standardized = await applyProductOverrides(companyId, config.name, standardizedRaw);
     const competencias = distinctCompetencias(standardized);
 
-    return db.$transaction(async (tx) => {
-      await tx.sale.deleteMany({ where: { importBatchId: batch.id } });
-      if (standardized.length > 0) {
-        await tx.sale.createMany({
-          data: standardized.map((s) => ({
-            ...s,
-            companyId,
-            importBatchId: batch.id,
-            platformConfigId: config.id,
-          })),
+    return db.$transaction(
+      async (tx) => {
+        await tx.sale.deleteMany({ where: { importBatchId: batch.id } });
+        if (standardized.length > 0) {
+          await tx.sale.createMany({
+            data: standardized.map((s) => ({
+              ...s,
+              companyId,
+              importBatchId: batch.id,
+              platformConfigId: config.id,
+            })),
+          });
+        }
+        return tx.importBatch.update({
+          where: { id: batch.id },
+          data: { rowCount: standardized.length, competencias },
         });
-      }
-      return tx.importBatch.update({
-        where: { id: batch.id },
-        data: { rowCount: standardized.length, competencias },
-      });
-    });
+      },
+      TRANSACTION_OPTIONS,
+    );
   }
 
   if (!batch.emitterConfigId) throw new Error("Lote sem emissor associado");
@@ -223,23 +238,26 @@ export async function reanalyzeBatch(companyId: string, batchId: string) {
   const standardized = standardizeInvoices(rawRows, configInput);
   const competencias = distinctCompetencias(standardized);
 
-  return db.$transaction(async (tx) => {
-    await tx.invoice.deleteMany({ where: { importBatchId: batch.id } });
-    if (standardized.length > 0) {
-      await tx.invoice.createMany({
-        data: standardized.map((s) => ({
-          ...s,
-          companyId,
-          importBatchId: batch.id,
-          emitterConfigId: config.id,
-        })),
+  return db.$transaction(
+    async (tx) => {
+      await tx.invoice.deleteMany({ where: { importBatchId: batch.id } });
+      if (standardized.length > 0) {
+        await tx.invoice.createMany({
+          data: standardized.map((s) => ({
+            ...s,
+            companyId,
+            importBatchId: batch.id,
+            emitterConfigId: config.id,
+          })),
+        });
+      }
+      return tx.importBatch.update({
+        where: { id: batch.id },
+        data: { rowCount: standardized.length, competencias },
       });
-    }
-    return tx.importBatch.update({
-      where: { id: batch.id },
-      data: { rowCount: standardized.length, competencias },
-    });
-  });
+    },
+    TRANSACTION_OPTIONS,
+  );
 }
 
 /** All active import batches for a company — deliberately unfiltered here;
