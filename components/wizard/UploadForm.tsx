@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { parseSpreadsheet } from "@/lib/parsing/parseSpreadsheet";
+import { rowsToCsv } from "@/lib/parsing/csvRows";
 import { Button } from "@/components/ui/Button";
 import { Label, Select, Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
@@ -47,17 +48,25 @@ export function UploadForm({
       }
 
       setStatus("uploading");
+      const rawCsv = rowsToCsv(rows);
       const res = await fetch(`/api/c/${companyId}/imports`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sourceType, configId, filename: file.name, rawRows: rows, referenceCompetencia }),
+        body: JSON.stringify({ sourceType, configId, filename: file.name, rawCsv, referenceCompetencia }),
       });
-      const data = await res.json();
+
       if (!res.ok) {
         setStatus("error");
-        setMessage(data.error ?? "Erro ao importar arquivo.");
+        if (res.status === 413) {
+          setMessage("Arquivo muito grande para importar. Divida o relatório em partes menores e tente novamente.");
+        } else {
+          const data = await res.json().catch(() => null);
+          setMessage(data?.error ?? `Erro ao importar arquivo (HTTP ${res.status}).`);
+        }
         return;
       }
+
+      const data = await res.json();
       setStatus("done");
       setMessage(`Importado: ${data.rowCount} linhas.`);
       router.refresh();

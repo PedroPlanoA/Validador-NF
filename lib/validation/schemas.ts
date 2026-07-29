@@ -79,7 +79,11 @@ export const importRequestSchema = z.object({
   sourceType: z.enum(["PLATFORM", "EMITTER"]),
   configId: z.string().min(1),
   filename: z.string().min(1),
-  rawRows: z.array(z.record(z.string(), z.string())).min(1, "Arquivo vazio"),
+  /** Compact CSV text (headers + rows), not a JSON array of row objects —
+   *  a JSON array repeats every column name on every row, which is large
+   *  enough for real multi-thousand-row reports to trip the platform's
+   *  request body size limit. Parsed back into rows server-side. */
+  rawCsv: z.string().min(1, "Arquivo vazio"),
   /** Manual reference competência (YYYY-MM) — for locating the file on the
    *  Importações screen only, never used for analysis. */
   referenceCompetencia: z.string().min(1, "Informe a competência de referência"),
