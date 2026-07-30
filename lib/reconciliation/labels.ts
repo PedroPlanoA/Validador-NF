@@ -49,6 +49,19 @@ export const SITUACAO_CONFERENCIA_TONE: Record<SituacaoConferencia, BadgeTone> =
   OUTRO: "neutral",
 };
 
+/** Rótulos dos baldes "sem venda casada" no dashboard. Nota fiscal não tem
+ *  plataforma nem moeda próprias — as duas vêm da venda casada pelo código, e
+ *  quando não há venda na base o dado fica explicitamente não identificado em
+ *  vez de assumir BRL/plataforma qualquer. É um estado legítimo: o cliente
+ *  emite nota para venda feita fora de plataforma.
+ *
+ *  `PLATAFORMA_NAO_IDENTIFICADA` também é aceito como valor do filtro
+ *  `?plataforma=` na tela de Notas Fiscais, onde significa "notas sem venda
+ *  correspondente" — é o que faz a barra do dashboard ser clicável como as
+ *  outras. Compartilhado daqui para que gráfico e filtro nunca divirjam. */
+export const PLATAFORMA_NAO_IDENTIFICADA = "Plataforma Não Identificada";
+export const MOEDA_NAO_IDENTIFICADA = "Moeda Não Identificada";
+
 /** Statuses that count as "errors requiring attention" in the checklist's
  *  executive summary — explicitly excludes NF_CANCELADA (a clean state) and
  *  OUTRO. MULTIPLAS_NOTAS_REVISAO is tracked separately, not folded in here,

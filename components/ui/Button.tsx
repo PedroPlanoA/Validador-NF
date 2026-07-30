@@ -12,16 +12,24 @@ const VARIANT_CLASSES: Record<Variant, string> = {
   danger: "bg-danger text-white hover:brightness-95",
 };
 
+/** `sm` para botão dentro de balão/modal, onde o tamanho cheio pesa. Prop (e não
+ *  classe por fora) pelo mesmo motivo do `fieldSize` em Input/Select. */
+const SIZE_CLASSES = {
+  md: "text-sm px-6 py-3",
+  sm: "text-[13px] px-4 py-2",
+} as const;
+
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
+  size?: keyof typeof SIZE_CLASSES;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = "primary", className = "", ...props }, ref) => {
+  ({ variant = "primary", size = "md", className = "", ...props }, ref) => {
     return (
       <button
         ref={ref}
-        className={`inline-flex items-center gap-2 font-semibold text-sm px-6 py-3 rounded-pill transition-colors outline-none focus-visible:ring-4 focus-visible:ring-mint/30 disabled:opacity-50 disabled:cursor-not-allowed ${VARIANT_CLASSES[variant]} ${className}`}
+        className={`inline-flex items-center gap-2 font-semibold rounded-pill transition-colors outline-none focus-visible:ring-4 focus-visible:ring-mint/30 disabled:opacity-50 disabled:cursor-not-allowed ${SIZE_CLASSES[size]} ${VARIANT_CLASSES[variant]} ${className}`}
         {...props}
       />
     );

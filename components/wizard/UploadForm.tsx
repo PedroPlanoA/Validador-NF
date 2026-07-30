@@ -71,6 +71,11 @@ export function UploadForm({
       const data = await res.json();
       setStatus("done");
       setDoneRowCount(data.rowCount);
+      // O seletor de competência vive na faixa lateral, renderizada pelo layout
+      // da empresa — que o Next mantém em cache no cliente e não re-renderiza
+      // ao navegar. Sem este refresh, a competência recém-importada só aparecia
+      // depois de recarregar a página na mão.
+      router.refresh();
     } catch (err) {
       setStatus("error");
       const detail = err instanceof Error ? err.message : String(err);
@@ -167,7 +172,13 @@ export function UploadForm({
                 sucesso.
               </p>
             </div>
-            <Button className="w-full justify-center" onClick={() => router.push(`/c/${companyId}/imports`)}>
+            <Button
+              className="w-full justify-center"
+              onClick={() => {
+                router.push(`/c/${companyId}/imports`);
+                router.refresh();
+              }}
+            >
               Voltar para Importações
             </Button>
           </div>

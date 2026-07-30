@@ -27,6 +27,16 @@ export interface ValueBar {
 /** Espaço reservado à direita para o valor escrito na ponta da barra. */
 const LABEL_GUTTER = 92;
 
+/** Largura reservada aos rótulos do eixo. O Chart.js dimensiona o eixo pelo
+ *  espaço que sobra e corta o que não cabe (era o que comia o começo de
+ *  "Plataforma Não Identificada"), então fixamos a largura a partir do rótulo
+ *  mais longo — com um teto, para uma plataforma de nome enorme não engolir a
+ *  área das barras. */
+function axisWidthFor(labels: string[]): number {
+  const longest = labels.reduce((max, l) => Math.max(max, l.length), 0);
+  return Math.min(190, Math.max(70, longest * 6.4 + 14));
+}
+
 /** Escreve o valor na ponta de cada barra. Feito como plugin inline porque o
  *  projeto não usa chartjs-plugin-datalabels — são poucas linhas de canvas e
  *  evitam mais uma dependência só para isso. */
@@ -60,6 +70,7 @@ export function HorizontalValueChart({ data, color = "#007878" }: { data: ValueB
   }
 
   const clickable = data.some((d) => d.href);
+  const axisWidth = axisWidthFor(data.map((d) => d.label));
 
   return (
     <Bar
@@ -89,7 +100,14 @@ export function HorizontalValueChart({ data, color = "#007878" }: { data: ValueB
         },
         scales: {
           x: { display: false, beginAtZero: true },
-          y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11 } } },
+          y: {
+            grid: { display: false },
+            border: { display: false },
+            ticks: { font: { size: 11 }, autoSkip: false },
+            afterFit: (scale) => {
+              scale.width = axisWidth;
+            },
+          },
         },
         onHover: (event, elements) => {
           const target = event.native?.target as HTMLElement | undefined;

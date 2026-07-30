@@ -11,7 +11,12 @@ import { PanelCard } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageTitle";
 import { formatCompetencia } from "@/lib/format/competencia";
 import { FileSpreadsheet } from "lucide-react";
-import { SITUACAO_CONFERENCIA_LABELS, SITUACAO_NF_LABELS } from "@/lib/reconciliation/labels";
+import {
+  MOEDA_NAO_IDENTIFICADA,
+  PLATAFORMA_NAO_IDENTIFICADA,
+  SITUACAO_CONFERENCIA_LABELS,
+  SITUACAO_NF_LABELS,
+} from "@/lib/reconciliation/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -105,7 +110,6 @@ export default async function DashboardPage({
   // recuperada pelo código da venda casado. Sem casamento, fica explícito
   // que a moeda não pôde ser identificada em vez de assumir BRL.
   const moedaPorCodigoVenda = new Map(allSales.map((s) => [s.codigoVendaNormalized, s.moeda]));
-  const MOEDA_NAO_IDENTIFICADA = "Moeda Não Identificada";
   const currencyRows = Object.entries(
     notasEmitidas.reduce<Record<string, number>>((acc, i) => {
       const moeda = moedaPorCodigoVenda.get(i.codigoVendaNormalized) ?? MOEDA_NAO_IDENTIFICADA;
@@ -118,7 +122,6 @@ export default async function DashboardPage({
   // fiel à situação fiscal real — cruzando o código da venda com o
   // relatório de vendas apenas para descobrir de qual plataforma ele veio.
   const plataformaPorCodigoVenda = new Map(allSales.map((s) => [s.codigoVendaNormalized, s.plataforma]));
-  const PLATAFORMA_NAO_IDENTIFICADA = "Plataforma Não Identificada";
   const platformTotals = Object.entries(
     notasEmitidas.reduce<Record<string, number>>((acc, i) => {
       const plataforma = plataformaPorCodigoVenda.get(i.codigoVendaNormalized) ?? PLATAFORMA_NAO_IDENTIFICADA;
@@ -129,12 +132,9 @@ export default async function DashboardPage({
     .map(([plataforma, total]) => ({
       label: plataforma,
       total,
-      // "Plataforma Não Identificada" não é uma plataforma — é nota sem venda
-      // casada na base, então não há lista de notas a filtrar por ela.
-      href:
-        plataforma === PLATAFORMA_NAO_IDENTIFICADA
-          ? undefined
-          : `/c/${companyId}/invoices?plataforma=${encodeURIComponent(plataforma)}`,
+      // Inclusive "Plataforma Não Identificada": a tela de Notas Fiscais aceita
+      // esse valor no filtro e devolve justamente as notas sem venda casada.
+      href: `/c/${companyId}/invoices?plataforma=${encodeURIComponent(plataforma)}`,
     }))
     .sort((a, b) => b.total - a.total);
 

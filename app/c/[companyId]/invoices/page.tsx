@@ -12,7 +12,11 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { TABLE_CLASS, THEAD_CLASS, TBODY_CLASS, TR_CLASS } from "@/components/ui/Table";
 import { FileText } from "lucide-react";
 import { formatCompetencia } from "@/lib/format/competencia";
-import { SITUACAO_NF_LABELS as NF_LABELS, SITUACAO_NF_TONE as NF_TONE } from "@/lib/reconciliation/labels";
+import {
+  PLATAFORMA_NAO_IDENTIFICADA,
+  SITUACAO_NF_LABELS as NF_LABELS,
+  SITUACAO_NF_TONE as NF_TONE,
+} from "@/lib/reconciliation/labels";
 import type { SituacaoNf } from "@/lib/mapping/types";
 
 export const dynamic = "force-dynamic";
@@ -53,15 +57,27 @@ export default async function InvoicesPage({
   // Nota fiscal não tem plataforma própria — ela vem da venda casada pelo
   // código. Para filtrar por plataforma no banco (necessário por causa da
   // paginação), resolvemos primeiro os códigos das vendas daquela plataforma.
-  const plataformaOptions = await listCompanyPlatforms(companyId);
-  let codigosDaPlataforma: string[] | null = null;
-  if (sp.plataforma) {
+  //
+  // O valor especial PLATAFORMA_NAO_IDENTIFICADA inverte a lógica: em vez de
+  // "notas das vendas desta plataforma", devolve as notas cujo código não
+  // existe em venda nenhuma — as emitidas para venda feita fora de plataforma.
+  // É o que torna aquela barra do dashboard clicável como as outras.
+  const plataformaOptions = [...(await listCompanyPlatforms(companyId)), PLATAFORMA_NAO_IDENTIFICADA];
+  let codigoFilter: { in: string[] } | { notIn: string[] } | null = null;
+  if (sp.plataforma === PLATAFORMA_NAO_IDENTIFICADA) {
+    const todasAsVendas = await db.sale.findMany({
+      where: { companyId },
+      select: { codigoVendaNormalized: true },
+      distinct: ["codigoVendaNormalized"],
+    });
+    codigoFilter = { notIn: todasAsVendas.map((s) => s.codigoVendaNormalized) };
+  } else if (sp.plataforma) {
     const salesDaPlataforma = await db.sale.findMany({
       where: { companyId, plataforma: sp.plataforma },
       select: { codigoVendaNormalized: true },
       distinct: ["codigoVendaNormalized"],
     });
-    codigosDaPlataforma = salesDaPlataforma.map((s) => s.codigoVendaNormalized);
+    codigoFilter = { in: salesDaPlataforma.map((s) => s.codigoVendaNormalized) };
   }
 
   const where = {
@@ -69,7 +85,7 @@ export default async function InvoicesPage({
     ...(sp.status ? { situacaoNf: (Object.keys(NF_LABELS) as SituacaoNf[]).find((k) => NF_LABELS[k] === sp.status) } : {}),
     ...(sp.codigoServico ? { codigoServico: sp.codigoServico } : {}),
     ...(sp.tipo ? { tipo: sp.tipo } : {}),
-    ...(codigosDaPlataforma ? { codigoVendaNormalized: { in: codigosDaPlataforma } } : {}),
+    ...(codigoFilter ? { codigoVendaNormalized: codigoFilter } : {}),
     ...(sp.q
       ? {
           OR: [

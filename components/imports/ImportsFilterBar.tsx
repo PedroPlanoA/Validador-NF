@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Filter, X } from "lucide-react";
-import { Select } from "@/components/ui/Input";
+import { Select, FieldCaption } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { DateRangePicker } from "@/components/imports/DateRangePicker";
 import { formatCompetencia } from "@/lib/format/competencia";
@@ -70,58 +70,71 @@ export function ImportsFilterBar({ fontes, competencias }: { fontes: string[]; c
           onClick={() => setOpen(false)}
         >
           <div
-            className="bg-white rounded-card-sm shadow-card-hover w-full max-w-md p-6 space-y-4"
+            className="bg-white rounded-card-sm shadow-card-hover w-full max-w-sm p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-serif font-black text-lg text-deep">Filtros</h3>
+              <h3 className="font-serif font-bold text-[15px] text-deep">Filtros</h3>
               <button onClick={() => setOpen(false)} className="text-ink/40 hover:text-ink">
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-3">
-              <Select
-                value={draft.fonte}
-                onChange={(e) => setDraft((prev) => ({ ...prev, fonte: e.target.value }))}
-              >
-                <option value="all">Todas as Fontes</option>
-                {fontes.map((f) => (
-                  <option key={f} value={f}>
-                    {f}
-                  </option>
-                ))}
-              </Select>
-              <Select
-                value={draft.competenciaRef}
-                onChange={(e) => setDraft((prev) => ({ ...prev, competenciaRef: e.target.value }))}
-              >
-                <option value="all">Todas as Competências</option>
-                {competencias.map((c) => (
-                  <option key={c} value={c}>
-                    {formatCompetencia(c)}
-                  </option>
-                ))}
-              </Select>
-              <DateRangePicker
-                dataInicio={draft.dataInicio}
-                dataFim={draft.dataFim}
-                onChange={(dataInicio, dataFim) => setDraft((prev) => ({ ...prev, dataInicio, dataFim }))}
-              />
+            <div className="space-y-2.5">
+              <div className="space-y-1">
+                <FieldCaption>Fonte</FieldCaption>
+                <Select
+                  fieldSize="sm"
+                  value={draft.fonte}
+                  onChange={(e) => setDraft((prev) => ({ ...prev, fonte: e.target.value }))}
+                >
+                  <option value="all">Todas as Fontes</option>
+                  {fontes.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <FieldCaption>Competência de referência</FieldCaption>
+                <Select
+                  fieldSize="sm"
+                  value={draft.competenciaRef}
+                  onChange={(e) => setDraft((prev) => ({ ...prev, competenciaRef: e.target.value }))}
+                >
+                  <option value="all">Todas as Competências</option>
+                  {competencias.map((c) => (
+                    <option key={c} value={c}>
+                      {formatCompetencia(c)}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <FieldCaption>Data de importação</FieldCaption>
+                <DateRangePicker
+                  dataInicio={draft.dataInicio}
+                  dataFim={draft.dataFim}
+                  onChange={(dataInicio, dataFim) => setDraft((prev) => ({ ...prev, dataInicio, dataFim }))}
+                />
+              </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between gap-3 pt-1">
               {activeCount > 0 ? (
                 <button
                   onClick={clearFilters}
-                  className="text-sm font-semibold text-ink/50 hover:text-danger transition-colors"
+                  className="text-[13px] font-semibold text-ink/50 hover:text-danger transition-colors"
                 >
-                  Remover filtro
+                  Limpar filtros
                 </button>
               ) : (
                 <span />
               )}
-              <Button onClick={applyFilters}>Filtrar</Button>
+              <Button size="sm" onClick={applyFilters}>
+                Filtrar
+              </Button>
             </div>
           </div>
         </div>

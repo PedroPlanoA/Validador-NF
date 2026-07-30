@@ -67,9 +67,11 @@ export const emitterConfigSchema = z.object({
   mappings: emitterMappingsSchema,
   cleanupChars: z.string().default(""),
   fallbackService: z.string().default(""),
+  // PENDENTE precisa estar aqui: o assistente oferece "Pendente" na etapa de
+  // status e, sem esse valor no enum, salvar o mapeamento falhava na validação.
   statusMap: z.record(
     z.string(),
-    z.enum(["EMITIDO", "CANCELADO", "ERRO_DE_EMISSAO", "EM_EMISSAO", "OUTRO"]),
+    z.enum(["EMITIDO", "CANCELADO", "ERRO_DE_EMISSAO", "EM_EMISSAO", "PENDENTE", "OUTRO"]),
   ),
 });
 

@@ -117,7 +117,7 @@ export function DateRangePicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 text-sm border border-ink/10 rounded-input px-4 py-2.5 bg-white hover:border-mint transition-colors"
+        className="w-full flex items-center gap-2 text-[13px] border border-ink/10 rounded-input px-3 py-2 bg-white hover:border-mint transition-colors"
       >
         <CalendarIcon className="w-4 h-4 text-ink/40" /> {label}
       </button>

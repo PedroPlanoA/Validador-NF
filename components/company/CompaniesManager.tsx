@@ -3,9 +3,9 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Settings, Plus, Trash2, X, Check, SlidersHorizontal, Search, Building2 } from "lucide-react";
+import { Settings, Plus, Trash2, X, Check, SlidersHorizontal, Search, Building2, Pencil } from "lucide-react";
 import { deleteCompanies } from "@/lib/actions/companies";
-import { CreateCompanyForm } from "@/components/company/CreateCompanyForm";
+import { CompanyForm } from "@/components/company/CompanyForm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { FAB_BUTTON_CLASS, FAB_ICON_CLASS, FAB_ITEM_CLASS, FAB_MENU_CLASS } from "@/components/ui/Fab";
@@ -19,11 +19,14 @@ interface CompanyItem {
 
 const OPEN_ANIMATION_MS = 200;
 
+const CNPJ_DIGITS = 14;
+
 export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
   const router = useRouter();
   const [mode, setMode] = useState<"view" | "delete">("view");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editing, setEditing] = useState<CompanyItem | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
@@ -32,14 +35,14 @@ export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
   const visibleCompanies = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return companies;
+    // CNPJ casa apenas quando os 14 dígitos completos foram digitados — com ou
+    // sem pontuação. Antes qualquer pedaço de número casava com o CNPJ de
+    // qualquer empresa, então buscar o código "3" trazia meia lista de volta.
     const qDigits = q.replace(/\D/g, "");
+    const cnpjBuscado = qDigits.length === CNPJ_DIGITS ? qDigits : null;
     return companies.filter((c) => {
-      const cnpjDigits = c.cnpj.replace(/\D/g, "");
-      return (
-        c.codigo.toLowerCase().includes(q) ||
-        c.nome.toLowerCase().includes(q) ||
-        (qDigits && cnpjDigits.includes(qDigits))
-      );
+      if (cnpjBuscado) return c.cnpj.replace(/\D/g, "") === cnpjBuscado;
+      return c.codigo.toLowerCase().includes(q) || c.nome.toLowerCase().includes(q);
     });
   }, [companies, search]);
 
@@ -86,7 +89,7 @@ export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Pesquisar por código, nome ou CNPJ..."
+                placeholder="Pesquisar por código, nome ou CNPJ completo..."
                 className="w-full pl-11 pr-4 py-3 text-sm text-ink placeholder:text-ink/40 border border-ink/10 rounded-input outline-none focus:ring-2 focus:ring-mint/40 focus:border-mint bg-white"
               />
             </div>
@@ -138,9 +141,22 @@ export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
                     {cardBody}
                   </button>
                 ) : (
-                  <Link key={company.id} href={href} onClick={(e) => openCompany(e, href, company.id)}>
-                    {cardBody}
-                  </Link>
+                  // O lápis é irmão do link, não filho: botão dentro de <a> é
+                  // HTML inválido e o clique acabaria abrindo a empresa.
+                  <div key={company.id} className="relative">
+                    <Link href={href} onClick={(e) => openCompany(e, href, company.id)}>
+                      {cardBody}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(company)}
+                      title="Editar cadastro da empresa"
+                      aria-label={`Editar cadastro de ${company.nome}`}
+                      className="absolute top-3.5 right-3.5 p-1.5 rounded-input text-ink/30 hover:text-teal hover:bg-teal/10 transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -166,10 +182,15 @@ export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
         </div>
       )}
 
+      {/* `h-14` é a altura do botão flutuante: com a pastilha centrada dentro de
+          uma faixa da mesma altura, os dois ficam alinhados pelo meio. Alinhar
+          só pela base deixaria a pastilha (mais baixa) visivelmente acima. */}
       {mode === "view" && (
-        <div className="fixed bottom-6 left-6 z-30 hidden sm:flex items-center gap-2 bg-white border border-ink/10 shadow-card rounded-pill px-4 py-2.5 text-xs font-semibold text-ink/60">
-          <Building2 className="w-3.5 h-3.5 text-primary" />
-          {companies.length} {companies.length === 1 ? "empresa cadastrada" : "empresas cadastradas"}
+        <div className="fixed bottom-6 left-6 z-30 h-14 hidden sm:flex items-center">
+          <span className="flex items-center gap-2 bg-white border border-ink/10 shadow-card rounded-pill px-4 py-2.5 text-xs font-semibold text-ink/60">
+            <Building2 className="w-3.5 h-3.5 text-primary" />
+            {companies.length} {companies.length === 1 ? "empresa cadastrada" : "empresas cadastradas"}
+          </span>
         </div>
       )}
 
@@ -209,7 +230,30 @@ export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <CreateCompanyForm onSuccess={() => setShowAddModal(false)} />
+            <CompanyForm onSuccess={() => setShowAddModal(false)} />
+          </div>
+        </div>
+      )}
+
+      {editing && (
+        <div
+          className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setEditing(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-card p-6 w-full max-w-lg shadow-card-hover"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-sm font-bold text-ink">Editar Empresa</h2>
+              <button onClick={() => setEditing(null)} className="text-ink/40 hover:text-ink">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-ink/50 mb-4">
+              Alterar o cadastro não afeta vendas, notas nem importações já vinculadas a esta empresa.
+            </p>
+            <CompanyForm company={editing} onSuccess={() => setEditing(null)} />
           </div>
         </div>
       )}

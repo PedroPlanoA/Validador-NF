@@ -234,6 +234,16 @@ Erros, porque é outro tipo de pendência e o cliente quer vê-la sozinha.
 
 ## 6. Comportamento de cada aba
 
+### Tela de empresas (entrada do sistema)
+- Cards ordenados por **código, crescente**, com comparação **numérica** — a
+  ordenação de texto colocaria "10" antes de "2". Código não numérico vai para o
+  fim da lista.
+- A busca casa **código** e **nome** por trecho, mas **CNPJ somente completo**
+  (14 dígitos, com ou sem pontuação). Antes qualquer trecho de número casava com
+  o CNPJ de qualquer empresa, então procurar o código "3" trazia meia lista.
+- O lápis no card edita o cadastro; nada de importado é afetado (o vínculo é pelo
+  `id`).
+
 | Aba | Filtra por competência? | Observações |
 |---|---|---|
 | **Dashboard** | depende da seção | ver abaixo |
@@ -274,13 +284,31 @@ mais os dois de tipo quando cabem) e o número de colunas acompanha.
 #### Cliques nos gráficos
 Todos os gráficos levam à listagem correspondente: Situação NF → `invoices?status=`,
 Proporção/Emissões por Tipo → `invoices?tipo=`, Desempenho por Plataforma →
-`invoices?plataforma=`. Barras de **"Plataforma Não Identificada"** não são
-clicáveis — não existe plataforma a filtrar ali.
+`invoices?plataforma=` — **inclusive** a barra de "Plataforma Não Identificada".
 
 Como `Invoice` não tem coluna de plataforma, o filtro `plataforma` da aba Notas
 Fiscais resolve primeiro os `codigoVendaNormalized` das vendas daquela
 plataforma e filtra as notas por esse conjunto. É feito no banco, e não em
 memória, porque a listagem é paginada.
+
+O valor especial `"Plataforma Não Identificada"` (constante compartilhada em
+`lib/reconciliation/labels.ts`, usada pelo gráfico e pelo filtro para nunca
+divergirem) **inverte** essa lógica: devolve as notas cujo código não existe em
+venda nenhuma da base, via `notIn`. Também aparece como opção no menu de
+filtros da aba.
+
+#### Nota sem venda correspondente é estado esperado
+Decisão do usuário (30/07/2026): **não** é erro e não deve ser sinalizada como
+tal. Acontece de verdade — o cliente emite nota para venda fechada fora de
+plataforma. Consequências assumidas:
+
+- O motor percorre as **vendas**, então nota órfã não gera linha de
+  reconciliação e **nunca aparece no Painel de Erros**. É intencional.
+- Ela conta no faturamento e na aba Notas Fiscais, mas cai em "Plataforma/Moeda
+  Não Identificada" nos painéis do dashboard.
+- Efeito colateral a ter em mente: se o relatório de vendas de um mês **faltar**,
+  as notas daquele mês também caem nesse balde e nada acusa a falta. O caminho
+  para investigar é clicar na barra "Plataforma Não Identificada".
 
 ### Checklist — itens fixos
 1. Alterado acumulador para exportação
@@ -317,6 +345,9 @@ brancos, densidade compacta). Tokens em `app/globals.css` via `@theme`.
   caixa alta pequena, divisórias discretas, `hover` em menta na linha.
 - **Estados vazios:** `EmptyState` (ícone + o que aconteceu + próximo passo),
   nunca só um texto em itálico.
+- **Densidade `sm`:** `Input`/`Select` aceitam `fieldSize="sm"` e `Button` aceita
+  `size="sm"`, usados nos balões de filtro. São props, não classes passadas por
+  fora — ver a armadilha de CSS no fim desta seção.
 - **Filtros:** modal para escolher, **pastilhas** mostrando o que está aplicado
   (clicáveis para remover) e busca com debounce de 350ms — cada tecla dispararia
   uma navegação server-side, já que as telas são `force-dynamic`.
@@ -328,6 +359,23 @@ brancos, densidade compacta). Tokens em `app/globals.css` via `@theme`.
   texto pequeno em caixa alta sobre fundo escuro visivelmente mole.
 - **Nome de empresa:** sans, semibold, verde claro (`mint-600` sobre branco,
   `mint-300` sobre petróleo); código em pastilha verde-escura.
+- **Balão de filtros:** cada campo é nomeado por um `FieldCaption` com o nome da
+  dimensão, derivado do rótulo neutro (`"Todas as Plataformas"` → `Plataformas`)
+  para não declarar o mesmo nome duas vezes em cada tela. Sem isso o balão é uma
+  pilha de caixas iguais cuja única pista é um texto comprido dentro do próprio
+  campo.
+- **Alinhamento de elementos flutuantes:** a pastilha de contagem à esquerda fica
+  dentro de uma faixa `h-14` (a altura do botão flutuante) e centrada nela —
+  alinhar as duas só por `bottom-6` deixa a pastilha, mais baixa, visivelmente
+  acima do botão.
+- **Card de empresa:** lápis no canto superior direito abre a edição do cadastro
+  (`CompanyForm`, o mesmo formulário do cadastro novo). O botão é **irmão** do
+  `<Link>`, nunca filho — botão dentro de `<a>` é HTML inválido e o clique
+  abriria a empresa em vez de editar.
+- **Gráfico de barras horizontais:** a largura do eixo de rótulos é fixada por
+  `afterFit` a partir do rótulo mais longo. O Chart.js dimensiona o eixo pelo
+  espaço que sobra e **corta** o texto que não cabe (era o que comia o começo de
+  "Plataforma Não Identificada").
 - **Botão flutuante de ações:** abre no **hover**, em CSS puro
   (`components/ui/Fab.tsx`) — sem estado em React, então não fica preso aberto
   depois de navegar. O respiro entre menu e botão é `padding`, não `gap`, senão
@@ -374,6 +422,20 @@ Cores por função: menta = ação/positivo · teal = informativo · clay = aten
 - **`SituacaoConferencia` nova** exige quatro lugares: o type em
   `reconciliation/types.ts`, o rótulo e o tom em `labels.ts`, o `classify` e o
   enum do Prisma + migration (`ALTER TYPE ... ADD VALUE`).
+- **`SituacaoNf`/`SituacaoVenda` nova** exige **cinco**: o type em
+  `mapping/types.ts`, rótulo/tom em `labels.ts`, as opções do assistente em
+  `wizard/statusFields.ts`, o **enum do zod** em `validation/schemas.ts` e o enum
+  do Prisma + migration. Esquecer o zod é silencioso na interface e só estoura ao
+  salvar o mapeamento — foi o que aconteceu com `PENDENTE`.
+- **Editar cadastro de empresa** (código, nome, CNPJ) não mexe em dado nenhum
+  importado: vendas, notas, importações e checklists são vinculados pelo `id`,
+  não pelo código.
+- **Layout do Next fica em cache no cliente e não re-renderiza ao navegar.** A
+  faixa lateral (competências, nome da empresa) vem do layout, então toda
+  mutação que a afete precisa de `router.refresh()` no cliente ou
+  `revalidatePath(..., "layout")` no servidor. Sem isso a pessoa precisa
+  recarregar a página na mão — foi o caso do seletor de competência após
+  importar.
 - **Next 16 tem quebras de compatibilidade.** Antes de escrever código, consulte
   `node_modules/next/dist/docs/` (ver `AGENTS.md`). `params` e `searchParams` são
   Promises; layouts não veem pathname nem searchParams.

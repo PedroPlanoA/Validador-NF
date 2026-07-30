@@ -3,13 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Search, Filter, X } from "lucide-react";
-import { Select } from "@/components/ui/Input";
+import { Select, FieldCaption } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 export interface FilterSpec {
   key: string;
+  /** Rótulo da opção neutra, no formato "Todos os X" / "Todas as X". */
   label: string;
   options: string[];
+}
+
+/** "Todas as Plataformas" → "Plataformas". Derivar do rótulo neutro evita ter de
+ *  declarar o nome da dimensão duas vezes em cada tela. */
+function dimensionOf(label: string): string {
+  return label.replace(/^(todos|todas)\s+(os|as)\s+/i, "");
 }
 
 export function FilterBar({
@@ -138,45 +145,54 @@ export function FilterBar({
           onClick={() => setOpen(false)}
         >
           <div
-            className="bg-white rounded-card-sm shadow-card-hover w-full max-w-md p-6 space-y-4"
+            className="bg-white rounded-card-sm shadow-card-hover w-full max-w-sm p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-serif font-black text-lg text-deep">Filtros</h3>
+              <h3 className="font-serif font-bold text-[15px] text-deep">Filtros</h3>
               <button onClick={() => setOpen(false)} className="text-ink/40 hover:text-ink">
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-3">
+            {/* Cada campo é nomeado pela dimensão que filtra. Antes eram só
+                caixas iguais empilhadas, em que a única pista do que cada uma
+                fazia era a opção neutra ("Todos os Status NF") — texto comprido
+                que ainda era o valor exibido enquanto nada estava escolhido. */}
+            <div className="space-y-2.5">
               {filters.map((f) => (
-                <Select
-                  key={f.key}
-                  value={draft[f.key] ?? "all"}
-                  onChange={(e) => setDraft((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                >
-                  <option value="all">{f.label}</option>
-                  {f.options.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </Select>
+                <div key={f.key} className="space-y-1">
+                  <FieldCaption>{dimensionOf(f.label)}</FieldCaption>
+                  <Select
+                    fieldSize="sm"
+                    value={draft[f.key] ?? "all"}
+                    onChange={(e) => setDraft((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                  >
+                    <option value="all">{f.label}</option>
+                    {f.options.map((o) => (
+                      <option key={o} value={o}>
+                        {o}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
               ))}
             </div>
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between gap-3 pt-1">
               {activeCount > 0 ? (
                 <button
                   onClick={clearFilters}
-                  className="text-sm font-semibold text-ink/50 hover:text-danger transition-colors"
+                  className="text-[13px] font-semibold text-ink/50 hover:text-danger transition-colors"
                 >
-                  Remover filtro
+                  Limpar filtros
                 </button>
               ) : (
                 <span />
               )}
-              <Button onClick={applyFilters}>Filtrar</Button>
+              <Button size="sm" onClick={applyFilters}>
+                Filtrar
+              </Button>
             </div>
           </div>
         </div>

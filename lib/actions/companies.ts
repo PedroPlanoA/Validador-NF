@@ -9,10 +9,13 @@ export interface CreateCompanyState {
   fieldErrors?: Record<string, string>;
 }
 
-export async function createCompany(
-  _prevState: CreateCompanyState,
+/** Valida os três campos do cadastro e checa a unicidade do código, ignorando a
+ *  própria empresa quando é edição (senão editar só o nome acusaria "código já
+ *  existe" contra o próprio registro). */
+async function validateCompanyForm(
   formData: FormData,
-): Promise<CreateCompanyState> {
+  ignoreCompanyId?: string,
+): Promise<{ data: { codigo: string; nome: string; cnpj: string } } | { state: CreateCompanyState }> {
   const parsed = companySchema.safeParse({
     codigo: formData.get("codigo"),
     nome: formData.get("nome"),
@@ -24,29 +27,63 @@ export async function createCompany(
     for (const issue of parsed.error.issues) {
       fieldErrors[String(issue.path[0])] = issue.message;
     }
-    return { fieldErrors };
+    return { state: { fieldErrors } };
   }
 
   const existing = await db.company.findUnique({ where: { codigo: parsed.data.codigo } });
-  if (existing) {
-    return { fieldErrors: { codigo: "Já existe uma empresa com este código" } };
+  if (existing && existing.id !== ignoreCompanyId) {
+    return { state: { fieldErrors: { codigo: "Já existe uma empresa com este código" } } };
   }
 
-  await db.company.create({ data: parsed.data });
+  return { data: parsed.data };
+}
+
+export async function createCompany(
+  _prevState: CreateCompanyState,
+  formData: FormData,
+): Promise<CreateCompanyState> {
+  const result = await validateCompanyForm(formData);
+  if ("state" in result) return result.state;
+
+  await db.company.create({ data: result.data });
   revalidatePath("/companies");
   return {};
 }
 
-/** Ordered by código, descending — numeric-aware (falls back to plain
- *  string compare for non-numeric codes) so "010" sorts above "002" and
- *  above any stray alphabetic test code. */
+/**
+ * Edita código, nome e CNPJ de uma empresa já cadastrada. Nada mais é tocado:
+ * vendas, notas, importações e checklists continuam vinculados pelo id, então
+ * corrigir um código digitado errado não afeta nenhum dado importado.
+ */
+export async function updateCompany(
+  companyId: string,
+  _prevState: CreateCompanyState,
+  formData: FormData,
+): Promise<CreateCompanyState> {
+  const result = await validateCompanyForm(formData, companyId);
+  if ("state" in result) return result.state;
+
+  await db.company.update({ where: { id: companyId }, data: result.data });
+  revalidatePath("/companies");
+  // A faixa lateral de dentro da empresa mostra código, nome e CNPJ — sem isto
+  // ela continuaria exibindo o cadastro antigo.
+  revalidatePath(`/c/${companyId}`, "layout");
+  return {};
+}
+
+/** Ordered by código, ascending and numeric-aware — "10" vem depois de "2", que
+ *  a ordenação de texto do banco inverteria. Códigos não numéricos caem no
+ *  compare de string e vão para o fim da lista. */
 export async function listCompanies() {
   const companies = await db.company.findMany();
   return companies.sort((a, b) => {
     const na = Number(a.codigo);
     const nb = Number(b.codigo);
-    if (!Number.isNaN(na) && !Number.isNaN(nb)) return nb - na;
-    return b.codigo.localeCompare(a.codigo);
+    const aIsNum = !Number.isNaN(na);
+    const bIsNum = !Number.isNaN(nb);
+    if (aIsNum && bIsNum) return na - nb;
+    if (aIsNum !== bIsNum) return aIsNum ? -1 : 1;
+    return a.codigo.localeCompare(b.codigo);
   });
 }
 
