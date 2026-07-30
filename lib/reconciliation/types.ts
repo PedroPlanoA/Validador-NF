@@ -7,6 +7,7 @@ export type SituacaoConferencia =
   | "ERRO_DE_CANCELAMENTO"
   | "NF_CANCELADA"
   | "MULTIPLAS_NOTAS_REVISAO"
+  | "VENDA_INCOMPLETA"
   | "OUTRO";
 
 /** Minimal shape the engine needs from a Sale row — Prisma's generated Sale

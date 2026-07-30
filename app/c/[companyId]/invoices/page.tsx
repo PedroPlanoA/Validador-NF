@@ -5,8 +5,11 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Pagination } from "@/components/ui/Pagination";
-import { PageTitle } from "@/components/ui/PageTitle";
+import { PageHeader } from "@/components/ui/PageTitle";
 import { ExportRawDataButton } from "@/components/ui/ExportRawDataButton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { TABLE_CLASS, THEAD_CLASS, TBODY_CLASS, TR_CLASS } from "@/components/ui/Table";
+import { FileText } from "lucide-react";
 import { formatCompetencia } from "@/lib/format/competencia";
 import { SITUACAO_NF_LABELS as NF_LABELS, SITUACAO_NF_TONE as NF_TONE } from "@/lib/reconciliation/labels";
 import type { SituacaoNf } from "@/lib/mapping/types";
@@ -20,7 +23,7 @@ export default async function InvoicesPage({
   searchParams,
 }: {
   params: Promise<{ companyId: string }>;
-  searchParams: Promise<{ q?: string; status?: string; codigoServico?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; codigoServico?: string; tipo?: string; page?: string }>;
 }) {
   const { companyId } = await params;
   const sp = await searchParams;
@@ -33,15 +36,17 @@ export default async function InvoicesPage({
 
   const allForFilters = await db.invoice.findMany({
     where: baseWhere,
-    select: { situacaoNf: true, codigoServico: true },
+    select: { situacaoNf: true, codigoServico: true, tipo: true },
   });
   const statusOptions = Array.from(new Set(allForFilters.map((i) => NF_LABELS[i.situacaoNf]))).sort();
   const servicoOptions = Array.from(new Set(allForFilters.map((i) => i.codigoServico).filter(Boolean))).sort();
+  const tipoOptions = Array.from(new Set(allForFilters.map((i) => i.tipo).filter(Boolean))).sort();
 
   const where = {
     ...baseWhere,
     ...(sp.status ? { situacaoNf: (Object.keys(NF_LABELS) as SituacaoNf[]).find((k) => NF_LABELS[k] === sp.status) } : {}),
     ...(sp.codigoServico ? { codigoServico: sp.codigoServico } : {}),
+    ...(sp.tipo ? { tipo: sp.tipo } : {}),
     ...(sp.q
       ? {
           OR: [
@@ -67,8 +72,10 @@ export default async function InvoicesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <PageTitle>Notas Fiscais</PageTitle>
+      <PageHeader
+        title="Notas Fiscais"
+        sub={`${total} nota(s) ${competencia ? `em ${formatCompetencia(competencia)}` : "no total"}`}
+      >
         <ExportRawDataButton
           options={[
             {
@@ -77,19 +84,20 @@ export default async function InvoicesPage({
             },
           ]}
         />
-      </div>
+      </PageHeader>
       <Card className="overflow-hidden">
         <FilterBar
           searchPlaceholder="Pesquisar por código, comprador, NF..."
           filters={[
             { key: "status", label: "Todos os Status NF", options: statusOptions },
             { key: "codigoServico", label: "Todos os Serviços", options: servicoOptions },
+            { key: "tipo", label: "Todos os Tipos", options: tipoOptions },
           ]}
           resultCount={total}
         />
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs whitespace-nowrap">
-            <thead className="bg-paper-alt/40 border-b border-ink/8 text-ink/50 font-bold uppercase tracking-wider">
+          <table className={`${TABLE_CLASS} whitespace-nowrap`}>
+            <thead className={THEAD_CLASS}>
               <tr>
                 <th className="py-3 px-5">Código Venda</th>
                 <th className="py-3 px-5">Número NF</th>
@@ -101,9 +109,9 @@ export default async function InvoicesPage({
                 <th className="py-3 px-5">Cód. Serviço</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-ink/5 font-medium text-ink">
+            <tbody className={TBODY_CLASS}>
               {invoices.map((inv) => (
-                <tr key={inv.id}>
+                <tr key={inv.id} className={TR_CLASS}>
                   <td className="py-3 px-5">{inv.codigoVenda}</td>
                   <td className="py-3 px-5">{inv.numero}</td>
                   <td className="py-3 px-5">{inv.comprador}</td>
@@ -118,8 +126,12 @@ export default async function InvoicesPage({
               ))}
               {invoices.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-ink/40 italic">
-                    Nenhuma nota fiscal encontrada.
+                  <td colSpan={8}>
+                    <EmptyState
+                      icon={FileText}
+                      title="Nenhuma nota fiscal encontrada"
+                      description="Ajuste os filtros ou a competência selecionada no menu lateral. Se ainda não importou o relatório do emissor, faça isso na aba Importações."
+                    />
                   </td>
                 </tr>
               )}

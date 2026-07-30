@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { listCompanyPlatforms, listProductsForPlatform } from "@/lib/actions/products";
+import { Package } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { PageTitle } from "@/components/ui/PageTitle";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ProductsTable } from "@/components/products/ProductsTable";
 
 export const dynamic = "force-dynamic";
@@ -22,11 +25,22 @@ export default async function ProductsPage({
 
   return (
     <div className="space-y-6">
-      <PageTitle>Produtos</PageTitle>
+      <PageTitle sub="Percentual de comissão por produto, usado no cálculo do valor esperado da nota.">
+        Produtos
+      </PageTitle>
 
       {platforms.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-ink/40 italic">
-          Nenhum produto identificado ainda — importe um relatório de vendas para esta empresa.
+        <Card>
+          <EmptyState
+            icon={Package}
+            title="Nenhum produto identificado ainda"
+            description="Os produtos aparecem aqui depois que um relatório de vendas da plataforma for importado para esta empresa."
+            action={
+              <Link href={`/c/${companyId}/imports/upload`}>
+                <Button variant="solid">Importar Relatório</Button>
+              </Link>
+            }
+          />
         </Card>
       ) : (
         <>

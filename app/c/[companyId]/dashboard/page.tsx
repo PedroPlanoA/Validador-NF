@@ -6,11 +6,12 @@ import { formatCurrency } from "@/lib/validation/currency";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { SituacaoChart } from "@/components/dashboard/SituacaoChart";
 import { PlatformChart } from "@/components/dashboard/PlatformChart";
-import { Card } from "@/components/ui/Card";
-import { PageTitle } from "@/components/ui/PageTitle";
+import { TipoChart } from "@/components/dashboard/TipoChart";
+import { PanelCard } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageTitle";
+import { formatCompetencia } from "@/lib/format/competencia";
 import { FileSpreadsheet } from "lucide-react";
 import { SITUACAO_CONFERENCIA_LABELS, SITUACAO_NF_LABELS } from "@/lib/reconciliation/labels";
-import type { ReconciliationRow } from "@/lib/reconciliation/types";
 
 export const dynamic = "force-dynamic";
 
@@ -40,11 +41,6 @@ export default async function DashboardPage({
     }),
   ]);
 
-  // --- Vendas-based (relatório de vendas), competência = data da venda ---
-  const concluidas = allRows.filter(
-    (r: ReconciliationRow) => r.situacaoVenda === "CONCLUIDO" && (!competencia || r.competencia === competencia),
-  );
-
   // --- Análise de erros (venda x nota) — nunca filtrado por competência ---
   const errosEmissao = allRows.filter((r) => r.situacaoConferencia === "ERRO_DE_EMISSAO");
   const nfAusente = allRows.filter((r) => r.situacaoConferencia === "NF_NAO_EMITIDA");
@@ -71,6 +67,20 @@ export default async function DashboardPage({
       return acc;
     }, {}),
   ).sort((a, b) => b[1].valor - a[1].valor);
+
+  // Emissões por tipo de nota (NF-e, NFS-e, NF-e Devolução...). O painel só
+  // existe quando há mais de um tipo — com um único tipo o gráfico seria um
+  // círculo de 100% e não informaria nada.
+  const tipoRows = Object.entries(
+    notasEmitidas.reduce<Record<string, number>>((acc, i) => {
+      const tipo = i.tipo.trim() || "Não Informado";
+      acc[tipo] = (acc[tipo] ?? 0) + 1;
+      return acc;
+    }, {}),
+  )
+    .map(([tipo, count]) => ({ tipo, count }))
+    .sort((a, b) => b.count - a.count);
+  const showTipoPanel = tipoRows.length > 1;
 
   // Notas fiscais não têm moeda própria — é sempre a do relatório de vendas,
   // recuperada pelo código da venda casado. Sem casamento, fica explícito
@@ -102,24 +112,19 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <PageTitle>Painel Geral</PageTitle>
+      <PageHeader
+        title="Painel Geral"
+        sub={competencia ? `Competência ${formatCompetencia(competencia)}` : "Todas as competências"}
+      >
         <a
           href={`/api/c/${companyId}/export/reconciliation${competencia ? `?competencia=${competencia}` : ""}`}
-          className="flex items-center gap-2 text-xs font-semibold text-positive hover:opacity-80 bg-positive/10 px-3 py-2 rounded-input border border-positive/20 transition-colors"
+          className="flex items-center gap-2 text-sm font-bold text-positive border border-positive/25 hover:bg-positive/10 rounded-input px-4 py-2.5 transition-colors"
         >
-          <FileSpreadsheet className="w-3.5 h-3.5" /> Exportar Análise (XLSX)
+          <FileSpreadsheet className="w-4 h-4" /> Exportar Análise (XLSX)
         </a>
-      </div>
+      </PageHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
-        <KpiCard
-          label="Total Vendas (Concluídas)"
-          value={concluidas.length}
-          sub={formatCurrency(sum(concluidas, (r) => r.valorVenda), "BRL")}
-          accent="primary"
-          href={`/c/${companyId}/sales`}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <KpiCard
           label="Notas Emitidas"
           value={notasEmitidas.length}
@@ -150,28 +155,25 @@ export default async function DashboardPage({
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="p-6 flex flex-col">
-          <h4 className="text-sm font-bold text-ink mb-4">Situação NF</h4>
-          <div className="flex-1 min-h-[240px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <PanelCard title="Situação NF">
+          <div className="p-6 h-[300px]">
             <SituacaoChart counts={situacaoNfCounts} companyId={companyId} />
           </div>
-        </Card>
+        </PanelCard>
 
-        <Card className="p-6 flex flex-col">
-          <h4 className="text-sm font-bold text-ink mb-4">Desempenho por Plataforma</h4>
-          <div className="flex-1 min-h-[240px]">
+        <PanelCard title="Desempenho por Plataforma">
+          <div className="p-6 h-[300px]">
             <PlatformChart data={platformTotals} />
           </div>
-        </Card>
+        </PanelCard>
 
-        <Card className="overflow-hidden flex flex-col">
-          <div className="px-6 py-4 border-b border-ink/8 bg-paper-alt/40">
-            <h4 className="text-sm font-bold text-ink">Faturamento por Serviço</h4>
-          </div>
-          <div className="divide-y divide-ink/5 overflow-y-auto max-h-[260px] flex-1">
+        <PanelCard title="Faturamento por Serviço">
+          <div className="divide-y divide-ink/5 overflow-y-auto max-h-[300px]">
             {serviceRows.length === 0 ? (
-              <div className="p-4 text-center text-xs text-ink/40">Nenhuma nota emitida para este período.</div>
+              <div className="p-6 text-center text-xs text-ink/40 italic">
+                Nenhuma nota emitida para este período.
+              </div>
             ) : (
               serviceRows.map(([code, v]) => (
                 <Link
@@ -187,16 +189,16 @@ export default async function DashboardPage({
               ))
             )}
           </div>
-        </Card>
+        </PanelCard>
       </div>
 
-      <Card className="overflow-hidden">
-        <div className="px-6 py-4 border-b border-ink/8 bg-paper-alt/40">
-          <h4 className="text-sm font-bold text-ink">Resumo por Moeda</h4>
-        </div>
+      <div className={`grid grid-cols-1 gap-6 ${showTipoPanel ? "lg:grid-cols-2" : ""}`}>
+        <PanelCard title="Resumo por Moeda">
         <div className="divide-y divide-ink/5">
           {currencyRows.length === 0 ? (
-            <div className="p-4 text-center text-xs text-ink/40">Nenhum dado importado para esta competência.</div>
+            <div className="p-6 text-center text-xs text-ink/40 italic">
+              Nenhum dado importado para esta competência.
+            </div>
           ) : (
             currencyRows.map(([moeda, total]) =>
               moeda === MOEDA_NAO_IDENTIFICADA ? (
@@ -216,8 +218,17 @@ export default async function DashboardPage({
               ),
             )
           )}
-        </div>
-      </Card>
+          </div>
+        </PanelCard>
+
+        {showTipoPanel && (
+          <PanelCard title="Emissões por Tipo">
+            <div className="p-6 h-[300px]">
+              <TipoChart data={tipoRows} companyId={companyId} />
+            </div>
+          </PanelCard>
+        )}
+      </div>
     </div>
   );
 }

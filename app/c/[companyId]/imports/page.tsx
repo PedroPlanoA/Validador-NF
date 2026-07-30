@@ -2,13 +2,15 @@ import Link from "next/link";
 import { listActiveBatches } from "@/lib/imports/importService";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { PageTitle } from "@/components/ui/PageTitle";
+import { PageHeader } from "@/components/ui/PageTitle";
 import { ReanalyzeButton } from "@/components/wizard/ReanalyzeButton";
 import { DeleteBatchButton } from "@/components/wizard/DeleteBatchButton";
 import { ImportsFilterBar } from "@/components/imports/ImportsFilterBar";
 import { ExportRawDataButton } from "@/components/ui/ExportRawDataButton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { TABLE_CLASS, THEAD_CLASS, TBODY_CLASS, TR_CLASS } from "@/components/ui/Table";
 import { formatCompetencia } from "@/lib/format/competencia";
-import { Upload } from "lucide-react";
+import { Upload, FileSpreadsheet } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -50,33 +52,52 @@ export default async function ImportsPage({
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <PageTitle>Importações</PageTitle>
-        <Link href={`/c/${companyId}/imports/upload`}>
-          <Button>
-            <Upload className="w-4 h-4" /> Importar Relatório
-          </Button>
-        </Link>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <ImportsFilterBar fontes={fontes} competencias={competencias} />
+      {/* Exportar Dados Brutos vive no cabeçalho, na mesma posição das outras
+          abas; Importar Relatório fica na linha dos filtros, junto do conteúdo
+          que a pessoa está manipulando. */}
+      <PageHeader title="Importações" sub={`${allBatches.length} relatório(s) ativo(s)`}>
         <ExportRawDataButton
           options={[
             { label: "Baixar Vendas (XLSX)", href: `/api/c/${companyId}/export/sales` },
             { label: "Baixar Notas (XLSX)", href: `/api/c/${companyId}/export/invoices` },
           ]}
         />
+      </PageHeader>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <ImportsFilterBar fontes={fontes} competencias={competencias} />
+        <Link href={`/c/${companyId}/imports/upload`} className="shrink-0">
+          <Button variant="solid">
+            <Upload className="w-4 h-4" /> Importar Relatório
+          </Button>
+        </Link>
       </div>
 
       {batches.length === 0 ? (
-        <p className="text-sm text-ink/40 italic">
-          {allBatches.length === 0 ? "Nenhum arquivo importado ainda." : "Nenhum arquivo corresponde aos filtros."}
-        </p>
+        <Card>
+          <EmptyState
+            icon={FileSpreadsheet}
+            title={allBatches.length === 0 ? "Nenhum arquivo importado ainda" : "Nenhum arquivo com estes filtros"}
+            description={
+              allBatches.length === 0
+                ? "Importe o relatório de vendas da plataforma e o relatório de notas do emissor para começar a conferência."
+                : "Existem relatórios importados, mas nenhum corresponde aos filtros aplicados."
+            }
+            action={
+              allBatches.length === 0 ? (
+                <Link href={`/c/${companyId}/imports/upload`}>
+                  <Button variant="solid">
+                    <Upload className="w-4 h-4" /> Importar Relatório
+                  </Button>
+                </Link>
+              ) : undefined
+            }
+          />
+        </Card>
       ) : (
         <Card className="overflow-hidden">
-          <table className="w-full text-left text-xs whitespace-nowrap">
-            <thead className="bg-paper-alt/50 border-b border-ink/8 text-ink/50 font-bold uppercase tracking-wider">
+          <table className={`${TABLE_CLASS} whitespace-nowrap`}>
+            <thead className={THEAD_CLASS}>
               <tr>
                 <th className="py-3 px-5">Fonte</th>
                 <th className="py-3 px-5">Tipo</th>
@@ -85,9 +106,9 @@ export default async function ImportsPage({
                 <th className="py-3 px-5">Ação</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-ink/5 font-medium text-ink">
+            <tbody className={TBODY_CLASS}>
               {batches.map((batch) => (
-                <tr key={batch.id}>
+                <tr key={batch.id} className={TR_CLASS}>
                   <td className="py-3 px-5">
                     {batch.platformConfig?.name ?? batch.emitterConfig?.name ?? "—"}
                   </td>

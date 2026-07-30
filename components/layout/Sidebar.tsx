@@ -8,11 +8,8 @@ import {
   ShoppingCart,
   FileText,
   AlertTriangle,
-  SlidersHorizontal,
   ListChecks,
   Package,
-  Building2,
-  ArrowLeftRight,
 } from "lucide-react";
 import { CompetenciaSidebarSelect } from "@/components/layout/CompetenciaSidebarSelect";
 
@@ -22,15 +19,18 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
+/** Ordem definida pelo usuário: segue o fluxo real de trabalho — olhar o
+ *  panorama, conferir vendas e notas, ajustar produtos, tratar erros, fechar o
+ *  checklist e só então voltar às importações. */
 function navItems(companyId: string): NavItem[] {
   return [
     { href: `/c/${companyId}/dashboard`, label: "Dashboard", icon: ChartPie },
+    { href: `/c/${companyId}/sales`, label: "Vendas", icon: ShoppingCart },
+    { href: `/c/${companyId}/invoices`, label: "Notas Fiscais", icon: FileText },
+    { href: `/c/${companyId}/products`, label: "Produtos", icon: Package },
+    { href: `/c/${companyId}/errors`, label: "Painel de Erros", icon: AlertTriangle },
     { href: `/c/${companyId}/checklist`, label: "Checklist", icon: ListChecks },
     { href: `/c/${companyId}/imports`, label: "Importações", icon: FileSpreadsheet },
-    { href: `/c/${companyId}/sales`, label: "Vendas", icon: ShoppingCart },
-    { href: `/c/${companyId}/products`, label: "Produtos", icon: Package },
-    { href: `/c/${companyId}/invoices`, label: "Notas Fiscais", icon: FileText },
-    { href: `/c/${companyId}/errors`, label: "Painel de Erros", icon: AlertTriangle },
   ];
 }
 
@@ -42,14 +42,20 @@ const NAV_LINK_BASE =
 const NAV_LINK_ACTIVE = "border-l-mint bg-mint/12 text-white font-semibold";
 const NAV_LINK_INACTIVE = "border-l-transparent text-sand/80 hover:bg-white/5 hover:text-white font-medium";
 
+export const SIDEBAR_WIDTH_CLASS = "w-64";
+
 export function Sidebar({
   companyId,
   companyName,
+  companyCodigo,
+  companyCnpj,
   competencias,
   currentCompetencia,
 }: {
   companyId: string;
   companyName: string;
+  companyCodigo: string;
+  companyCnpj: string;
   competencias: string[];
   currentCompetencia?: string;
 }) {
@@ -58,13 +64,38 @@ export function Sidebar({
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <aside className="w-64 bg-deep text-white flex flex-col shrink-0">
-      <div className="h-16 flex items-center px-6 border-b border-white/10 gap-3">
-        <img src="/simbolo-cores.png" alt="Plano A" className="h-9 w-9 object-contain shrink-0" />
-        <h1 className="font-serif font-black text-base leading-tight truncate text-white min-w-0">{companyName}</h1>
+    // Fixa de propósito: a faixa lateral não pode crescer, encolher nem rolar
+    // junto com o conteúdo da aba — só a área de conteúdo se move.
+    <aside
+      className={`fixed top-0 left-0 z-40 h-dvh ${SIDEBAR_WIDTH_CLASS} bg-deep text-white flex flex-col border-r border-black/20`}
+    >
+      <div className="h-16 flex items-center gap-3 px-5 border-b border-white/10 shrink-0">
+        <img src="/simbolo-cores.png" alt="Plano A" className="h-8 w-8 object-contain shrink-0" />
+        <div className="min-w-0">
+          <div className="font-serif font-black text-[15px] leading-none text-white">Plano A</div>
+          <div className="font-sans font-medium text-[9px] tracking-[.24em] text-mint-300 uppercase mt-1">
+            Contabilidade
+          </div>
+        </div>
       </div>
 
-      <div className="pt-4 border-b border-white/10">
+      {/* Bloco da empresa — o dado mais importante da tela inteira, então tem
+          respiro próprio, hierarquia (eyebrow, nome, CNPJ) e fundo levemente
+          destacado em vez de um nome truncado dentro do cabeçalho da marca. */}
+      <div className="px-5 py-4 border-b border-white/10 bg-white/[0.03] shrink-0">
+        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-mint-300/90">
+          <span className="w-4 h-px bg-mint-300/60" /> Empresa {companyCodigo}
+        </span>
+        <h2
+          className="font-serif font-black text-[17px] leading-snug text-white mt-2 line-clamp-2"
+          title={companyName}
+        >
+          {companyName}
+        </h2>
+        <p className="text-[11px] font-medium text-sand/50 mt-1.5 tabular-nums">{companyCnpj}</p>
+      </div>
+
+      <div className="pt-4 shrink-0">
         <CompetenciaSidebarSelect
           companyId={companyId}
           competencias={competencias}
@@ -72,7 +103,7 @@ export function Sidebar({
         />
       </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+      <nav className="scroll-dark flex-1 px-4 pb-6 space-y-1 overflow-y-auto border-t border-white/10 pt-4">
         {navItems(companyId).map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
@@ -82,28 +113,7 @@ export function Sidebar({
             <Icon className="w-4 h-4 shrink-0" /> {label}
           </Link>
         ))}
-
-        <div className="pt-4 mt-4 border-t border-white/10">
-          <Link
-            href={`/c/${companyId}/config/platforms`}
-            className={`${NAV_LINK_BASE} ${isActive(`/c/${companyId}/config`) ? NAV_LINK_ACTIVE : NAV_LINK_INACTIVE}`}
-          >
-            <SlidersHorizontal className="w-4 h-4 shrink-0" /> Mapear
-          </Link>
-        </div>
       </nav>
-
-      <div className="p-4 border-t border-white/10 space-y-3">
-        <Link
-          href="/companies"
-          className="flex items-center justify-center gap-2 text-sm font-semibold text-white bg-white/8 hover:bg-white/15 border border-white/15 rounded-input px-3 py-2.5 transition-colors"
-        >
-          <ArrowLeftRight className="w-4 h-4" /> Trocar Empresa
-        </Link>
-        <div className="text-xs text-sand/50 flex items-center gap-2 px-0.5">
-          <Building2 className="w-3.5 h-3.5" /> Plano A Contabilidade
-        </div>
-      </div>
     </aside>
   );
 }

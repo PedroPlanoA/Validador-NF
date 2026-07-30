@@ -42,5 +42,11 @@ export function classify(
 
   // INCOMPLETO / OUTRO sale status
   if (situacaoNf === "ERRO_DE_EMISSAO") return "ERRO_DE_EMISSAO";
+
+  // Venda incompleta sem nota nenhuma é o caso esperado (a venda não se
+  // concretizou, então não há o que emitir) — merece rótulo próprio em vez de
+  // cair no genérico "Outro", que escondia esse estado no meio de tudo.
+  if (situacaoVenda === "INCOMPLETO" && situacaoNf === null) return "VENDA_INCOMPLETA";
+
   return "OUTRO";
 }

@@ -7,8 +7,10 @@ import { formatCurrency } from "@/lib/validation/currency";
 import { formatCompetencia } from "@/lib/format/competencia";
 import { ERROR_STATUSES, SITUACAO_CONFERENCIA_LABELS } from "@/lib/reconciliation/labels";
 import { ChecklistForm } from "@/components/checklist/ChecklistForm";
-import { PageTitle } from "@/components/ui/PageTitle";
+import { PageTitle, PageHeader } from "@/components/ui/PageTitle";
 import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { CalendarRange } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +26,12 @@ export default async function ChecklistPage({
     return (
       <div className="space-y-6">
         <PageTitle>Checklist</PageTitle>
-        <Card className="p-8 text-center text-sm text-ink/50">
-          Selecione uma competência específica no menu lateral para abrir o checklist de fechamento — ele audita um
-          mês por vez.
+        <Card>
+          <EmptyState
+            icon={CalendarRange}
+            title="Selecione uma competência"
+            description="O checklist audita um mês por vez. Escolha a competência no menu lateral para abrir o fechamento."
+          />
         </Card>
       </div>
     );
@@ -53,12 +58,11 @@ export default async function ChecklistPage({
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <PageTitle>Checklist</PageTitle>
-        <span className="text-xs font-semibold text-ink/50 bg-white border border-ink/10 px-3 py-1.5 rounded-pill">
+      <PageHeader title="Checklist" sub="Auditoria de fechamento da competência selecionada.">
+        <span className="text-xs font-semibold text-ink/60 bg-white border border-ink/10 px-3.5 py-2 rounded-pill">
           {formatCompetencia(competencia)}
         </span>
-      </div>
+      </PageHeader>
 
       <div className="bg-deep text-white p-6 rounded-card shadow-card space-y-4">
         <div className="flex justify-between items-center border-b border-white/10 pb-3">

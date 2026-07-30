@@ -34,6 +34,7 @@ export const SITUACAO_CONFERENCIA_LABELS: Record<SituacaoConferencia, string> = 
   ERRO_DE_CANCELAMENTO: "Erro Cancelamento",
   NF_CANCELADA: "NF Cancelada",
   MULTIPLAS_NOTAS_REVISAO: "Múltiplas Notas — Revisão",
+  VENDA_INCOMPLETA: "Venda Incompleta",
   OUTRO: "Outro",
 };
 
@@ -44,6 +45,7 @@ export const SITUACAO_CONFERENCIA_TONE: Record<SituacaoConferencia, BadgeTone> =
   ERRO_DE_CANCELAMENTO: "danger",
   NF_CANCELADA: "neutral",
   MULTIPLAS_NOTAS_REVISAO: "attention",
+  VENDA_INCOMPLETA: "neutral",
   OUTRO: "neutral",
 };
 

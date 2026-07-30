@@ -5,8 +5,12 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Pagination } from "@/components/ui/Pagination";
-import { PageTitle } from "@/components/ui/PageTitle";
+import { PageHeader } from "@/components/ui/PageTitle";
 import { ExportRawDataButton } from "@/components/ui/ExportRawDataButton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { TABLE_CLASS, THEAD_CLASS, TBODY_CLASS, TR_CLASS } from "@/components/ui/Table";
+import { ShoppingCart } from "lucide-react";
+import { formatCompetencia } from "@/lib/format/competencia";
 import {
   SITUACAO_CONFERENCIA_LABELS,
   SITUACAO_CONFERENCIA_TONE,
@@ -58,8 +62,10 @@ export default async function SalesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <PageTitle>Vendas</PageTitle>
+      <PageHeader
+        title="Vendas"
+        sub={`${allRows.length} venda(s) ${competencia ? `em ${formatCompetencia(competencia)}` : "no total"}`}
+      >
         <ExportRawDataButton
           options={[
             {
@@ -68,7 +74,7 @@ export default async function SalesPage({
             },
           ]}
         />
-      </div>
+      </PageHeader>
       <Card className="overflow-hidden">
         <FilterBar
           searchPlaceholder="Pesquisar por código, comprador..."
@@ -80,8 +86,8 @@ export default async function SalesPage({
           resultCount={rows.length}
         />
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-paper-alt/40 border-b border-ink/8 text-ink/50 font-bold uppercase tracking-wider">
+          <table className={TABLE_CLASS}>
+            <thead className={THEAD_CLASS}>
               <tr>
                 <th className="py-3 px-2.5 whitespace-nowrap">Código Venda</th>
                 <th className="py-3 px-2.5">Comprador</th>
@@ -93,9 +99,9 @@ export default async function SalesPage({
                 <th className="py-3 px-2.5 whitespace-nowrap">Conferência</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-ink/5 font-medium text-ink">
+            <tbody className={TBODY_CLASS}>
               {pageRows.map((r) => (
-                <tr key={r.saleId}>
+                <tr key={r.saleId} className={TR_CLASS}>
                   <td className="py-2.5 px-2.5 whitespace-nowrap">{r.codigoVenda}</td>
                   <td className="py-2.5 px-2.5 max-w-[130px] truncate" title={r.comprador}>
                     {r.comprador}
@@ -121,8 +127,12 @@ export default async function SalesPage({
               ))}
               {pageRows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-ink/40 italic">
-                    Nenhuma venda encontrada.
+                  <td colSpan={8}>
+                    <EmptyState
+                      icon={ShoppingCart}
+                      title="Nenhuma venda encontrada"
+                      description="Ajuste os filtros ou a competência selecionada no menu lateral. Se ainda não importou o relatório da plataforma, faça isso na aba Importações."
+                    />
                   </td>
                 </tr>
               )}

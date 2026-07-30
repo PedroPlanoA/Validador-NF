@@ -4,10 +4,12 @@ import { getVerifiedKeys } from "@/lib/actions/valueCheck";
 import { formatCurrency } from "@/lib/validation/currency";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { PageTitle } from "@/components/ui/PageTitle";
+import { PageHeader } from "@/components/ui/PageTitle";
 import { FilterBar } from "@/components/ui/FilterBar";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { TABLE_CLASS, THEAD_CLASS, TBODY_CLASS, TR_CLASS } from "@/components/ui/Table";
 import { VerifyValueButton } from "@/components/errors/VerifyValueButton";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, ShieldCheck } from "lucide-react";
 import { combineStatus } from "@/lib/reconciliation/classify";
 import {
   ERROR_STATUSES,
@@ -78,10 +80,14 @@ export default async function ErrorsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <PageTitle>Painel de Erros</PageTitle>
-        <p className="text-xs text-ink/50 mt-1">{allErrorRows.length} venda(s) precisam de atenção.</p>
-      </div>
+      <PageHeader
+        title="Painel de Erros"
+        sub={
+          allErrorRows.length === 0
+            ? "Nenhuma divergência pendente."
+            : `${allErrorRows.length} venda(s) precisam de atenção — todas as competências.`
+        }
+      />
 
       <Card className="overflow-hidden">
         <FilterBar
@@ -96,8 +102,8 @@ export default async function ErrorsPage({
           resultCount={errorRows.length}
         />
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-paper-alt/40 border-b border-ink/8 text-ink/50 font-bold uppercase tracking-wider">
+          <table className={TABLE_CLASS}>
+            <thead className={THEAD_CLASS}>
               <tr>
                 <th className="py-3 px-2 whitespace-nowrap">Código Venda</th>
                 <th className="py-3 px-2">Comprador</th>
@@ -110,11 +116,11 @@ export default async function ErrorsPage({
                 <th className="py-3 px-2 whitespace-nowrap">Ação</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-ink/5 font-medium text-ink">
+            <tbody className={TBODY_CLASS}>
               {errorRows.map((r) => {
                 const isVerified = verifiedKeys.has(`${r.codigoVenda}|${r.competenciaEfetiva}`);
                 return (
-                  <tr key={r.saleId}>
+                  <tr key={r.saleId} className={TR_CLASS}>
                     <td className="py-2.5 px-2 whitespace-nowrap">{r.codigoVenda}</td>
                     <td className="py-2.5 px-2 max-w-[110px] truncate" title={r.comprador}>
                       {r.comprador}
@@ -175,8 +181,16 @@ export default async function ErrorsPage({
               })}
               {errorRows.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-ink/40 italic">
-                    Nenhum erro reportado! Tudo reconciliado.
+                  <td colSpan={9}>
+                    <EmptyState
+                      icon={ShieldCheck}
+                      title={allErrorRows.length === 0 ? "Tudo reconciliado" : "Nenhum erro com estes filtros"}
+                      description={
+                        allErrorRows.length === 0
+                          ? "Nenhuma divergência entre vendas e notas fiscais nas competências importadas."
+                          : "Existem divergências, mas nenhuma corresponde aos filtros aplicados acima."
+                      }
+                    />
                   </td>
                 </tr>
               )}

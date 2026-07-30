@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import { TABLE_CLASS, THEAD_CLASS, TBODY_CLASS, TR_CLASS } from "@/components/ui/Table";
 import { formatCurrency } from "@/lib/validation/currency";
 
 export function ProductsTable({
@@ -94,8 +95,8 @@ export function ProductsTable({
         <span className="text-xs text-ink/50 shrink-0">Mostrando {visibleProducts.length} produtos</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs whitespace-nowrap">
-          <thead className="bg-paper-alt/40 border-b border-ink/8 text-ink/50 font-bold uppercase tracking-wider">
+        <table className={`${TABLE_CLASS} whitespace-nowrap`}>
+          <thead className={THEAD_CLASS}>
             <tr>
               <th className="py-3 px-5">Produto</th>
               <th className="py-3 px-5 text-right">Nº Vendas</th>
@@ -104,9 +105,9 @@ export function ProductsTable({
               <th className="py-3 px-5 w-10"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-ink/5 font-medium text-ink">
+          <tbody className={TBODY_CLASS}>
             {visibleProducts.map((p) => (
-              <tr id={`product-${p.produto}`} key={p.produto}>
+              <tr id={`product-${p.produto}`} key={p.produto} className={TR_CLASS}>
                 <td className="py-3 px-5 max-w-xs truncate" title={p.produto}>
                   {p.produto}
                 </td>
