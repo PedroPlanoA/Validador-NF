@@ -38,7 +38,6 @@ export default async function ErrorsPage({
     q?: string;
     plataforma?: string;
     situacaoNf?: string;
-    produto?: string;
     situacaoVenda?: string;
     situacaoConferencia?: string;
   }>;
@@ -62,7 +61,6 @@ export default async function ErrorsPage({
     r.matchedInvoices.length > 0 ? SITUACAO_NF_LABELS[combineStatus(r.matchedInvoices.map((i) => i.situacaoNf))] : null;
 
   const platformOptions = Array.from(new Set(allErrorRows.map((r) => r.plataforma))).sort();
-  const produtoOptions = Array.from(new Set(allErrorRows.map((r) => r.produto))).sort();
   const situacaoNfOptions = Array.from(new Set(allErrorRows.map(situacaoNfOf).filter((v): v is string => !!v))).sort();
   const situacaoVendaOptions = Array.from(new Set(allErrorRows.map((r) => SITUACAO_VENDA_LABELS[r.situacaoVenda]))).sort();
   const situacaoConferenciaOptions = Array.from(
@@ -71,7 +69,6 @@ export default async function ErrorsPage({
 
   let errorRows = allErrorRows;
   if (sp.plataforma) errorRows = errorRows.filter((r) => r.plataforma === sp.plataforma);
-  if (sp.produto) errorRows = errorRows.filter((r) => r.produto === sp.produto);
   if (sp.situacaoNf) errorRows = errorRows.filter((r) => situacaoNfOf(r) === sp.situacaoNf);
   if (sp.situacaoVenda) errorRows = errorRows.filter((r) => SITUACAO_VENDA_LABELS[r.situacaoVenda] === sp.situacaoVenda);
   if (sp.situacaoConferencia) {
@@ -95,18 +92,18 @@ export default async function ErrorsPage({
         }
       />
 
+      <FilterBar
+        searchPlaceholder="Pesquisar por código, comprador..."
+        filters={[
+          { key: "plataforma", label: "Todas as Plataformas", options: platformOptions },
+          { key: "situacaoNf", label: "Todas as Situações NF", options: situacaoNfOptions },
+          { key: "situacaoVenda", label: "Todas as Situações da Venda", options: situacaoVendaOptions },
+          { key: "situacaoConferencia", label: "Todas as Situações da Reconciliação", options: situacaoConferenciaOptions },
+        ]}
+        resultCount={errorRows.length}
+      />
+
       <Card className="overflow-hidden">
-        <FilterBar
-          searchPlaceholder="Pesquisar por código, comprador..."
-          filters={[
-            { key: "plataforma", label: "Todas as Plataformas", options: platformOptions },
-            { key: "situacaoNf", label: "Todas as Situações NF", options: situacaoNfOptions },
-            { key: "produto", label: "Todos os Produtos", options: produtoOptions },
-            { key: "situacaoVenda", label: "Todas as Situações da Venda", options: situacaoVendaOptions },
-            { key: "situacaoConferencia", label: "Todas as Situações da Reconciliação", options: situacaoConferenciaOptions },
-          ]}
-          resultCount={errorRows.length}
-        />
         <div className="overflow-x-auto">
           <table className={TABLE_CLASS}>
             <thead className={THEAD_CLASS}>

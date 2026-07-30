@@ -250,7 +250,7 @@ Erros, porque é outro tipo de pendência e o cliente quer vê-la sozinha.
 | **Vendas** | sim (`competenciaEfetiva`) | paginada, 10 por página |
 | **Notas Fiscais** | sim (competência da própria nota) | filtros de status, serviço, tipo e plataforma |
 | **Produtos** | não | abas por plataforma; ajusta % de comissão |
-| **Painel de Erros** | **não, de propósito** | precisa mostrar toda divergência, senão um erro fora do mês selecionado ficaria escondido |
+| **Painel de Erros** | **não, de propósito** | precisa mostrar toda divergência, senão um erro fora do mês selecionado ficaria escondido. Filtra por plataforma, situação NF, situação da venda e situação da reconciliação — **não** por produto (removido a pedido do usuário) |
 | **Checklist** | sim, e **exige** uma competência | audita um mês por vez |
 | **Importações** | **não** | precisa listar todo relatório ativo |
 
@@ -354,11 +354,16 @@ brancos, densidade compacta). Tokens em `app/globals.css` via `@theme`.
 - **Botões:** `primary` (menta, texto petróleo), `solid` (menta escura, **texto
   branco** — usado em Importar Relatório), `ghost`, `danger`.
 - **Assinatura da marca:** um único `BrandLockup` serve o painel de empresas
-  (`lg`) e a faixa lateral (`md`). O "CONTABILIDADE" usa
-  `subpixel-antialiased` — no Windows o alisamento em escala de cinza deixa
-  texto pequeno em caixa alta sobre fundo escuro visivelmente mole.
+  (`lg`) e a faixa lateral (`md`). O "CONTABILIDADE" copia o site institucional
+  (`plano-a-ux`, nav `.brand .name span`): peso **500**, `tracking` .24em, menta,
+  e sempre menor que "Plano A". Nem `font-bold` nem `subpixel-antialiased` — os
+  dois deixavam a palavra visivelmente diferente do resto da interface.
 - **Nome de empresa:** sans, semibold, verde claro (`mint-600` sobre branco,
   `mint-300` sobre petróleo); código em pastilha verde-escura.
+- **Busca e filtros em cartão próprio:** `FilterBar` já renderiza o seu próprio
+  `Card`, separado do card da tabela (Vendas, Notas Fiscais, Produtos e Painel de
+  Erros). Dentro do card da tabela ela virava uma faixa de fundo tingido colada
+  no cabeçalho, e busca, contagem e dados pareciam um bloco único.
 - **Balão de filtros:** cada campo é nomeado por um `FieldCaption` com o nome da
   dimensão, derivado do rótulo neutro (`"Todas as Plataformas"` → `Plataformas`)
   para não declarar o mesmo nome duas vezes em cada tela. Sem isso o balão é uma

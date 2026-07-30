@@ -81,9 +81,11 @@ export function ProductsTable({
   }
 
   return (
-    <Card className="overflow-hidden">
-      <div className="p-5 border-b border-ink/8 bg-paper-alt/20 flex items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-sm">
+    <div className="space-y-4">
+      {/* Busca em cartão próprio, como nas outras abas — ver o comentário em
+          FilterBar sobre por que a barra saiu de dentro do card da tabela. */}
+      <Card className="p-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="relative flex-1 min-w-[260px] max-w-sm">
           <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-ink/30 pointer-events-none" />
           <input
             value={search}
@@ -92,9 +94,13 @@ export function ProductsTable({
             className="w-full pl-11 pr-4 py-3 text-sm text-ink placeholder:text-ink/40 border border-ink/10 rounded-input outline-none focus:ring-2 focus:ring-mint/40 focus:border-mint bg-white"
           />
         </div>
-        <span className="text-xs text-ink/50 shrink-0">Mostrando {visibleProducts.length} produtos</span>
-      </div>
-      <div className="overflow-x-auto">
+        <span className="text-xs text-ink/50 shrink-0 tabular-nums">
+          {visibleProducts.length === 1 ? "1 produto" : `${visibleProducts.length} produtos`}
+        </span>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
         <table className={`${TABLE_CLASS} whitespace-nowrap`}>
           <thead className={THEAD_CLASS}>
             <tr>
@@ -144,7 +150,8 @@ export function ProductsTable({
             )}
           </tbody>
         </table>
-      </div>
+        </div>
+      </Card>
 
       {editingProduct && (
         <div
@@ -195,6 +202,6 @@ export function ProductsTable({
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }

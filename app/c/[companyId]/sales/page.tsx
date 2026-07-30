@@ -75,16 +75,17 @@ export default async function SalesPage({
           ]}
         />
       </PageHeader>
+      <FilterBar
+        searchPlaceholder="Pesquisar por código, comprador..."
+        filters={[
+          { key: "plataforma", label: "Todas as Plataformas", options: platformOptions },
+          { key: "status", label: "Todos os Status", options: statusOptions },
+          { key: "moeda", label: "Todas as Moedas", options: moedaOptions },
+        ]}
+        resultCount={rows.length}
+      />
+
       <Card className="overflow-hidden">
-        <FilterBar
-          searchPlaceholder="Pesquisar por código, comprador..."
-          filters={[
-            { key: "plataforma", label: "Todas as Plataformas", options: platformOptions },
-            { key: "status", label: "Todos os Status", options: statusOptions },
-            { key: "moeda", label: "Todas as Moedas", options: moedaOptions },
-          ]}
-          resultCount={rows.length}
-        />
         <div className="overflow-x-auto">
           <table className={TABLE_CLASS}>
             <thead className={THEAD_CLASS}>

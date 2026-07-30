@@ -124,17 +124,18 @@ export default async function InvoicesPage({
           ]}
         />
       </PageHeader>
+      <FilterBar
+        searchPlaceholder="Pesquisar por código, comprador, NF..."
+        filters={[
+          { key: "status", label: "Todos os Status NF", options: statusOptions },
+          { key: "codigoServico", label: "Todos os Serviços", options: servicoOptions },
+          { key: "tipo", label: "Todos os Tipos", options: tipoOptions },
+          { key: "plataforma", label: "Todas as Plataformas", options: plataformaOptions },
+        ]}
+        resultCount={total}
+      />
+
       <Card className="overflow-hidden">
-        <FilterBar
-          searchPlaceholder="Pesquisar por código, comprador, NF..."
-          filters={[
-            { key: "status", label: "Todos os Status NF", options: statusOptions },
-            { key: "codigoServico", label: "Todos os Serviços", options: servicoOptions },
-            { key: "tipo", label: "Todos os Tipos", options: tipoOptions },
-            { key: "plataforma", label: "Todas as Plataformas", options: plataformaOptions },
-          ]}
-          resultCount={total}
-        />
         <div className="overflow-x-auto">
           <table className={`${TABLE_CLASS} whitespace-nowrap`}>
             <thead className={THEAD_CLASS}>

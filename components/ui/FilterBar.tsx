@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Search, Filter, X } from "lucide-react";
 import { Select, FieldCaption } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 export interface FilterSpec {
   key: string;
@@ -88,8 +89,12 @@ export function FilterBar({
     setOpen(false);
   }
 
+  // Painel próprio, separado do card da tabela: dentro dele a barra virava uma
+  // faixa de fundo tingido colada no cabeçalho, e busca, contagem e tabela
+  // pareciam um bloco só. Como cartão independente, "onde eu filtro" e "o que
+  // resultou" ficam visualmente separados.
   return (
-    <div className="p-5 border-b border-ink/8 bg-paper-alt/20 space-y-3">
+    <Card className="p-4 space-y-3">
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div className="relative flex-1 min-w-[260px] max-w-md">
           <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-ink/30 pointer-events-none" />
@@ -197,6 +202,6 @@ export function FilterBar({
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
