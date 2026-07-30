@@ -19,7 +19,12 @@ const PALETTE = [
   "#DCDCDC", // sand
 ];
 
-export function TipoChart({
+/** Proporção de notas emitidas por tipo, em quantidade. Devoluções ficam fora
+ *  desta visualização (ver `tiposSemDevolucao` no dashboard): elas não são
+ *  faturamento, e incluí-las distorceria a leitura de "quanto de cada tipo a
+ *  empresa emite". O volume completo, com devolução, está no gráfico de
+ *  Emissões por Tipo. */
+export function TipoProportionChart({
   data,
   companyId,
 }: {

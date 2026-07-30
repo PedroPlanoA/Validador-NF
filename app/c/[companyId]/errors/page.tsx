@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/ui/PageTitle";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { HoverTooltip } from "@/components/ui/HoverTooltip";
 import { TABLE_CLASS, THEAD_CLASS, TBODY_CLASS, TR_CLASS } from "@/components/ui/Table";
 import { VerifyValueButton } from "@/components/errors/VerifyValueButton";
 import { SlidersHorizontal, ShieldCheck } from "lucide-react";
@@ -18,10 +19,15 @@ import {
   SITUACAO_NF_LABELS,
   SITUACAO_VENDA_LABELS,
 } from "@/lib/reconciliation/labels";
+import type { SituacaoNf } from "@/lib/mapping/types";
 
 export const dynamic = "force-dynamic";
 
 const ATTENTION_STATUSES = [...ERROR_STATUSES, "MULTIPLAS_NOTAS_REVISAO"] as const;
+
+function notasVinculadasTexto(notas: { tipo: string; numero: string; situacaoNf: string }[]): string {
+  return notas.map((i) => `${i.tipo} #${i.numero} (${SITUACAO_NF_LABELS[i.situacaoNf as SituacaoNf]})`).join(", ");
+}
 
 export default async function ErrorsPage({
   params,
@@ -152,10 +158,16 @@ export default async function ErrorsPage({
                     <td className="py-2.5 px-2 text-right whitespace-nowrap">
                       {r.valorNfFaturado === null ? "—" : formatCurrency(r.valorNfFaturado, r.moeda)}
                     </td>
-                    <td className="py-2.5 px-2 max-w-[110px] truncate" title={r.matchedInvoices.map((i) => `${i.tipo} #${i.numero} (${i.situacaoNf})`).join(", ")}>
-                      {r.matchedInvoices.length === 0
-                        ? "—"
-                        : r.matchedInvoices.map((i) => `${i.tipo} #${i.numero} (${i.situacaoNf})`).join(", ")}
+                    <td className="py-2.5 px-2 max-w-[110px]">
+                      {r.matchedInvoices.length === 0 ? (
+                        "—"
+                      ) : (
+                        <HoverTooltip text={notasVinculadasTexto(r.matchedInvoices)} className="block cursor-help">
+                          <span className="block truncate underline decoration-dotted decoration-ink/25 underline-offset-4">
+                            {notasVinculadasTexto(r.matchedInvoices)}
+                          </span>
+                        </HoverTooltip>
+                      )}
                     </td>
                     <td className="py-2.5 px-2">
                       {r.valorDivergente && (

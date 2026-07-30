@@ -8,6 +8,7 @@ import { deleteCompanies } from "@/lib/actions/companies";
 import { CreateCompanyForm } from "@/components/company/CreateCompanyForm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { FAB_BUTTON_CLASS, FAB_ICON_CLASS, FAB_ITEM_CLASS, FAB_MENU_CLASS } from "@/components/ui/Fab";
 
 interface CompanyItem {
   id: string;
@@ -20,7 +21,6 @@ const OPEN_ANIMATION_MS = 200;
 
 export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
   const router = useRouter();
-  const [fabOpen, setFabOpen] = useState(false);
   const [mode, setMode] = useState<"view" | "delete">("view");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
@@ -118,11 +118,13 @@ export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
                         {isSelected && <Check className="w-3 h-3 text-white" />}
                       </div>
                     )}
-                    <span className="text-[10px] text-ink/40 font-bold uppercase tracking-wider">
+                    <span className="inline-flex items-center bg-deep/8 text-deep text-[10px] font-bold uppercase tracking-[.14em] px-2.5 py-1 rounded-pill">
                       Código {company.codigo}
                     </span>
-                    <h3 className="font-serif font-black text-lg text-ink mt-1 pr-6">{company.nome}</h3>
-                    <span className="text-xs text-ink/50 block mt-1">{company.cnpj}</span>
+                    <h3 className="font-sans font-semibold text-xl text-mint-600 mt-2.5 pr-6 leading-snug">
+                      {company.nome}
+                    </h3>
+                    <span className="text-xs text-ink/50 block mt-1.5 tabular-nums">{company.cnpj}</span>
                   </Card>
                 );
 
@@ -171,41 +173,24 @@ export function CompaniesManager({ companies }: { companies: CompanyItem[] }) {
         </div>
       )}
 
-      <div className="fixed bottom-6 right-6 z-40">
-        {fabOpen && mode === "view" && (
-          <div className="absolute bottom-16 right-0 bg-white border border-ink/10 shadow-card-hover rounded-card-sm py-2 w-60">
-            <button
-              onClick={() => {
-                setShowAddModal(true);
-                setFabOpen(false);
-              }}
-              className="w-full text-left px-4 py-2.5 text-sm font-semibold text-ink hover:bg-paper-alt/50 flex items-center gap-2.5 transition-colors"
-            >
-              <Plus className="w-4 h-4 text-mint-600" /> Adicionar Empresa
-            </button>
-            <button
-              onClick={() => {
-                setMode("delete");
-                setFabOpen(false);
-              }}
-              className="w-full text-left px-4 py-2.5 text-sm font-semibold text-ink hover:bg-paper-alt/50 flex items-center gap-2.5 transition-colors"
-            >
-              <Trash2 className="w-4 h-4 text-danger" /> Excluir Empresa
-            </button>
-            <Link
-              href="/config/platforms"
-              className="w-full text-left px-4 py-2.5 text-sm font-semibold text-ink hover:bg-paper-alt/50 flex items-center gap-2.5 transition-colors"
-            >
-              <SlidersHorizontal className="w-4 h-4 text-teal" /> Plataformas Mapeadas
-            </Link>
+      <div className="group fixed bottom-6 right-6 z-40">
+        {mode === "view" && (
+          <div className={FAB_MENU_CLASS}>
+            <div className="bg-white border border-ink/10 shadow-card-hover rounded-card-sm py-2 w-60">
+              <button onClick={() => setShowAddModal(true)} className={FAB_ITEM_CLASS}>
+                <Plus className="w-4 h-4 text-mint-600" /> Adicionar Empresa
+              </button>
+              <button onClick={() => setMode("delete")} className={FAB_ITEM_CLASS}>
+                <Trash2 className="w-4 h-4 text-danger" /> Excluir Empresa
+              </button>
+              <Link href="/config/platforms" className={FAB_ITEM_CLASS}>
+                <SlidersHorizontal className="w-4 h-4 text-teal" /> Plataformas Mapeadas
+              </Link>
+            </div>
           </div>
         )}
-        <button
-          onClick={() => setFabOpen((v) => !v)}
-          className="w-14 h-14 rounded-full bg-deep text-white shadow-card-hover flex items-center justify-center hover:bg-deep-dark transition-colors"
-          title="Ações"
-        >
-          <Settings className={`w-6 h-6 transition-transform duration-300 ${fabOpen ? "rotate-90" : ""}`} />
+        <button className={FAB_BUTTON_CLASS} aria-label="Ações" title="Ações">
+          <Settings className={FAB_ICON_CLASS} />
         </button>
       </div>
 

@@ -5,8 +5,8 @@ import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
 import { formatCurrency } from "@/lib/validation/currency";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { SituacaoChart } from "@/components/dashboard/SituacaoChart";
-import { PlatformChart } from "@/components/dashboard/PlatformChart";
-import { TipoChart } from "@/components/dashboard/TipoChart";
+import { HorizontalValueChart } from "@/components/dashboard/HorizontalValueChart";
+import { TipoProportionChart } from "@/components/dashboard/TipoProportionChart";
 import { PanelCard } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageTitle";
 import { formatCompetencia } from "@/lib/format/competencia";
@@ -18,6 +18,15 @@ export const dynamic = "force-dynamic";
 function sum<T>(rows: T[], pick: (r: T) => number) {
   return rows.reduce((acc, r) => acc + pick(r), 0);
 }
+
+/** A última faixa do dashboard tem de 1 a 3 painéis, dependendo de quantos
+ *  tipos de nota a empresa emite. Classes literais porque o Tailwind precisa
+ *  ver a classe completa no código para gerá-la. */
+const BOTTOM_GRID_COLS: Record<number, string> = {
+  1: "",
+  2: "lg:grid-cols-2",
+  3: "lg:grid-cols-3",
+};
 
 export default async function DashboardPage({
   params,
@@ -68,19 +77,29 @@ export default async function DashboardPage({
     }, {}),
   ).sort((a, b) => b[1].valor - a[1].valor);
 
-  // Emissões por tipo de nota (NF-e, NFS-e, NF-e Devolução...). O painel só
-  // existe quando há mais de um tipo — com um único tipo o gráfico seria um
-  // círculo de 100% e não informaria nada.
-  const tipoRows = Object.entries(
-    notasEmitidas.reduce<Record<string, number>>((acc, i) => {
+  // Notas emitidas agrupadas por tipo (NF-e, NFS-e, NF-e Devolução...), com
+  // quantidade e valor. Os dois painéis de tipo só existem quando há mais de um
+  // tipo — com um único tipo não há nada a comparar.
+  const tipoAggregates = Object.entries(
+    notasEmitidas.reduce<Record<string, { count: number; valor: number }>>((acc, i) => {
       const tipo = i.tipo.trim() || "Não Informado";
-      acc[tipo] = (acc[tipo] ?? 0) + 1;
+      acc[tipo] = acc[tipo] ?? { count: 0, valor: 0 };
+      acc[tipo].count += 1;
+      acc[tipo].valor += i.valorNf;
       return acc;
     }, {}),
   )
-    .map(([tipo, count]) => ({ tipo, count }))
+    .map(([tipo, v]) => ({ tipo, ...v }))
     .sort((a, b) => b.count - a.count);
-  const showTipoPanel = tipoRows.length > 1;
+
+  // Devolução não é faturamento: incluí-la na proporção distorceria a leitura
+  // de "quanto de cada tipo a empresa emite". O volume completo (com
+  // devolução) fica no gráfico de valores.
+  const tiposSemDevolucao = tipoAggregates.filter((t) => !t.tipo.toLowerCase().includes("devolu"));
+
+  const showEmissoesPorTipo = tipoAggregates.length > 1;
+  const showProporcaoPorTipo = tiposSemDevolucao.length > 1;
+  const bottomPanelCount = 1 + (showProporcaoPorTipo ? 1 : 0) + (showEmissoesPorTipo ? 1 : 0);
 
   // Notas fiscais não têm moeda própria — é sempre a do relatório de vendas,
   // recuperada pelo código da venda casado. Sem casamento, fica explícito
@@ -107,7 +126,16 @@ export default async function DashboardPage({
       return acc;
     }, {}),
   )
-    .map(([plataforma, total]) => ({ plataforma, total }))
+    .map(([plataforma, total]) => ({
+      label: plataforma,
+      total,
+      // "Plataforma Não Identificada" não é uma plataforma — é nota sem venda
+      // casada na base, então não há lista de notas a filtrar por ela.
+      href:
+        plataforma === PLATAFORMA_NAO_IDENTIFICADA
+          ? undefined
+          : `/c/${companyId}/invoices?plataforma=${encodeURIComponent(plataforma)}`,
+    }))
     .sort((a, b) => b.total - a.total);
 
   return (
@@ -164,7 +192,7 @@ export default async function DashboardPage({
 
         <PanelCard title="Desempenho por Plataforma">
           <div className="p-6 h-[300px]">
-            <PlatformChart data={platformTotals} />
+            <HorizontalValueChart data={platformTotals} />
           </div>
         </PanelCard>
 
@@ -192,7 +220,7 @@ export default async function DashboardPage({
         </PanelCard>
       </div>
 
-      <div className={`grid grid-cols-1 gap-6 ${showTipoPanel ? "lg:grid-cols-2" : ""}`}>
+      <div className={`grid grid-cols-1 gap-6 ${BOTTOM_GRID_COLS[bottomPanelCount]}`}>
         <PanelCard title="Resumo por Moeda">
         <div className="divide-y divide-ink/5">
           {currencyRows.length === 0 ? (
@@ -221,10 +249,25 @@ export default async function DashboardPage({
           </div>
         </PanelCard>
 
-        {showTipoPanel && (
+        {showProporcaoPorTipo && (
+          <PanelCard title="Proporção por Tipo">
+            <div className="p-6 h-[300px]">
+              <TipoProportionChart data={tiposSemDevolucao} companyId={companyId} />
+            </div>
+          </PanelCard>
+        )}
+
+        {showEmissoesPorTipo && (
           <PanelCard title="Emissões por Tipo">
             <div className="p-6 h-[300px]">
-              <TipoChart data={tipoRows} companyId={companyId} />
+              <HorizontalValueChart
+                color="#14B4A0"
+                data={tipoAggregates.map((t) => ({
+                  label: t.tipo,
+                  total: t.valor,
+                  href: `/c/${companyId}/invoices?tipo=${encodeURIComponent(t.tipo)}`,
+                }))}
+              />
             </div>
           </PanelCard>
         )}

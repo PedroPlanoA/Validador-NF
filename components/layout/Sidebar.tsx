@@ -12,6 +12,7 @@ import {
   Package,
 } from "lucide-react";
 import { CompetenciaSidebarSelect } from "@/components/layout/CompetenciaSidebarSelect";
+import { BrandLockup } from "@/components/layout/BrandLockup";
 
 interface NavItem {
   href: string;
@@ -69,25 +70,21 @@ export function Sidebar({
     <aside
       className={`fixed top-0 left-0 z-40 h-dvh ${SIDEBAR_WIDTH_CLASS} bg-deep text-white flex flex-col border-r border-black/20`}
     >
-      <div className="h-16 flex items-center gap-3 px-5 border-b border-white/10 shrink-0">
-        <img src="/simbolo-cores.png" alt="Plano A" className="h-8 w-8 object-contain shrink-0" />
-        <div className="min-w-0">
-          <div className="font-serif font-black text-[15px] leading-none text-white">Plano A</div>
-          <div className="font-sans font-medium text-[9px] tracking-[.24em] text-mint-300 uppercase mt-1">
-            Contabilidade
-          </div>
-        </div>
+      <div className="px-5 py-4 border-b border-white/10 shrink-0">
+        <BrandLockup size="md" />
       </div>
 
       {/* Bloco da empresa — o dado mais importante da tela inteira, então tem
-          respiro próprio, hierarquia (eyebrow, nome, CNPJ) e fundo levemente
-          destacado em vez de um nome truncado dentro do cabeçalho da marca. */}
+          respiro próprio, hierarquia (código, nome, CNPJ) e fundo levemente
+          destacado em vez de um nome truncado dentro do cabeçalho da marca.
+          Mesma tipografia dos cards da tela de empresas: nome em sans, verde
+          claro. */}
       <div className="px-5 py-4 border-b border-white/10 bg-white/[0.03] shrink-0">
-        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-mint-300/90">
-          <span className="w-4 h-px bg-mint-300/60" /> Empresa {companyCodigo}
+        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-sand/45">
+          <span className="w-4 h-px bg-sand/30" /> Código {companyCodigo}
         </span>
         <h2
-          className="font-serif font-black text-[17px] leading-snug text-white mt-2 line-clamp-2"
+          className="font-sans font-semibold text-[17px] leading-snug text-mint-300 mt-2 line-clamp-2"
           title={companyName}
         >
           {companyName}

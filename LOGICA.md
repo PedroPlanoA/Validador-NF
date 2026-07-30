@@ -238,7 +238,7 @@ Erros, porque é outro tipo de pendência e o cliente quer vê-la sozinha.
 |---|---|---|
 | **Dashboard** | depende da seção | ver abaixo |
 | **Vendas** | sim (`competenciaEfetiva`) | paginada, 10 por página |
-| **Notas Fiscais** | sim (competência da própria nota) | filtros de status, serviço e tipo |
+| **Notas Fiscais** | sim (competência da própria nota) | filtros de status, serviço, tipo e plataforma |
 | **Produtos** | não | abas por plataforma; ajusta % de comissão |
 | **Painel de Erros** | **não, de propósito** | precisa mostrar toda divergência, senão um erro fora do mês selecionado ficaria escondido |
 | **Checklist** | sim, e **exige** uma competência | audita um mês por vez |
@@ -254,8 +254,33 @@ Erros, porque é outro tipo de pendência e o cliente quer vê-la sozinha.
 - **Moeda e plataforma da nota** vêm do relatório de vendas, casando pelo código
   da venda; sem casamento aparece explicitamente "Moeda/Plataforma Não
   Identificada", em vez de assumir BRL.
-- **Emissões por Tipo** só é renderizado quando há **mais de um** tipo de nota —
-  com um tipo só o gráfico seria um círculo de 100%.
+
+#### Os dois painéis de tipo de nota
+
+| Painel | Mede | Devolução | Aparece quando |
+|---|---|---|---|
+| **Proporção por Tipo** (rosca) | quantidade | **excluída** | há mais de um tipo **fora** de devolução |
+| **Emissões por Tipo** (barras) | valor em R$ | incluída | há mais de um tipo, contando devolução |
+
+Devolução fica fora da proporção porque não é faturamento — incluí-la
+distorceria a leitura de "quanto de cada tipo a empresa emite". O volume
+completo está no gráfico de valores. Devolução é reconhecida por `tipo` contendo
+`"devolu"` (o campo é texto livre do emissor, então a comparação é frouxa de
+propósito, para pegar "NF-e Devolução", "Devolucao" etc.).
+
+A faixa inferior do dashboard tem de 1 a 3 painéis (Resumo por Moeda sempre,
+mais os dois de tipo quando cabem) e o número de colunas acompanha.
+
+#### Cliques nos gráficos
+Todos os gráficos levam à listagem correspondente: Situação NF → `invoices?status=`,
+Proporção/Emissões por Tipo → `invoices?tipo=`, Desempenho por Plataforma →
+`invoices?plataforma=`. Barras de **"Plataforma Não Identificada"** não são
+clicáveis — não existe plataforma a filtrar ali.
+
+Como `Invoice` não tem coluna de plataforma, o filtro `plataforma` da aba Notas
+Fiscais resolve primeiro os `codigoVendaNormalized` das vendas daquela
+plataforma e filtra as notas por esse conjunto. É feito no banco, e não em
+memória, porque a listagem é paginada.
 
 ### Checklist — itens fixos
 1. Alterado acumulador para exportação
@@ -297,6 +322,27 @@ brancos, densidade compacta). Tokens em `app/globals.css` via `@theme`.
   uma navegação server-side, já que as telas são `force-dynamic`.
 - **Botões:** `primary` (menta, texto petróleo), `solid` (menta escura, **texto
   branco** — usado em Importar Relatório), `ghost`, `danger`.
+- **Assinatura da marca:** um único `BrandLockup` serve o painel de empresas
+  (`lg`) e a faixa lateral (`md`). O "CONTABILIDADE" usa
+  `subpixel-antialiased` — no Windows o alisamento em escala de cinza deixa
+  texto pequeno em caixa alta sobre fundo escuro visivelmente mole.
+- **Nome de empresa:** sans, semibold, verde claro (`mint-600` sobre branco,
+  `mint-300` sobre petróleo); código em pastilha verde-escura.
+- **Botão flutuante de ações:** abre no **hover**, em CSS puro
+  (`components/ui/Fab.tsx`) — sem estado em React, então não fica preso aberto
+  depois de navegar. O respiro entre menu e botão é `padding`, não `gap`, senão
+  o cursor atravessa uma faixa morta e o menu fecha.
+- **Tooltip de texto truncado:** `HoverTooltip` desenha o balão via portal no
+  `document.body`. Dentro da tabela não funcionaria: o contêiner de rolagem
+  horizontal recorta filhos absolutos.
+
+### Armadilha de CSS: largura em Input/Select
+`Input`/`Select` já trazem `w-full`. Passar `w-36` no `className` **não**
+sobrescreve — quem vence é a classe que aparece depois na folha de estilo
+gerada, e `w-full` vem depois de `w-36`. Combinado com `shrink-0`, isso fez o
+select da etapa de Status ocupar a linha inteira e esmagar o rótulo em uma letra
+por linha. **Ponha a largura num invólucro** (`<div className="w-44 shrink-0">`),
+nunca no `className` do campo.
 
 Cores por função: menta = ação/positivo · teal = informativo · clay = atenção ·
 `#C0453B` = erro real. Menta é **acento**, não fundo.

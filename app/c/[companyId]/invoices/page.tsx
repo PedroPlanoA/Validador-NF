@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
+import { listCompanyPlatforms } from "@/lib/actions/products";
 import { formatCurrency } from "@/lib/validation/currency";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -23,7 +24,14 @@ export default async function InvoicesPage({
   searchParams,
 }: {
   params: Promise<{ companyId: string }>;
-  searchParams: Promise<{ q?: string; status?: string; codigoServico?: string; tipo?: string; page?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    status?: string;
+    codigoServico?: string;
+    tipo?: string;
+    plataforma?: string;
+    page?: string;
+  }>;
 }) {
   const { companyId } = await params;
   const sp = await searchParams;
@@ -42,11 +50,26 @@ export default async function InvoicesPage({
   const servicoOptions = Array.from(new Set(allForFilters.map((i) => i.codigoServico).filter(Boolean))).sort();
   const tipoOptions = Array.from(new Set(allForFilters.map((i) => i.tipo).filter(Boolean))).sort();
 
+  // Nota fiscal não tem plataforma própria — ela vem da venda casada pelo
+  // código. Para filtrar por plataforma no banco (necessário por causa da
+  // paginação), resolvemos primeiro os códigos das vendas daquela plataforma.
+  const plataformaOptions = await listCompanyPlatforms(companyId);
+  let codigosDaPlataforma: string[] | null = null;
+  if (sp.plataforma) {
+    const salesDaPlataforma = await db.sale.findMany({
+      where: { companyId, plataforma: sp.plataforma },
+      select: { codigoVendaNormalized: true },
+      distinct: ["codigoVendaNormalized"],
+    });
+    codigosDaPlataforma = salesDaPlataforma.map((s) => s.codigoVendaNormalized);
+  }
+
   const where = {
     ...baseWhere,
     ...(sp.status ? { situacaoNf: (Object.keys(NF_LABELS) as SituacaoNf[]).find((k) => NF_LABELS[k] === sp.status) } : {}),
     ...(sp.codigoServico ? { codigoServico: sp.codigoServico } : {}),
     ...(sp.tipo ? { tipo: sp.tipo } : {}),
+    ...(codigosDaPlataforma ? { codigoVendaNormalized: { in: codigosDaPlataforma } } : {}),
     ...(sp.q
       ? {
           OR: [
@@ -92,6 +115,7 @@ export default async function InvoicesPage({
             { key: "status", label: "Todos os Status NF", options: statusOptions },
             { key: "codigoServico", label: "Todos os Serviços", options: servicoOptions },
             { key: "tipo", label: "Todos os Tipos", options: tipoOptions },
+            { key: "plataforma", label: "Todas as Plataformas", options: plataformaOptions },
           ]}
           resultCount={total}
         />

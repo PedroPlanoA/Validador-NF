@@ -448,25 +448,31 @@ export function MappingWizard({
             {distinctStatusValues.map((raw) => (
               <div
                 key={raw}
-                className="flex items-start justify-between gap-3 bg-paper-alt/40 rounded-input px-3 py-2.5"
+                className="flex items-center justify-between gap-3 bg-paper-alt/40 rounded-input px-3 py-2.5"
               >
-                <span className="text-sm font-medium text-ink break-words leading-snug pt-2 min-w-0 flex-1" title={raw}>
+                <span className="text-sm font-medium text-ink break-words leading-snug min-w-0 flex-1" title={raw}>
                   {raw}
                 </span>
-                <Select
-                  className="w-36 shrink-0"
-                  value={state.statusMap[raw] ?? ""}
-                  onChange={(e) => dispatch({ type: "setStatus", raw, value: e.target.value })}
-                >
-                  <option value="" disabled>
-                    Selecione...
-                  </option>
-                  {statusOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
+                {/* A largura fixa vive neste invólucro, não no `className` do
+                    Select: o componente já traz `w-full`, e qual das duas
+                    classes de largura vence depende da ordem do CSS gerado —
+                    era isso que fazia o select ocupar a linha inteira e
+                    esmagar o valor em uma letra por linha. */}
+                <div className="w-44 shrink-0">
+                  <Select
+                    value={state.statusMap[raw] ?? ""}
+                    onChange={(e) => dispatch({ type: "setStatus", raw, value: e.target.value })}
+                  >
+                    <option value="" disabled>
+                      Selecione...
                     </option>
-                  ))}
-                </Select>
+                    {statusOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
               </div>
             ))}
           </div>
