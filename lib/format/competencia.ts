@@ -23,3 +23,11 @@ export function formatCompetencia(value: string): string {
   if (!monthName) return value;
   return `${monthName}/${year}`;
 }
+
+/** "2026-T2" -> "2º trimestre/2026". Qualquer outro formato volta intacto. */
+export function formatTrimestre(value: string): string {
+  const match = value.match(/^(\d{4})-T([1-4])$/);
+  if (!match) return value;
+  const [, year, quarter] = match;
+  return `${quarter}º trimestre/${year}`;
+}

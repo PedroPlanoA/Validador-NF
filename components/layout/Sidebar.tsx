@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   ListChecks,
   Package,
+  Split,
 } from "lucide-react";
 import { CompetenciaSidebarSelect } from "@/components/layout/CompetenciaSidebarSelect";
 import { BrandLockup } from "@/components/layout/BrandLockup";
@@ -23,11 +24,14 @@ interface NavItem {
 /** Ordem definida pelo usuário: segue o fluxo real de trabalho — olhar o
  *  panorama, conferir vendas e notas, ajustar produtos, tratar erros, fechar o
  *  checklist e só então voltar às importações. */
-function navItems(companyId: string): NavItem[] {
+function navItems(companyId: string, showSplit: boolean): NavItem[] {
   return [
     { href: `/c/${companyId}/dashboard`, label: "Dashboard", icon: ChartPie },
     { href: `/c/${companyId}/sales`, label: "Vendas", icon: ShoppingCart },
     { href: `/c/${companyId}/invoices`, label: "Notas Fiscais", icon: FileText },
+    // Só aparece quando a empresa emite os dois modelos de nota — ver
+    // `hasSplitDeNotas`. Com um modelo só, a aba seria uma tela de zeros.
+    ...(showSplit ? [{ href: `/c/${companyId}/split`, label: "Split de Notas", icon: Split }] : []),
     { href: `/c/${companyId}/products`, label: "Produtos", icon: Package },
     { href: `/c/${companyId}/errors`, label: "Painel de Erros", icon: AlertTriangle },
     { href: `/c/${companyId}/checklist`, label: "Checklist", icon: ListChecks },
@@ -52,6 +56,7 @@ export function Sidebar({
   companyCnpj,
   competencias,
   currentCompetencia,
+  showSplit,
 }: {
   companyId: string;
   companyName: string;
@@ -59,6 +64,7 @@ export function Sidebar({
   companyCnpj: string;
   competencias: string[];
   currentCompetencia?: string;
+  showSplit: boolean;
 }) {
   const pathname = usePathname();
 
@@ -101,7 +107,7 @@ export function Sidebar({
       </div>
 
       <nav className="scroll-dark flex-1 px-4 pb-6 space-y-1 overflow-y-auto border-t border-white/10 pt-4">
-        {navItems(companyId).map(({ href, label, icon: Icon }) => (
+        {navItems(companyId, showSplit).map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}

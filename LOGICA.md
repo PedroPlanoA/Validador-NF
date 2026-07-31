@@ -60,6 +60,7 @@ lib/
   parsing/         leitura de planilha, números, datas/competência, palpites de coluna
   mapping/         tipos, aplicação do mapeamento, normalização de código
   reconciliation/  engine (puro), classify (tabela de decisão), labels, types
+  split/           análise NF-e × NFS-e (puro) e classificação do modelo da nota
   imports/         importService (transações de import/reanálise)
   actions/         Server Actions e leituras (reconciliação, produtos, checklist...)
   export/          geração de XLSX e do PDF
@@ -369,6 +370,7 @@ Erros, porque é outro tipo de pendência e o cliente quer vê-la sozinha.
 | **Dashboard** | depende da seção | ver abaixo |
 | **Vendas** | sim (`competenciaEfetiva`) | paginada, 10 por página |
 | **Notas Fiscais** | sim (competência da própria nota) | filtros de status, serviço, tipo e plataforma |
+| **Split de Notas** | **não** — mostra a série inteira | só existe quando a empresa emite os dois modelos; ver abaixo |
 | **Produtos** | não | abas por plataforma; ajusta % de comissão |
 | **Painel de Erros** | **não, de propósito** | precisa mostrar toda divergência, senão um erro fora do mês selecionado ficaria escondido. Filtra por plataforma, situação NF, situação da venda e situação da reconciliação — **não** por produto (removido a pedido do usuário) |
 | **Checklist** | sim, e **exige** uma competência | audita um mês por vez |
@@ -384,6 +386,64 @@ Erros, porque é outro tipo de pendência e o cliente quer vê-la sozinha.
 - **Moeda e plataforma da nota** vêm do relatório de vendas, casando pelo código
   da venda; sem casamento aparece explicitamente "Moeda/Plataforma Não
   Identificada", em vez de assumir BRL.
+
+### Split de Notas — divisão NF-e × NFS-e
+Responde a uma pergunta fiscal que o dashboard não responde: **quanto de cada
+venda saiu como produto (NF-e) e quanto como serviço (NFS-e)**, por período e por
+produto. Reproduz o relatório que o escritório já fazia à mão a partir do export
+do eNotas, agora sobre os dados importados.
+
+`lib/split/computeSplit.ts` é **puro** (mesma regra de `lib/reconciliation/`);
+quem busca dados é `lib/actions/split.ts`.
+
+**Quando a aba existe:** `hasSplitDeNotas` — a empresa precisa ter notas
+**emitidas** dos **dois** modelos. Com um modelo só não há divisão a demonstrar, e
+a aba seria uma tela de zeros. A página repete a checagem e devolve 404, para a
+URL direta não escapar da regra.
+
+**Classificação do modelo** (`modeloDaNota`, por radical, como `isDevolucao`):
+
+| `tipo` contém | Modelo |
+|---|---|
+| `devolu` | **fora da análise** — devolução não é faturamento |
+| `nfs` | `SERVICO` (NFS-e) |
+| `nfe` / `nf-e` | `PRODUTO` (NF-e) |
+| resto (ex.: "NF Indefinida") | **fora da análise** — chutar seria pior |
+
+O que fica fora é **reportado na tela** com tipo e quantidade, em vez de
+desaparecer do total.
+
+**Base de cálculo:** só notas com `situacaoNf = EMITIDO`. Cancelada, com erro ou
+pendente distorceria qualquer rateio.
+
+**Valor da venda** = soma das notas que compartilham o mesmo
+`codigoVendaNormalized`. Numa venda dividida, NF-e + NFS-e — daí
+`% NF-e da venda = NF-e ÷ soma`. Não usa `Sale.valorVenda`: a pergunta é o que
+foi **emitido**, não o que a plataforma registrou.
+
+**As três leituras — e por que são três.** A resposta muda muito conforme a base,
+e as três aparecem lado a lado justamente para isso:
+
+| Métrica | Base | O que responde |
+|---|---|---|
+| Ponderada — todas as vendas | todo o faturamento emitido | peso da NF-e no faturamento total (dilui nos produtos que não dividem) |
+| Ponderada — só produtos que dividem | receita dos produtos com NF-e | a **regra de rateio praticada** |
+| Média simples por venda | cada venda dividida pesa igual | rateio típico, ignorando o tamanho da venda |
+
+Medido na IPP: 3,1% · 8,5% · 47,0%. O mesmo dado, três números — por isso nenhum
+deles vai sozinho na tela.
+
+Um produto **divide** quando tem qualquer NF-e no período (selo "divide").
+
+**Produto vem do relatório de vendas**, casado pelo código — a nota fiscal não
+tem produto. Sem venda casada, cai em "Produto Não Identificado", explícito, e não
+num rateio inventado. Diferença em relação ao relatório original: lá a média
+simples era por **nota** NF-e; aqui é por **venda**, para que uma venda com duas
+NF-e não pese dobrado.
+
+**Total de vendas** usa a contagem **distinta** da análise, não a soma da coluna
+dos períodos: uma venda cujas notas caem em meses diferentes contaria duas vezes e
+o total passaria a discordar do KPI no topo.
 
 #### Os dois painéis de tipo de nota
 

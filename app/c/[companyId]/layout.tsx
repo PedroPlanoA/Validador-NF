@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { CompanyFab } from "@/components/layout/CompanyFab";
 import { listCompetencias } from "@/lib/actions/reconciliation";
 import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
+import { hasSplitDeNotas } from "@/lib/actions/split";
 
 export default async function CompanyLayout({
   children,
@@ -16,9 +17,10 @@ export default async function CompanyLayout({
   const company = await db.company.findUnique({ where: { id: companyId } });
   if (!company) notFound();
 
-  const [competencias, currentCompetencia] = await Promise.all([
+  const [competencias, currentCompetencia, showSplit] = await Promise.all([
     listCompetencias(companyId),
     getCompetenciaCookie(companyId),
+    hasSplitDeNotas(companyId),
   ]);
 
   // A faixa lateral é `fixed` (ver Sidebar) — a página inteira rola
@@ -33,6 +35,7 @@ export default async function CompanyLayout({
         companyCnpj={company.cnpj}
         competencias={competencias}
         currentCompetencia={currentCompetencia}
+        showSplit={showSplit}
       />
       <main className="ml-64 min-h-dvh bg-paper">
         <div className="p-8 pb-24">{children}</div>
