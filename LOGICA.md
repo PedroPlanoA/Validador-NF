@@ -313,10 +313,34 @@ Ordem de preferência (`resolveCompetenciaEfetiva` no engine):
 
 O critério de desempate existe porque antes se usava `matched[0]`, e a consulta
 de notas não tem ordenação garantida. Enquanto o emissor mandava a devolução com
-a competência da venda original (ver 4.7) isso era inofensivo, porque as duas
+a competência da venda original (ver 4.8) isso era inofensivo, porque as duas
 coincidiam. Corrigida a competência da devolução, o par passa a cruzar dois
 meses, e a competência da venda não pode depender da ordem em que o banco
 devolveu as linhas.
+
+Referência interna: a competência de 4.8 é a **da nota de devolução**; esta aqui é
+a **da venda**.
+
+#### A lista de competências do seletor
+`listCompetencias` é a **união** de dois conjuntos: a competência efetiva de cada
+linha de reconciliação (lado das vendas) **e** a competência de toda nota fiscal
+da empresa.
+
+O segundo conjunto é indispensável porque o motor percorre as vendas: nota sem
+venda casada não gera linha nenhuma. Sem ele, empresa com relatório de notas e
+sem relatório de vendas ficava com o seletor **vazio** — apesar de a aba Notas
+Fiscais, o faturamento do dashboard e o checklist filtrarem exatamente por essa
+competência.
+
+Consequência aceita: é possível selecionar uma competência que só tem notas. Aí a
+aba Vendas mostra estado vazio e as seções de nota funcionam normalmente, o que é
+o comportamento correto.
+
+Observação de custo, ainda não endereçada: essa função roda a reconciliação
+completa só para montar o seletor, e a faixa lateral está no layout — ou seja,
+acontece em toda página de empresa. Trocar por duas consultas `distinct` seria
+muito mais barato, ao preço de eventualmente listar um mês em que existiam vendas
+mas todas foram faturadas em outro mês.
 
 ### 5.4 Erros que contam como erro
 ```
