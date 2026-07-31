@@ -204,6 +204,12 @@ model Invoice {
   codigoVendaNormalized String
   comprador             String
   situacaoNf            SituacaoNf
+  /// Texto original da situação como veio na planilha (ex: "Falha ao cancelar"),
+  /// antes do mapeamento para o enum. Mesmo papel de Sale.situacaoVendaOriginal:
+  /// exibir como referência e, principalmente, permitir descobrir quais valores
+  /// do relatório não estão mapeados — sem isso, um valor não mapeado virava
+  /// "Outro" silenciosamente e não havia como saber qual era o texto de origem.
+  situacaoNfOriginal    String        @default("")
   competencia           String
   valorNf               Float
   numero                String

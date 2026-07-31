@@ -4,7 +4,7 @@ Documento de referência da **estrutura e das regras de negócio** da aplicaçã
 Serve para retomar o desenvolvimento sem depender do histórico de conversa: se
 uma regra não estiver aqui nem no código, ela não existe.
 
-Última atualização: 30/07/2026.
+Última atualização: 31/07/2026.
 
 ---
 
@@ -81,7 +81,7 @@ tocar no Postgres.
 | `EmitterConfig` | Mapeamento de um emissor de NF. **Global**, mesma razão. |
 | `ImportBatch` | Um arquivo importado. Guarda `rawContent` (só as colunas mapeadas, em CSV), as `competencias` encontradas e a `referenceCompetencia`. |
 | `Sale` | Uma linha do relatório de vendas, já padronizada. |
-| `Invoice` | Uma linha do relatório de notas, já padronizada. |
+| `Invoice` | Uma linha do relatório de notas, já padronizada. Guarda `situacaoNfOriginal` (texto de status como veio no arquivo). |
 | `ProductOverride` | % de comissão fixado manualmente por (empresa, plataforma, produto). |
 | `ValueCheckAnnotation` | Marca "conferi essa divergência de valor e está certa". |
 | `ChecklistState` | Estado dos itens do checklist por (empresa, competência). |
@@ -161,12 +161,43 @@ Verificado de ponta a ponta com 50 mil linhas: importação em ~63 s e reanális
 em ~73 s no servidor de desenvolvimento, com status, competência, valor e código
 normalizado corretos.
 
-### 4.4 Substituição por competência
+### 4.4 Mapeamento de status é comparação exata
+`statusMap[texto_do_relatório]` é busca de chave em objeto: **caractere por
+caractere**. Uma letra em outra caixa, um acento ou um espaço a mais fazem o
+valor não casar, e ele cai no `?? "OUTRO"`. Já aconteceu na prática: o relatório
+trazia `Falha ao cancelar` e o mapeamento tinha `Falha ao Cancelar` — 79 notas
+foram para "Outro" sem nenhum sinal.
+
+A comparação **continua exata de propósito** (decisão do usuário): tolerar caixa
+e espaço esconderia a diferença em vez de mostrá-la. O que mudou é que agora ela
+**aparece**:
+
+- `Invoice.situacaoNfOriginal` guarda o texto original, como
+  `Sale.situacaoVendaOriginal` já fazia. Sem isso não havia como saber qual texto
+  gerou o "Outro".
+- `listUnmappedStatuses` (`lib/actions/unmappedStatuses.ts`) lista os textos que
+  **nenhuma chave do mapeamento cobre**, com a fonte e a contagem. A detecção é
+  por comparação com as chaves, e **não** por "resultou em Outro": um valor
+  mapeado de propósito para Outro está correto e não é reportado.
+- `UnmappedStatusAlert` mostra isso no topo da aba **Importações**, com o texto
+  entre aspas em monoespaçada (para copiar e colar exatamente) e link direto para
+  editar aquele mapeamento.
+- Na etapa de Status do assistente, valores **não presentes na amostra** (os
+  digitados à mão, ou herdados de um mapeamento salvo) podem ser **editados** e
+  **excluídos**. Corrigir o texto é renomear a chave, já que a chave é o que
+  precisa casar com o relatório. Valor vindo da amostra não é editável: ele é o
+  texto exato do arquivo.
+
+**Ressalva:** linhas importadas antes de `situacaoNfOriginal` existir têm o texto
+vazio e não entram no aviso. **Reanalisar** o lote preenche o campo — e é o mesmo
+passo que aplica um mapeamento corrigido, sem precisar reimportar.
+
+### 4.5 Substituição por competência
 Ao importar, o sistema apaga **só** as linhas daquele `configId` **nas
 competências presentes no arquivo novo**. Reenviar o relatório de julho da
 Hotmart não toca em junho da Hotmart, e nunca toca em outro emissor/plataforma.
 
-### 4.5 Comissão (`commType`)
+### 4.6 Comissão (`commType`)
 | Modo | Cálculo |
 |---|---|
 | `INTEGRAL` | 100% — o valor da nota é o valor da venda. |
@@ -180,10 +211,10 @@ Hotmart não toca em junho da Hotmart, e nunca toca em outro emissor/plataforma.
 importação quanto na reanálise. É o contador dizendo "para este produto a
 coprodução é X%, e eu sei que é isso".
 
-### 4.6 Moeda (`currencyMode`)
+### 4.7 Moeda (`currencyMode`)
 `FIXED` (moeda fixa configurada) · `COL` (lida de uma coluna) · `NONE` → BRL.
 
-### 4.7 Competência da nota de devolução (falha do relatório do emissor)
+### 4.8 Competência da nota de devolução (falha do relatório do emissor)
 O relatório do emissor traz **nota de devolução com a competência da venda
 original**, não a do mês em que a devolução foi emitida. Isso jogava a devolução
 para um mês em que ela não aconteceu e desencontrava o dashboard.
@@ -205,13 +236,13 @@ essa coluna nos lotes antigos (nesse caso a regra cai no fallback). Para
 corrigir competências de devolução já na base é preciso **reimportar** o
 relatório do emissor.
 
-### 4.8 Competência e datas
+### 4.9 Competência e datas
 `extractCompetence` devolve `YYYY-MM`, tentando ISO → `DD/MM/AAAA` → `Date`
 nativo, e caindo em **um único** sentinela `"Sem Competência"` quando nada
 funciona. `parseFullDate` faz o mesmo com precisão de dia (`Sale.dataVenda`,
 exibida na aba Vendas); devolve `null` quando não dá para interpretar.
 
-### 4.9 Normalização do código da venda
+### 4.10 Normalização do código da venda
 `normalizeCode` remove os `cleanupChars` configurados e passa para minúsculas.
 É gravado em `codigoVendaNormalized` **no momento da importação**, com os
 `cleanupChars` do config que originou aquela linha — nunca recalculado depois

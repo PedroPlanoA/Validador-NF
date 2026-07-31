@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/ui/PageTitle";
 import { ReanalyzeButton } from "@/components/wizard/ReanalyzeButton";
 import { DeleteBatchButton } from "@/components/wizard/DeleteBatchButton";
 import { ImportsFilterBar } from "@/components/imports/ImportsFilterBar";
+import { UnmappedStatusAlert } from "@/components/imports/UnmappedStatusAlert";
+import { listUnmappedStatuses } from "@/lib/actions/unmappedStatuses";
 import { ExportRawDataButton } from "@/components/ui/ExportRawDataButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TABLE_CLASS, THEAD_CLASS, TBODY_CLASS, TR_CLASS } from "@/components/ui/Table";
@@ -27,7 +29,10 @@ export default async function ImportsPage({
   // Not affected by the global competência selector — this screen must
   // always be able to show every active report, regardless of which
   // competência is currently selected elsewhere in the app.
-  const allBatches = await listActiveBatches(companyId);
+  const [allBatches, unmapped] = await Promise.all([
+    listActiveBatches(companyId),
+    listUnmappedStatuses(companyId),
+  ]);
 
   const fontes = Array.from(
     new Set(allBatches.map((b) => b.platformConfig?.name ?? b.emitterConfig?.name).filter((x): x is string => !!x)),
@@ -63,6 +68,8 @@ export default async function ImportsPage({
           ]}
         />
       </PageHeader>
+
+      <UnmappedStatusAlert companyId={companyId} unmapped={unmapped} />
 
       <div className="flex flex-wrap items-center gap-3">
         <ImportsFilterBar fontes={fontes} competencias={competencias} />

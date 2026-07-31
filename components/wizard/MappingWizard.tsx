@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Label, Select } from "@/components/ui/Input";
 import { Combobox } from "@/components/ui/Combobox";
 import { Card } from "@/components/ui/Card";
-import { Plus } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import {
   EMITTER_OPTIONAL_FIELDS,
   EMITTER_REQUIRED_FIELDS,
@@ -59,7 +59,9 @@ interface State {
 type Action =
   | { type: "set"; patch: Partial<State> }
   | { type: "setMapping"; field: string; value: string }
-  | { type: "setStatus"; raw: string; value: string };
+  | { type: "setStatus"; raw: string; value: string }
+  | { type: "renameStatus"; from: string; to: string }
+  | { type: "removeStatus"; raw: string };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -69,6 +71,21 @@ function reducer(state: State, action: Action): State {
       return { ...state, fieldMappings: { ...state.fieldMappings, [action.field]: action.value } };
     case "setStatus":
       return { ...state, statusMap: { ...state.statusMap, [action.raw]: action.value } };
+    // Corrigir o texto de um valor digitado errado é trocar a chave, não editar
+    // um valor: a chave é o texto que precisa casar com o relatório.
+    case "renameStatus": {
+      if (action.from === action.to) return state;
+      const statusMap = { ...state.statusMap };
+      const status = statusMap[action.from];
+      delete statusMap[action.from];
+      if (status !== undefined) statusMap[action.to] = status;
+      return { ...state, statusMap };
+    }
+    case "removeStatus": {
+      const statusMap = { ...state.statusMap };
+      delete statusMap[action.raw];
+      return { ...state, statusMap };
+    }
     default:
       return state;
   }
@@ -113,6 +130,7 @@ export function MappingWizard({
   const [state, dispatch] = useReducer(reducer, initialState(kind, existingConfig));
   const [parsing, setParsing] = useState(false);
   const [manualStatuses, setManualStatuses] = useState<string[]>([]);
+  const [editingStatus, setEditingStatus] = useState<{ raw: string; text: string } | null>(null);
   const [manualStatusInput, setManualStatusInput] = useState("");
 
   const requiredFields = kind === "platform" ? PLATFORM_REQUIRED_FIELDS : EMITTER_REQUIRED_FIELDS;
@@ -120,14 +138,46 @@ export function MappingWizard({
   const statusOptions = kind === "platform" ? PLATFORM_STATUS_OPTIONS : EMITTER_STATUS_OPTIONS;
   const statusField = kind === "platform" ? "situacaoVenda" : "situacaoNf";
 
-  const distinctStatusValues = useMemo(() => {
+  const sampleStatusValues = useMemo(() => {
     const col = state.fieldMappings[statusField];
-    const fromSample = !col || state.sampleRows.length === 0 ? [] : distinctValuesOf(state.sampleRows, col);
+    if (!col || state.sampleRows.length === 0) return new Set<string>();
+    return new Set(distinctValuesOf(state.sampleRows, col));
+  }, [state.fieldMappings, state.sampleRows, statusField]);
+
+  const distinctStatusValues = useMemo(() => {
     // Union with already-configured keys and manually-added ones, so a
     // status set up previously (or typed in by hand) never silently
     // disappears from view just because it's absent from the current sample.
-    return Array.from(new Set([...fromSample, ...Object.keys(state.statusMap), ...manualStatuses]));
-  }, [state.fieldMappings, state.sampleRows, statusField, state.statusMap, manualStatuses]);
+    return Array.from(new Set([...sampleStatusValues, ...Object.keys(state.statusMap), ...manualStatuses]));
+  }, [sampleStatusValues, state.statusMap, manualStatuses]);
+
+  /** Valor que veio da amostra é o texto exato do arquivo — não faz sentido
+   *  renomear nem remover. Editar/excluir vale para o que foi digitado à mão (ou
+   *  herdado de um mapeamento salvo sem amostra na tela), que é justamente onde
+   *  cabe o erro de digitação. */
+  const isEditableStatus = (raw: string) => !sampleStatusValues.has(raw);
+
+  function removeStatus(raw: string) {
+    dispatch({ type: "removeStatus", raw });
+    setManualStatuses((prev) => prev.filter((v) => v !== raw));
+    if (editingStatus?.raw === raw) setEditingStatus(null);
+  }
+
+  function commitStatusRename() {
+    if (!editingStatus) return;
+    const to = editingStatus.text.trim();
+    const from = editingStatus.raw;
+    if (!to || to === from) {
+      setEditingStatus(null);
+      return;
+    }
+    dispatch({ type: "renameStatus", from, to });
+    setManualStatuses((prev) => {
+      const withoutOld = prev.filter((v) => v !== from);
+      return withoutOld.includes(to) ? withoutOld : [...withoutOld, to];
+    });
+    setEditingStatus(null);
+  }
 
   async function handleFileUpload(file: File) {
     setParsing(true);
@@ -452,9 +502,66 @@ export function MappingWizard({
                 key={raw}
                 className="flex items-center justify-between gap-3 bg-paper-alt/40 rounded-input px-3 py-2.5"
               >
-                <span className="text-sm font-medium text-ink break-words leading-snug min-w-0 flex-1" title={raw}>
-                  {raw}
-                </span>
+                {editingStatus?.raw === raw ? (
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Input
+                      autoFocus
+                      fieldSize="sm"
+                      value={editingStatus.text}
+                      onChange={(e) => setEditingStatus({ raw, text: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          commitStatusRename();
+                        } else if (e.key === "Escape") {
+                          setEditingStatus(null);
+                        }
+                      }}
+                      className="min-w-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={commitStatusRename}
+                      title="Salvar texto"
+                      className="shrink-0 p-1.5 rounded-input text-mint-700 hover:bg-mint/10 transition-colors"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingStatus(null)}
+                      title="Cancelar"
+                      className="shrink-0 p-1.5 rounded-input text-ink/40 hover:text-ink transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-sm font-medium text-ink break-words leading-snug min-w-0 flex-1" title={raw}>
+                    {raw}
+                  </span>
+                )}
+
+                {editingStatus?.raw !== raw && isEditableStatus(raw) && (
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setEditingStatus({ raw, text: raw })}
+                      title="Corrigir o texto deste valor"
+                      className="p-1.5 rounded-input text-ink/35 hover:text-teal hover:bg-teal/10 transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeStatus(raw)}
+                      title="Remover este valor do mapeamento"
+                      className="p-1.5 rounded-input text-ink/35 hover:text-danger hover:bg-danger/10 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
                 {/* A largura fixa vive neste invólucro, não no `className` do
                     Select: o componente já traz `w-full`, e qual das duas
                     classes de largura vence depende da ordem do CSS gerado —

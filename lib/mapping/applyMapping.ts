@@ -126,6 +126,7 @@ export function standardizeMappedInvoices(rows: MappedInvoiceRow[], config: Emit
       codigoVendaNormalized: normalizeCode(rawCodigo, config.cleanupChars),
       comprador: row.comprador.trim() || "Desconhecido",
       situacaoNf,
+      situacaoNfOriginal: row.situacaoNf.trim(),
       competencia: competenciaDaNota(tipo, row),
       valorNf: parseNumber(row.valorNf),
       numero: normalizeInvoiceNumber(row.numero),

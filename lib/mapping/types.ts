@@ -79,6 +79,9 @@ export interface StandardizedInvoice {
   codigoVendaNormalized: string;
   comprador: string;
   situacaoNf: SituacaoNf;
+  /** Texto original da situação, antes do mapeamento — ver o comentário no
+   *  schema. É o que permite listar os valores do relatório sem mapeamento. */
+  situacaoNfOriginal: string;
   competencia: string;
   valorNf: number;
   numero: string;
