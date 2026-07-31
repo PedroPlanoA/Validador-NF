@@ -2,17 +2,28 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { parseSpreadsheet } from "@/lib/parsing/parseSpreadsheet";
+import { mapSpreadsheet } from "@/lib/parsing/mapSpreadsheet";
 import { rowsToCsv } from "@/lib/parsing/csvRows";
+import { gzipText, BODY_ENCODING_HEADER } from "@/lib/parsing/gzipText";
+import { mapInvoiceRow, mapSaleRow } from "@/lib/mapping/applyMapping";
 import { Button } from "@/components/ui/Button";
 import { Label, Select, Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { formatCompetencia } from "@/lib/format/competencia";
 import { CheckCircle2 } from "lucide-react";
+import type { EmitterMappings, PlatformMappings, RawRow } from "@/lib/mapping/types";
 
-interface ConfigOption {
+interface PlatformOption {
   id: string;
   name: string;
+  mappings: PlatformMappings;
+  currencyCol?: string;
+}
+
+interface EmitterOption {
+  id: string;
+  name: string;
+  mappings: EmitterMappings;
 }
 
 export function UploadForm({
@@ -21,8 +32,8 @@ export function UploadForm({
   emitterConfigs,
 }: {
   companyId: string;
-  platformConfigs: ConfigOption[];
-  emitterConfigs: ConfigOption[];
+  platformConfigs: PlatformOption[];
+  emitterConfigs: EmitterOption[];
 }) {
   const router = useRouter();
   const [sourceType, setSourceType] = useState<"PLATFORM" | "EMITTER">("PLATFORM");
@@ -34,33 +45,57 @@ export function UploadForm({
   const [doneRowCount, setDoneRowCount] = useState<number | null>(null);
 
   const options = sourceType === "PLATFORM" ? platformConfigs : emitterConfigs;
+  const platformConfig = platformConfigs.find((c) => c.id === configId);
+  const emitterConfig = emitterConfigs.find((c) => c.id === configId);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!file || !configId || !referenceCompetencia) return;
+    if (sourceType === "PLATFORM" ? !platformConfig : !emitterConfig) {
+      setStatus("error");
+      setMessage("Mapeamento selecionado não encontrado. Recarregue a página e tente novamente.");
+      return;
+    }
 
     setStatus("parsing");
     setMessage(null);
     try {
-      const { rows } = await parseSpreadsheet(file);
-      if (rows.length === 0) {
+      // As colunas são extraídas aqui, no navegador, linha por linha: sobe só o
+      // que o mapeamento usa, e não o relatório inteiro. Depois o CSV vai
+      // comprimido. Juntas, as duas coisas multiplicam por muitas vezes o
+      // tamanho de arquivo que passa pelo limite de corpo da plataforma.
+      const mapRow: (row: RawRow) => Record<string, string> =
+        sourceType === "PLATFORM"
+          ? (row) => mapSaleRow(row, platformConfig!.mappings, platformConfig!.currencyCol)
+          : (row) => mapInvoiceRow(row, emitterConfig!.mappings);
+
+      const mappedRows = await mapSpreadsheet(file, mapRow);
+      if (mappedRows.length === 0) {
         setStatus("error");
         setMessage("O arquivo não contém linhas de dados.");
         return;
       }
 
       setStatus("uploading");
-      const rawCsv = rowsToCsv(rows);
-      const res = await fetch(`/api/c/${companyId}/imports`, {
+      const { body, encoding } = await gzipText(rowsToCsv(mappedRows));
+      const query = new URLSearchParams({
+        sourceType,
+        configId,
+        filename: file.name,
+        referenceCompetencia,
+      });
+      const res = await fetch(`/api/c/${companyId}/imports?${query}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sourceType, configId, filename: file.name, rawCsv, referenceCompetencia }),
+        headers: { "Content-Type": "application/octet-stream", [BODY_ENCODING_HEADER]: encoding },
+        body,
       });
 
       if (!res.ok) {
         setStatus("error");
         if (res.status === 413) {
-          setMessage("Arquivo muito grande para importar. Divida o relatório em partes menores e tente novamente.");
+          setMessage(
+            `Arquivo ainda muito grande para importar (${mappedRows.length.toLocaleString("pt-BR")} linhas). Avise o time de desenvolvimento — o caminho a partir daqui é subir o arquivo direto para o armazenamento.`,
+          );
         } else {
           const data = await res.json().catch(() => null);
           setMessage(data?.error ?? `Erro ao importar arquivo (HTTP ${res.status}).`);

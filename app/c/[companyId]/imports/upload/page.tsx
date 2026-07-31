@@ -4,6 +4,7 @@ import { listPlatformConfigs } from "@/lib/actions/platformConfigs";
 import { listEmitterConfigs } from "@/lib/actions/emitterConfigs";
 import { UploadForm } from "@/components/wizard/UploadForm";
 import { PageTitle } from "@/components/ui/PageTitle";
+import type { EmitterMappings, PlatformMappings } from "@/lib/mapping/types";
 
 export default async function UploadPage({
   params,
@@ -29,10 +30,22 @@ export default async function UploadPage({
           Importar Relatório
         </PageTitle>
       </div>
+      {/* Só os mapeamentos de coluna vão para o cliente — é o que ele precisa
+          para extrair as colunas certas antes de enviar. Regras de comissão,
+          status e limpeza de código continuam apenas no servidor. */}
       <UploadForm
         companyId={companyId}
-        platformConfigs={platformConfigs.map((c) => ({ id: c.id, name: c.name }))}
-        emitterConfigs={emitterConfigs.map((c) => ({ id: c.id, name: c.name }))}
+        platformConfigs={platformConfigs.map((c) => ({
+          id: c.id,
+          name: c.name,
+          mappings: c.mappings as unknown as PlatformMappings,
+          currencyCol: c.currencyCol ?? undefined,
+        }))}
+        emitterConfigs={emitterConfigs.map((c) => ({
+          id: c.id,
+          name: c.name,
+          mappings: c.mappings as unknown as EmitterMappings,
+        }))}
       />
     </div>
   );

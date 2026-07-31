@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { reanalyzeBatch } from "@/lib/imports/importService";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+
+/** Reanalisar refaz a padronização e reinsere todas as linhas do lote — mesmo
+ *  custo de uma importação, logo o mesmo teto de tempo. */
+export const maxDuration = 300;
 
 export async function POST(
   _request: NextRequest,

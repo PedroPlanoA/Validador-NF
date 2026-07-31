@@ -109,31 +109,64 @@ tocar no Postgres.
 ## 4. Importação
 
 ### 4.1 Leitura do arquivo
-`lib/parsing/parseSpreadsheet.ts` aceita XLSX e CSV e devolve `RawRow[]`
-(`Record<string,string>`, chaveado pelos nomes originais das colunas).
-`guessColumn.ts` e `statusGuess.ts` alimentam o assistente com palpites de qual
-coluna é qual e de como traduzir cada texto de status.
+O arquivo **nunca sobe inteiro**. O navegador lê a planilha e envia apenas as
+colunas mapeadas, comprimidas. Duas peças:
+
+- `lib/parsing/mapSpreadsheet.ts` — lê CSV **em pedaços** (`chunk` do
+  PapaParse), reduzindo cada linha às colunas mapeadas na hora e descartando o
+  resto, de forma que o pico de memória acompanhe o resultado e não o arquivo.
+  XLS/XLSX não permite leitura incremental sem outra biblioteca, então ali o
+  arquivo é aberto inteiro.
+- `lib/parsing/parseSpreadsheet.ts` — leitura completa, usada só pelo
+  assistente de mapeamento (que precisa dos nomes originais das colunas para a
+  amostra). `guessColumn.ts` e `statusGuess.ts` alimentam os palpites.
 
 ### 4.2 Duas etapas separadas de propósito
-1. **`extractMapped*Rows`** — a **única** etapa que conhece os nomes originais
-   das colunas. Puxa os valores em texto e os rechaveia pelos nomes padrão do
-   sistema. O resultado é o que vai para `rawContent`.
-2. **`standardizeMapped*`** — tudo o que vem depois: converter número, calcular
+1. **`mapSaleRow` / `mapInvoiceRow`** — a **única** etapa que conhece os nomes
+   originais das colunas. Roda **no navegador**, linha por linha, e rechaveia os
+   valores pelos nomes padrão do sistema. O resultado é exatamente o que vai
+   para `rawContent`.
+2. **`standardizeMapped*`** — no **servidor**: converter número, calcular
    comissão, traduzir status, extrair competência, normalizar o código.
 
 A separação é o que permite **reanalisar** um lote antigo aplicando o
 mapeamento atual, mesmo que a plataforma tenha mudado os nomes das colunas do
-relatório desde então.
+relatório desde então — e é também o que reduz o tamanho do upload, já que só as
+poucas colunas usadas trafegam. Ao cliente vão apenas os **mapeamentos de
+coluna**; comissão, `statusMap` e `cleanupChars` nunca saem do servidor.
 
-### 4.3 Substituição por competência
+### 4.3 Por que o arquivo grande cabe agora
+O gargalo é o **limite de tamanho de corpo de requisição** da plataforma
+(4,5 MB numa função serverless), não o banco. Três medidas, nesta ordem de
+impacto:
+
+1. **Só as colunas mapeadas sobem** — 8 a 10 colunas em vez das dezenas do
+   relatório. Sozinho, isso já multiplica por várias vezes o arquivo que passa.
+2. **Gzip no navegador** (`CompressionStream`, `lib/parsing/gzipText.ts`). CSV
+   fiscal é repetitivo e comprime bem: medido **7,8×** num teste de 50 mil
+   linhas (4,34 MB → 0,56 MB). Onde `CompressionStream` não existir, o texto vai
+   sem compressão e o servidor aceita as duas formas — daí o cabeçalho próprio
+   `x-body-encoding`, e **não** `Content-Encoding`, que proxies interpretariam.
+3. **Corpo binário, metadados na query.** O corpo é o CSV comprimido; fonte,
+   config, nome do arquivo e competência de referência vão na query string.
+   JSON repetiria o nome de cada campo por linha e ainda cresceria com o escape
+   de `\n` e `"`.
+
+Depois disso o gargalo passa a ser **tempo**: `maxDuration = 300` nas rotas de
+importar e reanalisar, transação com `timeout: 120s` (o padrão de 5s do Prisma
+não dá conta) e inserção em lotes de 5.000 linhas — um `createMany` único com
+centenas de milhares de linhas estoura o limite de parâmetros do Postgres.
+
+Verificado de ponta a ponta com 50 mil linhas: importação em ~63 s e reanálise
+em ~73 s no servidor de desenvolvimento, com status, competência, valor e código
+normalizado corretos.
+
+### 4.4 Substituição por competência
 Ao importar, o sistema apaga **só** as linhas daquele `configId` **nas
 competências presentes no arquivo novo**. Reenviar o relatório de julho da
 Hotmart não toca em junho da Hotmart, e nunca toca em outro emissor/plataforma.
 
-Transações usam `timeout: 45s` (o padrão de 5s do Prisma não dá conta de um
-relatório grande contra o Neon).
-
-### 4.4 Comissão (`commType`)
+### 4.5 Comissão (`commType`)
 | Modo | Cálculo |
 |---|---|
 | `INTEGRAL` | 100% — o valor da nota é o valor da venda. |
@@ -147,16 +180,16 @@ relatório grande contra o Neon).
 importação quanto na reanálise. É o contador dizendo "para este produto a
 coprodução é X%, e eu sei que é isso".
 
-### 4.5 Moeda (`currencyMode`)
+### 4.6 Moeda (`currencyMode`)
 `FIXED` (moeda fixa configurada) · `COL` (lida de uma coluna) · `NONE` → BRL.
 
-### 4.6 Competência e datas
+### 4.7 Competência e datas
 `extractCompetence` devolve `YYYY-MM`, tentando ISO → `DD/MM/AAAA` → `Date`
 nativo, e caindo em **um único** sentinela `"Sem Competência"` quando nada
 funciona. `parseFullDate` faz o mesmo com precisão de dia (`Sale.dataVenda`,
 exibida na aba Vendas); devolve `null` quando não dá para interpretar.
 
-### 4.7 Normalização do código da venda
+### 4.8 Normalização do código da venda
 `normalizeCode` remove os `cleanupChars` configurados e passa para minúsculas.
 É gravado em `codigoVendaNormalized` **no momento da importação**, com os
 `cleanupChars` do config que originou aquela linha — nunca recalculado depois

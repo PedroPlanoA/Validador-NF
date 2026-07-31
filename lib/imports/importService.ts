@@ -1,18 +1,15 @@
 import { db } from "@/lib/db";
 import {
-  extractMappedInvoiceRows,
-  extractMappedSaleRows,
   standardizeMappedInvoices,
   standardizeMappedSales,
   distinctCompetencias,
 } from "@/lib/mapping/applyMapping";
-import { rowsToCsv, csvToRows } from "@/lib/parsing/csvRows";
+import { csvToRows } from "@/lib/parsing/csvRows";
 import type {
   EmitterConfigInput,
   MappedInvoiceRow,
   MappedSaleRow,
   PlatformConfigInput,
-  RawRow,
   StandardizedSale,
 } from "@/lib/mapping/types";
 
@@ -20,7 +17,21 @@ import type {
  *  large reports — the delete+createMany for a big batch can easily take
  *  longer than that against Neon. Raised well above what even a very large
  *  report should need, while staying under the route handlers' maxDuration. */
-const TRANSACTION_OPTIONS = { timeout: 45_000, maxWait: 10_000 };
+const TRANSACTION_OPTIONS = { timeout: 120_000, maxWait: 15_000 };
+
+/** Um `createMany` único com centenas de milhares de linhas monta um INSERT
+ *  gigante: estoura o limite de parâmetros do Postgres e consome memória
+ *  desnecessária. Inserir em lotes mantém cada comando previsível. */
+const INSERT_CHUNK_SIZE = 5_000;
+
+async function createManyChunked<T>(
+  rows: T[],
+  createMany: (chunk: T[]) => Promise<unknown>,
+): Promise<void> {
+  for (let i = 0; i < rows.length; i += INSERT_CHUNK_SIZE) {
+    await createMany(rows.slice(i, i + INSERT_CHUNK_SIZE));
+  }
+}
 
 /**
  * Applies any per-product commission overrides (set in the Produtos screen)
@@ -53,7 +64,10 @@ interface RunImportInput {
   sourceType: "PLATFORM" | "EMITTER";
   configId: string;
   filename: string;
-  rawRows: RawRow[];
+  /** CSV com **apenas as colunas mapeadas**, já extraídas no navegador. É
+   *  exatamente o texto que vai para `ImportBatch.rawContent`, então é guardado
+   *  como veio, sem reserializar. */
+  mappedCsv: string;
   referenceCompetencia: string;
 }
 
@@ -85,7 +99,7 @@ export async function runImport(companyId: string, input: RunImportInput) {
       statusMap: config.statusMap as unknown as PlatformConfigInput["statusMap"],
     };
 
-    const mappedRows = extractMappedSaleRows(input.rawRows, configInput);
+    const mappedRows = csvToRows<MappedSaleRow>(input.mappedCsv);
     const standardizedRaw = standardizeMappedSales(mappedRows, configInput);
     const standardized = await applyProductOverrides(companyId, config.name, standardizedRaw);
     const competencias = distinctCompetencias(standardized);
@@ -105,22 +119,22 @@ export async function runImport(companyId: string, input: RunImportInput) {
             rowCount: standardized.length,
             // Only the mapped columns (not the original file) — see
             // MappedSaleRow's doc comment for why.
-            rawContent: rowsToCsv(mappedRows),
+            rawContent: input.mappedCsv,
             competencias,
             referenceCompetencia: input.referenceCompetencia,
           },
         });
 
-        if (standardized.length > 0) {
-          await tx.sale.createMany({
-            data: standardized.map((s) => ({
+        await createManyChunked(standardized, (chunk) =>
+          tx.sale.createMany({
+            data: chunk.map((s) => ({
               ...s,
               companyId,
               importBatchId: batch.id,
               platformConfigId: config.id,
             })),
-          });
-        }
+          }),
+        );
 
         return batch;
       },
@@ -139,7 +153,7 @@ export async function runImport(companyId: string, input: RunImportInput) {
     statusMap: config.statusMap as unknown as EmitterConfigInput["statusMap"],
   };
 
-  const mappedRows = extractMappedInvoiceRows(input.rawRows, configInput);
+  const mappedRows = csvToRows<MappedInvoiceRow>(input.mappedCsv);
   const standardized = standardizeMappedInvoices(mappedRows, configInput);
   const competencias = distinctCompetencias(standardized);
 
@@ -156,22 +170,22 @@ export async function runImport(companyId: string, input: RunImportInput) {
           emitterConfigId: config.id,
           originalFilename: input.filename,
           rowCount: standardized.length,
-          rawContent: rowsToCsv(mappedRows),
+          rawContent: input.mappedCsv,
           competencias,
           referenceCompetencia: input.referenceCompetencia,
         },
       });
 
-      if (standardized.length > 0) {
-        await tx.invoice.createMany({
-          data: standardized.map((s) => ({
+      await createManyChunked(standardized, (chunk) =>
+        tx.invoice.createMany({
+          data: chunk.map((s) => ({
             ...s,
             companyId,
             importBatchId: batch.id,
             emitterConfigId: config.id,
           })),
-        });
-      }
+        }),
+      );
 
       return batch;
     },
@@ -219,16 +233,16 @@ export async function reanalyzeBatch(companyId: string, batchId: string) {
     return db.$transaction(
       async (tx) => {
         await tx.sale.deleteMany({ where: { importBatchId: batch.id } });
-        if (standardized.length > 0) {
-          await tx.sale.createMany({
-            data: standardized.map((s) => ({
+        await createManyChunked(standardized, (chunk) =>
+          tx.sale.createMany({
+            data: chunk.map((s) => ({
               ...s,
               companyId,
               importBatchId: batch.id,
               platformConfigId: config.id,
             })),
-          });
-        }
+          }),
+        );
         return tx.importBatch.update({
           where: { id: batch.id },
           data: { rowCount: standardized.length, competencias },
@@ -257,16 +271,16 @@ export async function reanalyzeBatch(companyId: string, batchId: string) {
   return db.$transaction(
     async (tx) => {
       await tx.invoice.deleteMany({ where: { importBatchId: batch.id } });
-      if (standardized.length > 0) {
-        await tx.invoice.createMany({
-          data: standardized.map((s) => ({
+      await createManyChunked(standardized, (chunk) =>
+        tx.invoice.createMany({
+          data: chunk.map((s) => ({
             ...s,
             companyId,
             importBatchId: batch.id,
             emitterConfigId: config.id,
           })),
-        });
-      }
+        }),
+      );
       return tx.importBatch.update({
         where: { id: batch.id },
         data: { rowCount: standardized.length, competencias },

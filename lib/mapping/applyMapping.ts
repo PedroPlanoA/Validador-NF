@@ -3,9 +3,11 @@ import { extractCompetence, parseFullDate } from "@/lib/parsing/competence";
 import { normalizeCode, normalizeInvoiceNumber } from "@/lib/mapping/normalizeCode";
 import type {
   EmitterConfigInput,
+  EmitterMappings,
   MappedInvoiceRow,
   MappedSaleRow,
   PlatformConfigInput,
+  PlatformMappings,
   RawRow,
   StandardizedInvoice,
   StandardizedSale,
@@ -17,11 +19,16 @@ import type {
  * name. This is the only step that ever needs to know the source file's own
  * column names; its output (not the original file) is what gets persisted
  * as import history, see MappedSaleRow's doc comment.
+ *
+ * Roda **no navegador**, uma linha por vez, enquanto o arquivo é lido: é o que
+ * permite subir só as colunas mapeadas em vez do relatório inteiro (dezenas de
+ * colunas que ninguém usa), o que multiplica por várias vezes o tamanho de
+ * arquivo que cabe no limite de corpo de requisição da plataforma. Recebe só os
+ * mapeamentos, e não a config inteira, para não enviar comissão/status/limpeza
+ * de código ao cliente — isso continua no servidor.
  */
-export function extractMappedSaleRows(rawRows: RawRow[], config: PlatformConfigInput): MappedSaleRow[] {
-  const { mappings } = config;
-
-  return rawRows.map((row) => ({
+export function mapSaleRow(row: RawRow, mappings: PlatformMappings, currencyCol?: string): MappedSaleRow {
+  return {
     codigoVenda: String(row[mappings.codigoVenda] ?? ""),
     comprador: String(row[mappings.comprador] ?? ""),
     produto: String(row[mappings.produto] ?? ""),
@@ -33,8 +40,8 @@ export function extractMappedSaleRows(rawRows: RawRow[], config: PlatformConfigI
     valorFaturamentoCoprodutor: mappings.valorFaturamentoCoprodutor
       ? String(row[mappings.valorFaturamentoCoprodutor] ?? "")
       : "",
-    moedaCol: config.currencyCol ? String(row[config.currencyCol] ?? "") : "",
-  }));
+    moedaCol: currencyCol ? String(row[currencyCol] ?? "") : "",
+  };
 }
 
 /**
@@ -91,11 +98,9 @@ export function standardizeMappedSales(rows: MappedSaleRow[], config: PlatformCo
   });
 }
 
-/** Invoice equivalent of extractMappedSaleRows — see its comment. */
-export function extractMappedInvoiceRows(rawRows: RawRow[], config: EmitterConfigInput): MappedInvoiceRow[] {
-  const { mappings } = config;
-
-  return rawRows.map((row) => ({
+/** Invoice equivalent of mapSaleRow — see its comment. */
+export function mapInvoiceRow(row: RawRow, mappings: EmitterMappings): MappedInvoiceRow {
+  return {
     codigoVenda: String(row[mappings.codigoVenda] ?? ""),
     comprador: String(row[mappings.comprador] ?? ""),
     situacaoNf: String(row[mappings.situacaoNf] ?? ""),
@@ -104,7 +109,7 @@ export function extractMappedInvoiceRows(rawRows: RawRow[], config: EmitterConfi
     numero: String(row[mappings.numero] ?? ""),
     tipo: String(row[mappings.tipo] ?? ""),
     codigoServico: mappings.codigoServico ? String(row[mappings.codigoServico] ?? "") : "",
-  }));
+  };
 }
 
 /** Invoice equivalent of standardizeMappedSales — see its comment. */
