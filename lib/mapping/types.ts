@@ -36,6 +36,11 @@ export interface EmitterMappings {
   numero: string;
   tipo: string;
   codigoServico?: string;
+  /** Coluna com a data de emissão/autorização da nota. Opcional, mas é a única
+   *  fonte confiável de competência para **nota de devolução**: o relatório do
+   *  emissor traz a devolução com a competência da venda original, não a do mês
+   *  em que ela foi emitida. Ver `standardizeMappedInvoices`. */
+  dataEmissao?: string;
 }
 
 export interface EmitterConfigInput {
@@ -117,4 +122,7 @@ export interface MappedInvoiceRow {
   numero: string;
   tipo: string;
   codigoServico: string;
+  /** Vem vazia quando a coluna não foi mapeada — e **ausente** ao reanalisar um
+   *  lote importado antes deste campo existir, daí o `?? ""` em quem lê. */
+  dataEmissao: string;
 }

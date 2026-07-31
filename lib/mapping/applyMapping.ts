@@ -1,6 +1,7 @@
 import { parseNumber } from "@/lib/parsing/numberParser";
-import { extractCompetence, parseFullDate } from "@/lib/parsing/competence";
+import { extractCompetence, parseFullDate, SEM_COMPETENCIA } from "@/lib/parsing/competence";
 import { normalizeCode, normalizeInvoiceNumber } from "@/lib/mapping/normalizeCode";
+import { isDevolucao } from "@/lib/mapping/tipoNota";
 import type {
   EmitterConfigInput,
   EmitterMappings,
@@ -109,6 +110,7 @@ export function mapInvoiceRow(row: RawRow, mappings: EmitterMappings): MappedInv
     numero: String(row[mappings.numero] ?? ""),
     tipo: String(row[mappings.tipo] ?? ""),
     codigoServico: mappings.codigoServico ? String(row[mappings.codigoServico] ?? "") : "",
+    dataEmissao: mappings.dataEmissao ? String(row[mappings.dataEmissao] ?? "") : "",
   };
 }
 
@@ -117,19 +119,40 @@ export function standardizeMappedInvoices(rows: MappedInvoiceRow[], config: Emit
   return rows.map((row) => {
     const rawCodigo = row.codigoVenda.trim();
     const situacaoNf = config.statusMap[row.situacaoNf] ?? "OUTRO";
+    const tipo = row.tipo.trim() || "NF-e";
 
     return {
       codigoVenda: rawCodigo,
       codigoVendaNormalized: normalizeCode(rawCodigo, config.cleanupChars),
       comprador: row.comprador.trim() || "Desconhecido",
       situacaoNf,
-      competencia: extractCompetence(row.competencia),
+      competencia: competenciaDaNota(tipo, row),
       valorNf: parseNumber(row.valorNf),
       numero: normalizeInvoiceNumber(row.numero),
-      tipo: row.tipo.trim() || "NF-e",
+      tipo,
       codigoServico: (row.codigoServico || config.fallbackService || "Sem Código").trim() || "Sem Código",
     };
   });
+}
+
+/**
+ * Competência da nota. Para **nota de devolução** o relatório do emissor traz um
+ * dado errado: a coluna de competência vem com a competência da **venda
+ * original**, não a do mês em que a devolução foi emitida — o que jogava a
+ * devolução para um mês em que ela não aconteceu e desencontrava o dashboard.
+ * Nesses casos a fonte correta é a data de emissão/autorização.
+ *
+ * A coluna de emissão é opcional no mapeamento: quando não está mapeada, ou
+ * quando o valor não pode ser lido como data, cai de volta na coluna de
+ * competência — comportamento anterior, para não inventar um mês.
+ */
+function competenciaDaNota(tipo: string, row: MappedInvoiceRow): string {
+  if (isDevolucao(tipo)) {
+    // Ausente (e não vazio) ao reanalisar lote importado antes deste campo.
+    const emissao = extractCompetence(row.dataEmissao ?? "");
+    if (emissao !== SEM_COMPETENCIA) return emissao;
+  }
+  return extractCompetence(row.competencia);
 }
 
 /** Distinct competências present in a set of standardized rows — used to scope import replacement. */

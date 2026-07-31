@@ -183,13 +183,35 @@ coprodução é X%, e eu sei que é isso".
 ### 4.6 Moeda (`currencyMode`)
 `FIXED` (moeda fixa configurada) · `COL` (lida de uma coluna) · `NONE` → BRL.
 
-### 4.7 Competência e datas
+### 4.7 Competência da nota de devolução (falha do relatório do emissor)
+O relatório do emissor traz **nota de devolução com a competência da venda
+original**, não a do mês em que a devolução foi emitida. Isso jogava a devolução
+para um mês em que ela não aconteceu e desencontrava o dashboard.
+
+Regra: quando o `tipo` da nota é de devolução, a competência vem da **data de
+emissão/autorização**, mapeada no campo opcional `dataEmissao` do emissor. Sem
+essa coluna mapeada, ou quando o valor não é uma data legível, cai de volta na
+coluna de competência — comportamento anterior, para não inventar um mês.
+
+Devolução é reconhecida por `isDevolucao` (`lib/mapping/tipoNota.ts`): `tipo`
+contendo o radical **devolu**, em qualquer caixa e com ou sem acento. Pega
+"NF-e Devolução", "Devolução", "Nota de devolução", "Devolucao". Comparação
+frouxa de propósito — `tipo` é texto livre do emissor, e uma lista fechada
+quebraria no primeiro emissor novo.
+
+**Consequência operacional:** mapear a coluna nova **não** corrige o que já foi
+importado. Reanalisar não resolve, porque o CSV guardado em `rawContent` não tem
+essa coluna nos lotes antigos (nesse caso a regra cai no fallback). Para
+corrigir competências de devolução já na base é preciso **reimportar** o
+relatório do emissor.
+
+### 4.8 Competência e datas
 `extractCompetence` devolve `YYYY-MM`, tentando ISO → `DD/MM/AAAA` → `Date`
 nativo, e caindo em **um único** sentinela `"Sem Competência"` quando nada
 funciona. `parseFullDate` faz o mesmo com precisão de dia (`Sale.dataVenda`,
 exibida na aba Vendas); devolve `null` quando não dá para interpretar.
 
-### 4.8 Normalização do código da venda
+### 4.9 Normalização do código da venda
 `normalizeCode` remove os `cleanupChars` configurados e passa para minúsculas.
 É gravado em `codigoVendaNormalized` **no momento da importação**, com os
 `cleanupChars` do config que originou aquela linha — nunca recalculado depois
@@ -247,13 +269,23 @@ A divergência é **independente** da conferência: uma venda pode estar
 corretamente "NF Emitida" e ainda assim com o valor errado.
 
 ### 5.3 Competência efetiva — a regra mais importante
-```
-competenciaEfetiva = competência da primeira nota casada
-                   ?? competência da própria venda (provisório)
-```
 Competência é dado **contábil**, e a única fonte confiável é a nota fiscal
 emitida. A competência da venda só é usada enquanto a venda ainda não tem nota
 casada. **Todo filtro, análise e checklist usa `competenciaEfetiva`.**
+
+Ordem de preferência (`resolveCompetenciaEfetiva` no engine):
+
+1. a competência da primeira nota casada que **não** é devolução — é a emissão
+   que caracteriza a venda;
+2. se só houver devolução, a competência **mais antiga** entre elas;
+3. sem nota casada, a competência da própria venda, como provisório.
+
+O critério de desempate existe porque antes se usava `matched[0]`, e a consulta
+de notas não tem ordenação garantida. Enquanto o emissor mandava a devolução com
+a competência da venda original (ver 4.7) isso era inofensivo, porque as duas
+coincidiam. Corrigida a competência da devolução, o par passa a cruzar dois
+meses, e a competência da venda não pode depender da ordem em que o banco
+devolveu as linhas.
 
 ### 5.4 Erros que contam como erro
 ```
@@ -465,6 +497,13 @@ Cores por função: menta = ação/positivo · teal = informativo · clay = aten
   `wizard/statusFields.ts`, o **enum do zod** em `validation/schemas.ts` e o enum
   do Prisma + migration. Esquecer o zod é silencioso na interface e só estoura ao
   salvar o mapeamento — foi o que aconteceu com `PENDENTE`.
+- **Campo novo de mapeamento** exige quatro lugares: o type em
+  `mapping/types.ts` (nas `*Mappings` **e** na `Mapped*Row`), a extração em
+  `mapSaleRow`/`mapInvoiceRow`, o zod em `validation/schemas.ts`, a lista do
+  assistente em `wizard/statusFields.ts` — e o repasse no `MappingWizard`, que
+  monta o objeto `mappings` campo por campo. Quem **lê** a nova coluna precisa
+  usar `?? ""`: lote importado antes do campo existir não a tem no `rawContent`,
+  e reanalisar não a inventa.
 - **Editar cadastro de empresa** (código, nome, CNPJ) não mexe em dado nenhum
   importado: vendas, notas, importações e checklists são vinculados pelo `id`,
   não pelo código.

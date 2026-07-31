@@ -1,4 +1,5 @@
 import { classify, combineStatus } from "@/lib/reconciliation/classify";
+import { isDevolucao } from "@/lib/mapping/tipoNota";
 import type {
   InvoiceForReconciliation,
   MatchedInvoiceRef,
@@ -28,6 +29,38 @@ const VALUE_DIVERGENCE_TOLERANCE = 0.01;
  *  a moeda fixa/coluna: "BRL", "R$", "Real"). */
 const BRL_ALIASES = new Set(["BRL", "R$", "REAL"]);
 
+/**
+ * Competência é um dado contábil, e a única fonte confiável é a nota fiscal
+ * emitida (relatório do emissor). Uma venda ainda sem nota casada não tem
+ * competência fiscal definida, então cai de volta na competência da própria
+ * venda, só como provisório até ser conferida.
+ *
+ * Com mais de uma nota casada, a ordem de preferência é:
+ *  1. a primeira nota que **não** é devolução — é a emissão que caracteriza a
+ *     venda; a devolução é outro evento fiscal, normalmente em outro mês;
+ *  2. se só houver devolução, a competência mais antiga entre elas.
+ *
+ * O critério existe porque antes se usava `matched[0]`, e a consulta de notas
+ * não tem ordenação garantida. Enquanto o emissor mandava a devolução com a
+ * competência da venda original isso era inofensivo (as duas coincidiam); agora
+ * que a devolução vai para o mês certo, o par passa a cruzar dois meses e a
+ * escolha não pode depender da ordem em que o banco devolveu as linhas.
+ */
+function resolveCompetenciaEfetiva(
+  sale: SaleForReconciliation,
+  matched: InvoiceForReconciliation[],
+): string {
+  if (matched.length === 0) return sale.competencia;
+
+  const naoDevolucao = matched.filter((m) => !isDevolucao(m.tipo));
+  if (naoDevolucao.length > 0) return naoDevolucao[0].competencia;
+
+  return matched.reduce(
+    (mais_antiga, m) => (m.competencia < mais_antiga ? m.competencia : mais_antiga),
+    matched[0].competencia,
+  );
+}
+
 function buildRow(
   sale: SaleForReconciliation,
   matched: InvoiceForReconciliation[],
@@ -40,11 +73,7 @@ function buildRow(
     valorNfFaturado !== null &&
     Math.abs(sale.valorNf - valorNfFaturado) > VALUE_DIVERGENCE_TOLERANCE;
 
-  // Competência é um dado contábil — a única fonte confiável é a nota
-  // fiscal emitida (relatório do emissor). Uma venda ainda sem nota casada
-  // não tem competência fiscal definida ainda, então cai de volta na
-  // competência da própria venda só como provisório até ser conferida.
-  const competenciaEfetiva = matched.length > 0 ? matched[0].competencia : sale.competencia;
+  const competenciaEfetiva = resolveCompetenciaEfetiva(sale, matched);
 
   return {
     saleId: sale.id,

@@ -60,6 +60,8 @@ const emitterMappingsSchema = z.object({
   numero: z.string().min(1),
   tipo: z.string().min(1),
   codigoServico: z.string().optional(),
+  /** Data de emissão/autorização — fonte da competência das notas de devolução. */
+  dataEmissao: z.string().optional(),
 });
 
 export const emitterConfigSchema = z.object({

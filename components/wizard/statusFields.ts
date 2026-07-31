@@ -14,7 +14,15 @@ export const EMITTER_STATUS_OPTIONS = [
   { value: "OUTRO", label: "Outro" },
 ];
 
-export const PLATFORM_REQUIRED_FIELDS: { key: string; label: string }[] = [
+/** Campo de mapeamento exibido na etapa de colunas do assistente. */
+export interface MappingField {
+  key: string;
+  label: string;
+  /** Explicação curta sob o campo, quando o nome não basta. */
+  hint?: string;
+}
+
+export const PLATFORM_REQUIRED_FIELDS: MappingField[] = [
   { key: "codigoVenda", label: "Código da Venda" },
   { key: "comprador", label: "Comprador" },
   { key: "produto", label: "Produto" },
@@ -23,16 +31,25 @@ export const PLATFORM_REQUIRED_FIELDS: { key: string; label: string }[] = [
   { key: "dataVenda", label: "Data da Venda" },
 ];
 
-export const EMITTER_REQUIRED_FIELDS: { key: string; label: string }[] = [
+export const EMITTER_REQUIRED_FIELDS: MappingField[] = [
   { key: "codigoVenda", label: "Código da Venda" },
   { key: "comprador", label: "Comprador" },
   { key: "situacaoNf", label: "Situação da Nota" },
-  { key: "competencia", label: "Competência / Data de Emissão" },
+  {
+    key: "competencia",
+    label: "Competência",
+    hint: "Coluna de competência do relatório. É o que vale para toda nota, exceto devolução — ver o campo de data de emissão abaixo.",
+  },
   { key: "valorNf", label: "Valor da Nota" },
   { key: "numero", label: "Número da Nota" },
   { key: "tipo", label: "Tipo (NF-e / NFS-e)" },
 ];
 
-export const EMITTER_OPTIONAL_FIELDS: { key: string; label: string }[] = [
+export const EMITTER_OPTIONAL_FIELDS: MappingField[] = [
   { key: "codigoServico", label: "Código de Serviço (opcional)" },
+  {
+    key: "dataEmissao",
+    label: "Data de Emissão / Autorização (opcional)",
+    hint: "Necessária para nota de devolução: o relatório traz a devolução com a competência da venda original, e é esta data que define a competência correta dela.",
+  },
 ];

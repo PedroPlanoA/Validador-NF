@@ -10,6 +10,7 @@ import { TipoProportionChart } from "@/components/dashboard/TipoProportionChart"
 import { PanelCard } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageTitle";
 import { formatCompetencia } from "@/lib/format/competencia";
+import { isDevolucao } from "@/lib/mapping/tipoNota";
 import { FileSpreadsheet } from "lucide-react";
 import {
   MOEDA_NAO_IDENTIFICADA,
@@ -100,7 +101,7 @@ export default async function DashboardPage({
   // Devolução não é faturamento: incluí-la na proporção distorceria a leitura
   // de "quanto de cada tipo a empresa emite". O volume completo (com
   // devolução) fica no gráfico de valores.
-  const tiposSemDevolucao = tipoAggregates.filter((t) => !t.tipo.toLowerCase().includes("devolu"));
+  const tiposSemDevolucao = tipoAggregates.filter((t) => !isDevolucao(t.tipo));
 
   const showEmissoesPorTipo = tipoAggregates.length > 1;
   const showProporcaoPorTipo = tiposSemDevolucao.length > 1;

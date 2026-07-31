@@ -201,12 +201,13 @@ export function MappingWizard({
             numero: state.fieldMappings.numero ?? "",
             tipo: state.fieldMappings.tipo ?? "",
             codigoServico: state.fieldMappings.codigoServico,
+            dataEmissao: state.fieldMappings.dataEmissao,
           },
           cleanupChars: state.cleanupChars,
           fallbackService: state.fallbackService,
           statusMap: state.statusMap as Record<
             string,
-            "EMITIDO" | "CANCELADO" | "ERRO_DE_EMISSAO" | "EM_EMISSAO" | "OUTRO"
+            "EMITIDO" | "CANCELADO" | "ERRO_DE_EMISSAO" | "EM_EMISSAO" | "PENDENTE" | "OUTRO"
           >,
         };
         if (existingConfig) {
@@ -304,6 +305,7 @@ export function MappingWizard({
                 options={state.sampleHeaders}
                 placeholder="nome exato da coluna no arquivo"
               />
+              {f.hint && <p className="text-[11px] text-ink/45">{f.hint}</p>}
             </div>
           ))}
 
