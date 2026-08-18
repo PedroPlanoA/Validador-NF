@@ -22,9 +22,17 @@ export function buildReconciliationWorkbook(rows: ReconciliationRow[]): Buffer {
       "Valor Calc. NF": r.valorNfCalculado,
       "Situação Venda": r.situacaoVenda,
       "Situação Conferência": SITUACAO_CONFERENCIA_LABELS[r.situacaoConferencia],
+      // Número e tipo em colunas próprias, além do texto agregado: dentro de
+      // "Notas Vinculadas" o número não dava para filtrar nem ordenar no Excel.
+      // Com mais de uma nota casada, todos os números entram separados por vírgula.
+      "Número NF": r.matchedInvoices.map((i) => i.numero).join(", "),
+      "Tipo NF": r.matchedInvoices.map((i) => i.tipo).join(", "),
       "Notas Vinculadas": r.matchedInvoices.map((i) => `${i.tipo} #${i.numero}`).join(", ") || "—",
       "Valor Faturado NF": r.valorNfFaturado ?? 0,
-      Competência: r.competencia,
+      // A competência que vale em toda a análise é a efetiva (da nota casada),
+      // não a derivada da data da venda — ver LOGICA.md 5.3.
+      Competência: r.competenciaEfetiva,
+      "Competência da Venda": r.competencia,
     })),
   );
 }

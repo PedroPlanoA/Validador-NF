@@ -19,8 +19,15 @@ function toRef(inv: InvoiceForReconciliation): MatchedInvoiceRef {
   };
 }
 
-/** Anything smaller than this is treated as float/rounding noise, not a real divergence. */
-const VALUE_DIVERGENCE_TOLERANCE = 0.01;
+/**
+ * Diferença até este valor não é divergência.
+ *
+ * Eram R$ 0,01 (só ruído de ponto flutuante), mas na prática o arredondamento do
+ * emissor e o da plataforma discordam em alguns centavos: uma comissão de
+ * 27,1974 sai na nota como 27,21. Isso enchia o Painel de Erros de linhas de
+ * 1 centavo, que ninguém vai corrigir. R$ 0,05 é o piso definido pelo usuário.
+ */
+const VALUE_DIVERGENCE_TOLERANCE = 0.05;
 
 /** Notas fiscais are sempre emitidas em Real — comparar um valor calculado
  *  em outra moeda contra o valor faturado da nota é comparar unidades

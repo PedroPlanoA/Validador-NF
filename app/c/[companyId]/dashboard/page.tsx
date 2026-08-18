@@ -56,6 +56,12 @@ export default async function DashboardPage({
     }),
   ]);
 
+  // Quantidade de vendas da competência selecionada, pela competência efetiva —
+  // a mesma que a aba Vendas usa, para os dois números nunca discordarem.
+  const vendasNaCompetencia = competencia
+    ? allRows.filter((r) => r.competenciaEfetiva === competencia)
+    : allRows;
+
   // --- Análise de erros (venda x nota) — nunca filtrado por competência ---
   const errosEmissao = allRows.filter((r) => r.situacaoConferencia === "ERRO_DE_EMISSAO");
   const nfAusente = allRows.filter((r) => r.situacaoConferencia === "NF_NAO_EMITIDA");
@@ -153,7 +159,14 @@ export default async function DashboardPage({
         </a>
       </PageHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+        <KpiCard
+          label="Vendas no Mês"
+          value={vendasNaCompetencia.length}
+          sub={formatCurrency(sum(vendasNaCompetencia, (r) => r.valorVenda), "BRL")}
+          accent="primary"
+          href={`/c/${companyId}/sales`}
+        />
         <KpiCard
           label="Notas Emitidas"
           value={notasEmitidas.length}

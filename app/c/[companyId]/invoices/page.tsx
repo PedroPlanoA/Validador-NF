@@ -9,6 +9,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { PageHeader } from "@/components/ui/PageTitle";
 import { ExportRawDataButton } from "@/components/ui/ExportRawDataButton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { EditInvoiceButton } from "@/components/invoices/EditInvoiceButton";
 import { TABLE_CLASS, THEAD_CLASS, TBODY_CLASS, TR_CLASS } from "@/components/ui/Table";
 import { FileText } from "lucide-react";
 import { formatCompetencia } from "@/lib/format/competencia";
@@ -148,6 +149,7 @@ export default async function InvoicesPage({
                 <th className="py-3 px-5">Competência</th>
                 <th className="py-3 px-5">Tipo</th>
                 <th className="py-3 px-5">Cód. Serviço</th>
+                <th className="py-3 px-5 w-10"></th>
               </tr>
             </thead>
             <tbody className={TBODY_CLASS}>
@@ -163,11 +165,19 @@ export default async function InvoicesPage({
                   <td className="py-3 px-5">{formatCompetencia(inv.competencia)}</td>
                   <td className="py-3 px-5">{inv.tipo}</td>
                   <td className="py-3 px-5">{inv.codigoServico}</td>
+                  <td className="py-3 px-5">
+                    <EditInvoiceButton
+                      invoiceId={inv.id}
+                      numero={inv.numero}
+                      competencia={inv.competencia}
+                      tipo={inv.tipo}
+                    />
+                  </td>
                 </tr>
               ))}
               {invoices.length === 0 && (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={9}>
                     <EmptyState
                       icon={FileText}
                       title="Nenhuma nota fiscal encontrada"

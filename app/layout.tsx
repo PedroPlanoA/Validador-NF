@@ -16,7 +16,7 @@ const sourceSans = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "Plano A — Validador de Emissões",
+  title: "Plano A — Hub Fiscal",
   description: "Validador de regularização entre vendas e emissões de notas fiscais",
   icons: {
     icon: "/favicon.png",

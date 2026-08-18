@@ -13,7 +13,7 @@ export default async function CompaniesPage() {
       <div className="bg-deep px-8 py-7 flex items-center justify-between gap-4">
         <BrandLockup size="lg" />
         <h1 className="font-sans font-light text-2xl text-white/95 whitespace-nowrap tracking-[0.01em]">
-          Validador de emissões
+          Hub Fiscal
         </h1>
       </div>
 
