@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Settings, SlidersHorizontal, ArrowLeftRight } from "lucide-react";
+import { Settings, SlidersHorizontal, ArrowLeftRight, LayoutGrid } from "lucide-react";
 import { FAB_BUTTON_CLASS, FAB_ICON_CLASS, FAB_ITEM_CLASS, FAB_MENU_CLASS } from "@/components/ui/Fab";
 
 /** Ações que não pertencem ao fluxo de conferência (mapear colunas, trocar de
@@ -18,6 +18,9 @@ export function CompanyFab({ companyId }: { companyId: string }) {
           </Link>
           <Link href="/companies" className={FAB_ITEM_CLASS}>
             <ArrowLeftRight className="w-4 h-4 text-mint-600" /> Trocar Empresa
+          </Link>
+          <Link href="/" className={FAB_ITEM_CLASS}>
+            <LayoutGrid className="w-4 h-4 text-ink/40" /> Ferramentas
           </Link>
         </div>
       </div>

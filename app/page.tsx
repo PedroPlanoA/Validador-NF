@@ -1,5 +1,63 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import { ArrowRight, ClipboardCheck, FileCode2 } from "lucide-react";
+import { HubHeader } from "@/components/layout/HubHeader";
+import { Card } from "@/components/ui/Card";
 
-export default function Home() {
-  redirect("/companies");
+export const dynamic = "force-dynamic";
+
+/** As ferramentas do Hub. Acrescentar uma é acrescentar um item aqui. */
+const FERRAMENTAS = [
+  {
+    href: "/companies",
+    nome: "Validador de Emissões",
+    descricao:
+      "Cruza o relatório de vendas da plataforma com o relatório de notas do emissor e aponta venda sem nota, erro de emissão, cancelamento inconsistente e divergência de valor.",
+    entrada: "Escolher a empresa",
+    icone: ClipboardCheck,
+  },
+  {
+    href: "/conversor-dominio",
+    nome: "Conversor de Leiaute",
+    descricao:
+      "Converte a planilha de NFS-e do emissor nacional (serviços tomados) no arquivo TXT de importação do Domínio, já com acumulador, série, espécie e CFOP resolvidos.",
+    entrada: "Abrir o conversor",
+    icone: FileCode2,
+  },
+] as const;
+
+export default function HubPage() {
+  return (
+    <main className="min-h-full bg-paper">
+      <HubHeader titulo="Hub Fiscal" />
+
+      <div className="max-w-6xl mx-auto px-6 py-12 space-y-8">
+        <div>
+          <h2 className="font-serif text-3xl font-black text-deep">Ferramentas</h2>
+          <p className="text-sm text-ink/60 mt-1.5">
+            Escolha a ferramenta que você vai usar agora.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {FERRAMENTAS.map(({ href, nome, descricao, entrada, icone: Icone }) => (
+            <Link key={href} href={href} className="group">
+              <Card className="h-full p-6 flex flex-col gap-4 transition-shadow group-hover:shadow-card-hover">
+                <div className="w-12 h-12 rounded-card-sm bg-mint/12 flex items-center justify-center shrink-0">
+                  <Icone className="w-6 h-6 text-mint-700" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-serif font-black text-xl text-deep">{nome}</h3>
+                  <p className="text-sm text-text-2 mt-2 leading-relaxed">{descricao}</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-mint-700">
+                  {entrada}
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </main>
+  );
 }

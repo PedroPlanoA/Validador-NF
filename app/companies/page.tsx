@@ -1,6 +1,6 @@
 import { listCompanies } from "@/lib/actions/companies";
 import { CompaniesManager } from "@/components/company/CompaniesManager";
-import { BrandLockup } from "@/components/layout/BrandLockup";
+import { HubHeader } from "@/components/layout/HubHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -9,13 +9,7 @@ export default async function CompaniesPage() {
 
   return (
     <main className="min-h-full bg-paper">
-      {/* Faixa de marca — igual ao topo do site institucional */}
-      <div className="bg-deep px-8 py-7 flex items-center justify-between gap-4">
-        <BrandLockup size="lg" />
-        <h1 className="font-sans font-light text-2xl text-white/95 whitespace-nowrap tracking-[0.01em]">
-          Hub Fiscal
-        </h1>
-      </div>
+      <HubHeader titulo="Validador de Emissões" voltar={{ href: "/", label: "Ferramentas" }} />
 
       <div className="max-w-6xl mx-auto px-6 py-12 space-y-8">
         <div>

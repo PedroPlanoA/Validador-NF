@@ -1,15 +1,57 @@
-# Lógica do Validador de NF — Plano A Contabilidade
+# Lógica do Hub Fiscal — Plano A Contabilidade
 
 Documento de referência da **estrutura e das regras de negócio** da aplicação.
 Serve para retomar o desenvolvimento sem depender do histórico de conversa: se
 uma regra não estiver aqui nem no código, ela não existe.
 
-Última atualização: 31/07/2026.
+Última atualização: 20/08/2026.
 
 ---
 
 ## 1. O que o sistema faz
 
+O **Hub Fiscal** reúne as ferramentas fiscais do escritório. A raiz (`/`) é a tela
+de ferramentas; cada ferramenta é uma entrada dali:
+
+| Ferramenta | Rota | O que faz |
+|---|---|---|
+| **Validador de Emissões** | `/companies` → `/c/[companyId]/...` | o sistema descrito no resto deste documento |
+| **Conversor de Leiaute** | `/conversor-dominio` | planilha de NFS-e do emissor nacional (serviços tomados) → TXT de importação do Domínio |
+
+Acrescentar ferramenta é acrescentar um item na lista `FERRAMENTAS` de
+`app/page.tsx` e uma rota própria. O `HubHeader` é a faixa comum dessas telas — a
+marca leva ao hub e o `voltar` liga o caminho de volta. De dentro de uma empresa,
+o botão flutuante tem "Ferramentas".
+
+### Conversor de Leiaute (NFS-e → Domínio)
+`lib/converters/dominioNfse.ts` é **puro** (sem DOM, sem leitura de arquivo), e a
+leitura da planilha fica no componente cliente. A conversão roda **inteira no
+navegador**: a planilha do cliente nunca sobe para o servidor.
+
+Saída: linhas de **94 campos** separados por `|`, os cadastros `0020` (um por CNPJ
+de prestador) antes dos lançamentos `1000` (um por nota), unidas por CRLF — o
+Domínio precisa do prestador existindo antes da nota que o referencia.
+
+Regras:
+
+- **Data de emissão e de entrada** = último dia **útil** do mês da competência.
+  Sábado volta para sexta, domingo volta para sexta. Feriado não é considerado —
+  exigiria uma tabela municipal que não existe aqui.
+- **CFOP** = `1933` quando a UF do prestador é a mesma do tomador **ou** não vem
+  na planilha; `2933` quando é de outro estado. A UF do prestador sai de
+  "Município de Incidência", depois da barra.
+- Linha **sem número de NFS-e ou sem CNPJ do prestador é ignorada**, e a
+  quantidade aparece na tela.
+- Competência ilegível cai em `DATA_PADRAO` (30/06/2026), herdado da ferramenta
+  original. É um paliativo ruim — a nota entra com data que não é dela — então a
+  tela avisa quantas notas caíram nesse caso, em vez de deixar passar calado.
+- Valor aceita número ou texto pt-BR e sai com vírgula decimal.
+
+Verificado contra a ferramenta original: 31/07/2026 (sexta), 31/08/2026
+(segunda), 29/05/2026 (31/05 é domingo → sexta) e 27/02/2026 (28/02 é sábado →
+sexta); CFOP 1933/2933 corretos; `0020` não repetido para o mesmo CNPJ.
+
+### Validador de Emissões
 Confere a **situação fiscal** de infoprodutores: cruza o que foi **vendido**
 (relatório exportado da plataforma de venda) com o que foi **faturado**
 (relatório exportado do emissor de nota fiscal) e aponta onde os dois não
@@ -41,7 +83,9 @@ competência** (mês de referência fiscal).
 
 ```
 app/
-  companies/                    escolha da empresa (entrada do sistema)
+  page.tsx                      Hub Fiscal — a tela de ferramentas (raiz)
+  conversor-dominio/            ferramenta: NFS-e do emissor nacional → TXT do Domínio
+  companies/                    escolha da empresa (entrada do Validador)
   config/                       mapeamentos globais (fora do contexto de empresa)
   c/[companyId]/
     layout.tsx                  faixa lateral fixa + botão flutuante
@@ -51,15 +95,17 @@ app/
     imports/                    upload, reanálise e exclusão de lote
     export/                     XLSX de vendas, notas, conciliação + PDF do checklist
 components/
-  layout/    faixa lateral, botão flutuante, seletor de competência, abas de config
+  layout/    faixa lateral, botão flutuante, HubHeader, seletor de competência, abas de config
   ui/        Card/PanelCard, Button, Badge, Table (classes), FilterBar, EmptyState,
              PageTitle/PageHeader, Pagination, Input, Combobox, ExportRawDataButton
   wizard/    assistente de mapeamento e formulário de upload
+  tools/     formulários das ferramentas do hub (conversor de leiaute)
   dashboard/ KpiCard e os gráficos (Situação NF, Plataforma, Tipo)
 lib/
   parsing/         leitura de planilha, números, datas/competência, palpites de coluna
   mapping/         tipos, aplicação do mapeamento, normalização de código
   reconciliation/  engine (puro), classify (tabela de decisão), labels, types
+  converters/      conversores de leiaute (puros) — hoje NFS-e → Domínio
   split/           análise NF-e × NFS-e (puro) e classificação do modelo da nota
   imports/         importService (transações de import/reanálise)
   actions/         Server Actions e leituras (reconciliação, produtos, checklist...)
