@@ -4,11 +4,12 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import { Download, FileSpreadsheet, AlertTriangle, CheckCircle2 } from "lucide-react";
 import {
-  COLUNAS_ESPERADAS,
+  COLUNAS_POR_MODELO,
   DATA_PADRAO,
-  converterParaDominio,
-  type ConversaoConfig,
+  converterEntrada,
+  converterServico,
   type LinhaPlanilha,
+  type ModeloDominio,
   type ResultadoConversao,
 } from "@/lib/converters/dominioNfse";
 import { Button } from "@/components/ui/Button";
@@ -16,13 +17,30 @@ import { Card } from "@/components/ui/Card";
 import { Input, Label } from "@/components/ui/Input";
 import { formatCurrency } from "@/lib/validation/currency";
 
-const ARQUIVO_SAIDA = "IMPORTACAO_DOMINIO_NFSE.TXT";
+const MODELOS: { valor: ModeloDominio; titulo: string; descricao: string; arquivo: string }[] = [
+  {
+    valor: "ENTRADA",
+    titulo: "Notas de Entrada",
+    descricao: "Serviços tomados. Gera cadastros 0020 e lançamentos 1000, com CFOP e série.",
+    arquivo: "IMPORTACAO_DOMINIO_ENTRADA.TXT",
+  },
+  {
+    valor: "SERVICO",
+    titulo: "Notas de Serviço",
+    descricao: "Serviços prestados. Gera cadastros 0010 e lançamentos 3000 — sem CFOP e sem série.",
+    arquivo: "IMPORTACAO_DOMINIO_SERVICO.TXT",
+  },
+];
 
-const CONFIG_INICIAL: ConversaoConfig = {
+const PADRAO = {
   acumulador: "2",
+  especiePadrao: "39",
   ufTomador: "SP",
   seriePadrao: "900",
-  especiePadrao: "39",
+  acumuladorServico: "503",
+  codigoServico: "9202",
+  municipioIbge: "3505708",
+  uf: "SP",
 };
 
 /**
@@ -31,20 +49,31 @@ const CONFIG_INICIAL: ConversaoConfig = {
  * necessidade, e era também a promessa da ferramenta original.
  */
 export function DominioConverterForm() {
-  const [config, setConfig] = useState<ConversaoConfig>(CONFIG_INICIAL);
+  const [modelo, setModelo] = useState<ModeloDominio>("ENTRADA");
+  const [campos, setCampos] = useState(PADRAO);
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [resultado, setResultado] = useState<ResultadoConversao | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [processando, setProcessando] = useState(false);
   const [arrastando, setArrastando] = useState(false);
 
-  const setCampo = (campo: keyof ConversaoConfig) => (valor: string) =>
-    setConfig((c) => ({ ...c, [campo]: valor }));
+  const modeloAtual = MODELOS.find((m) => m.valor === modelo)!;
+  const set = (campo: keyof typeof PADRAO) => (valor: string) =>
+    setCampos((c) => ({ ...c, [campo]: valor }));
+
+  function limparResultado() {
+    setResultado(null);
+    setErro(null);
+  }
+
+  function trocarModelo(novo: ModeloDominio) {
+    setModelo(novo);
+    limparResultado();
+  }
 
   function selecionar(file: File | null) {
     setArquivo(file);
-    setResultado(null);
-    setErro(null);
+    limparResultado();
   }
 
   async function converter() {
@@ -62,12 +91,27 @@ export function DominioConverterForm() {
         return;
       }
 
-      const r = converterParaDominio(linhas, config);
+      const r =
+        modelo === "ENTRADA"
+          ? converterEntrada(linhas, {
+              acumulador: campos.acumulador,
+              especiePadrao: campos.especiePadrao,
+              ufTomador: campos.ufTomador,
+              seriePadrao: campos.seriePadrao,
+            })
+          : converterServico(linhas, {
+              acumulador: campos.acumuladorServico,
+              especiePadrao: campos.especiePadrao,
+              codigoServico: campos.codigoServico,
+              municipioIbge: campos.municipioIbge,
+              uf: campos.uf,
+            });
+
       if (r.notas === 0) {
         setErro(
           r.colunasFaltando.length > 0
             ? `Nenhuma nota foi convertida. A planilha não tem a(s) coluna(s): ${r.colunasFaltando.join(", ")}.`
-            : "Nenhuma nota válida na planilha — todas as linhas estão sem número de NFS-e ou sem CNPJ do prestador.",
+            : "Nenhuma nota válida na planilha — todas as linhas estão sem número de NFS-e ou sem o documento da contraparte.",
         );
         return;
       }
@@ -87,7 +131,7 @@ export function DominioConverterForm() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = ARQUIVO_SAIDA;
+    link.download = modeloAtual.arquivo;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -96,37 +140,96 @@ export function DominioConverterForm() {
 
   return (
     <div className="space-y-6 max-w-3xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {MODELOS.map((m) => {
+          const ativo = m.valor === modelo;
+          return (
+            <button
+              key={m.valor}
+              type="button"
+              onClick={() => trocarModelo(m.valor)}
+              aria-pressed={ativo}
+              className={`text-left rounded-card-sm border p-4 transition-all ${
+                ativo
+                  ? "border-mint bg-mint/8 shadow-card"
+                  : "border-ink/10 bg-white hover:border-mint/50 shadow-[inset_0_2px_5px_rgba(0,50,60,0.06)]"
+              }`}
+            >
+              <span className={`text-sm font-bold ${ativo ? "text-deep" : "text-ink/70"}`}>{m.titulo}</span>
+              <span className="block text-xs text-ink/50 mt-1 leading-relaxed">{m.descricao}</span>
+            </button>
+          );
+        })}
+      </div>
+
       <Card className="p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="space-y-1.5">
             <Label>Acumulador</Label>
             <Input
-              value={config.acumulador}
-              onChange={(e) => setCampo("acumulador")(e.target.value)}
-              placeholder="ex: 2"
+              value={modelo === "ENTRADA" ? campos.acumulador : campos.acumuladorServico}
+              onChange={(e) =>
+                set(modelo === "ENTRADA" ? "acumulador" : "acumuladorServico")(e.target.value)
+              }
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label>UF do tomador</Label>
-            <Input
-              value={config.ufTomador}
-              onChange={(e) => setCampo("ufTomador")(e.target.value.toUpperCase())}
-              maxLength={2}
-              className="uppercase"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Série</Label>
-            <Input value={config.seriePadrao} onChange={(e) => setCampo("seriePadrao")(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label>Espécie</Label>
-            <Input value={config.especiePadrao} onChange={(e) => setCampo("especiePadrao")(e.target.value)} />
+            <Input value={campos.especiePadrao} onChange={(e) => set("especiePadrao")(e.target.value)} />
           </div>
+
+          {modelo === "ENTRADA" ? (
+            <>
+              <div className="space-y-1.5">
+                <Label>UF do tomador</Label>
+                <Input
+                  value={campos.ufTomador}
+                  onChange={(e) => set("ufTomador")(e.target.value.toUpperCase())}
+                  maxLength={2}
+                  className="uppercase"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Série</Label>
+                <Input value={campos.seriePadrao} onChange={(e) => set("seriePadrao")(e.target.value)} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <Label>Código de serviço</Label>
+                <Input value={campos.codigoServico} onChange={(e) => set("codigoServico")(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Município (IBGE)</Label>
+                <Input value={campos.municipioIbge} onChange={(e) => set("municipioIbge")(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>UF</Label>
+                <Input
+                  value={campos.uf}
+                  onChange={(e) => set("uf")(e.target.value.toUpperCase())}
+                  maxLength={2}
+                  className="uppercase"
+                />
+              </div>
+            </>
+          )}
         </div>
+
         <p className="text-xs text-ink/50">
-          A UF do tomador define o CFOP de cada nota: <strong>1933</strong> quando o prestador é do mesmo estado
-          (ou a UF dele não vem na planilha) e <strong>2933</strong> quando é de fora.
+          {modelo === "ENTRADA" ? (
+            <>
+              A UF do tomador define o CFOP de cada nota: <strong>1933</strong> quando o prestador é do mesmo
+              estado (ou a UF dele não vem na planilha) e <strong>2933</strong> quando é de fora.
+            </>
+          ) : (
+            <>
+              Município e UF vão em todos os cadastros <strong>0010</strong>; o código de serviço vai no campo 20
+              de cada lançamento <strong>3000</strong>. A data de emissão e de entrada é o último dia útil da
+              competência, como no modelo de entrada.
+            </>
+          )}
         </p>
       </Card>
 
@@ -172,22 +275,25 @@ export function DominioConverterForm() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-mint-700 shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-base text-ink">Conversão pronta</h3>
-              <p className="text-sm text-text-2 mt-0.5">
-                Confira os números antes de importar no Domínio.
-              </p>
+              <h3 className="text-base text-ink">Conversão pronta — {modeloAtual.titulo}</h3>
+              <p className="text-sm text-text-2 mt-0.5">Confira os números antes de importar no Domínio.</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               { rotulo: "Notas", valor: resultado.notas.toLocaleString("pt-BR") },
-              { rotulo: "Prestadores", valor: resultado.prestadores.toLocaleString("pt-BR") },
-              { rotulo: "Valor total", valor: formatCurrency(resultado.valorTotal, "BRL") },
               {
-                rotulo: "CFOP 1933 / 2933",
-                valor: `${resultado.cfopDentroDoEstado.toLocaleString("pt-BR")} / ${resultado.cfopForaDoEstado.toLocaleString("pt-BR")}`,
+                rotulo: modelo === "ENTRADA" ? "Prestadores" : "Tomadores",
+                valor: resultado.cadastros.toLocaleString("pt-BR"),
               },
+              { rotulo: "Valor total", valor: formatCurrency(resultado.valorTotal, "BRL") },
+              modelo === "ENTRADA"
+                ? {
+                    rotulo: "CFOP 1933 / 2933",
+                    valor: `${resultado.cfopDentroDoEstado.toLocaleString("pt-BR")} / ${resultado.cfopForaDoEstado.toLocaleString("pt-BR")}`,
+                  }
+                : { rotulo: "Linhas no TXT", valor: (resultado.cadastros + resultado.notas).toLocaleString("pt-BR") },
             ].map((k) => (
               <div key={k.rotulo}>
                 <span className="text-[10px] font-bold uppercase tracking-[.12em] text-ink/45 block">
@@ -203,7 +309,7 @@ export function DominioConverterForm() {
               {resultado.ignoradas > 0 && (
                 <p className="text-xs text-attention">
                   {resultado.ignoradas.toLocaleString("pt-BR")} linha(s) ignorada(s) por não ter número de NFS-e ou
-                  CNPJ do prestador.
+                  documento da contraparte.
                 </p>
               )}
               {resultado.semCompetencia > 0 && (
@@ -216,7 +322,7 @@ export function DominioConverterForm() {
           )}
 
           <Button variant="solid" onClick={baixar}>
-            <Download className="w-4 h-4" /> Baixar {ARQUIVO_SAIDA}
+            <Download className="w-4 h-4" /> Baixar {modeloAtual.arquivo}
           </Button>
         </Card>
       )}
@@ -231,10 +337,10 @@ export function DominioConverterForm() {
       <Card className="p-5">
         <h3 className="text-sm font-bold text-ink">Colunas que a planilha precisa ter</h3>
         <p className="text-xs text-ink/50 mt-1">
-          Os nomes precisam ser exatamente estes — é como o emissor nacional exporta.
+          Para o modelo <strong>{modeloAtual.titulo}</strong>. Os nomes precisam ser exatamente estes.
         </p>
         <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-4">
-          {COLUNAS_ESPERADAS.map((c) => (
+          {COLUNAS_POR_MODELO[modelo].map((c) => (
             <li key={c} className="text-xs text-ink/70 font-mono">
               {c}
             </li>

@@ -16,40 +16,61 @@ de ferramentas; cada ferramenta é uma entrada dali:
 | Ferramenta | Rota | O que faz |
 |---|---|---|
 | **Validador de Emissões** | `/companies` → `/c/[companyId]/...` | o sistema descrito no resto deste documento |
-| **Conversor de Leiaute** | `/conversor-dominio` | planilha de NFS-e do emissor nacional (serviços tomados) → TXT de importação do Domínio |
+| **Conversor de Leiaute** | `/conversor-dominio` | planilha de NFS-e do emissor nacional → TXT de importação do Domínio, nos modelos de entrada (tomados) e de serviço (prestados) |
 
 Acrescentar ferramenta é acrescentar um item na lista `FERRAMENTAS` de
 `app/page.tsx` e uma rota própria. O `HubHeader` é a faixa comum dessas telas — a
-marca leva ao hub e o `voltar` liga o caminho de volta. De dentro de uma empresa,
-o botão flutuante tem "Ferramentas".
+marca leva ao hub. A faixa tem **altura fixa**: o botão de voltar é o
+`VoltarParaFerramentas`, que fica fora dela, no corpo da página — dentro da faixa,
+ela engrossava só nas telas que tinham para onde voltar e a barra pulava de
+tamanho ao navegar. Em repouso o botão é um relevo negativo (sombra interna) e
+sobe no hover. De dentro de uma empresa, o botão flutuante tem "Ferramentas".
 
 ### Conversor de Leiaute (NFS-e → Domínio)
 `lib/converters/dominioNfse.ts` é **puro** (sem DOM, sem leitura de arquivo), e a
 leitura da planilha fica no componente cliente. A conversão roda **inteira no
 navegador**: a planilha do cliente nunca sobe para o servidor.
 
-Saída: linhas de **94 campos** separados por `|`, os cadastros `0020` (um por CNPJ
-de prestador) antes dos lançamentos `1000` (um por nota), unidas por CRLF — o
-Domínio precisa do prestador existindo antes da nota que o referencia.
+Dois modelos, escolhidos na tela:
 
-Regras:
+| | Notas de Entrada (tomados) | Notas de Serviço (prestados) |
+|---|---|---|
+| Cadastro | `0020`, 94 campos | `0010`, 94 campos + município IBGE no campo 8 |
+| Lançamento | `1000`, 94 campos | `3000`, **40** campos |
+| CFOP | 1933 / 2933 | **não existe** |
+| Série | sim | **não existe** |
+| Contraparte | prestador | tomador |
+| Marcador final do cadastro | campo 30 | campo **29** |
+
+Saída: cadastros antes dos lançamentos, unidos por CRLF — o Domínio precisa da
+pessoa existindo antes da nota que a referencia.
+
+Regras comuns aos dois:
 
 - **Data de emissão e de entrada** = último dia **útil** do mês da competência.
   Sábado volta para sexta, domingo volta para sexta. Feriado não é considerado —
-  exigiria uma tabela municipal que não existe aqui.
-- **CFOP** = `1933` quando a UF do prestador é a mesma do tomador **ou** não vem
-  na planilha; `2933` quando é de outro estado. A UF do prestador sai de
-  "Município de Incidência", depois da barra.
-- Linha **sem número de NFS-e ou sem CNPJ do prestador é ignorada**, e a
+  exigiria uma tabela municipal que não existe aqui. Vale também no modelo de
+  serviço, **por decisão do usuário**: o arquivo modelo que originou o leiaute
+  trazia a data de emissão de cada nota, e essa diferença foi escolhida.
+- Linha **sem número de NFS-e ou sem o documento da contraparte é ignorada**, e a
   quantidade aparece na tela.
 - Competência ilegível cai em `DATA_PADRAO` (30/06/2026), herdado da ferramenta
   original. É um paliativo ruim — a nota entra com data que não é dela — então a
   tela avisa quantas notas caíram nesse caso, em vez de deixar passar calado.
 - Valor aceita número ou texto pt-BR e sai com vírgula decimal.
 
-Verificado contra a ferramenta original: 31/07/2026 (sexta), 31/08/2026
-(segunda), 29/05/2026 (31/05 é domingo → sexta) e 27/02/2026 (28/02 é sábado →
-sexta); CFOP 1933/2933 corretos; `0020` não repetido para o mesmo CNPJ.
+Só no modelo de entrada: **CFOP** = `1933` quando a UF do prestador é a mesma do
+tomador **ou** não vem na planilha; `2933` quando é de outro estado. A UF sai da
+coluna de município de incidência, depois da barra.
+
+As colunas esperadas mudam com o modelo (`COLUNAS_POR_MODELO`) — prestador num,
+tomador no outro. Quando falta alguma, a tela diz **qual**, em vez de gerar um TXT
+com o documento errado. Os nomes das colunas do export de notas emitidas ainda
+precisam ser confirmados contra um arquivo real.
+
+Verificado contra o arquivo modelo do usuário: as **3.362 linhas** (1.464
+cadastros + 1.898 lançamentos) saem idênticas campo a campo, ignorando só as
+datas.
 
 ### Validador de Emissões
 Confere a **situação fiscal** de infoprodutores: cruza o que foi **vendido**

@@ -1,44 +1,88 @@
 import { parseNumber } from "@/lib/parsing/numberParser";
 
 /**
- * Conversão da planilha de NFS-e do emissor nacional (serviços **tomados**) para
- * o leiaute de importação do Domínio.
+ * Conversão da planilha de NFS-e do emissor nacional para os leiautes de
+ * importação do Domínio.
+ *
+ * Dois modelos, escolhidos pelo usuário na tela:
+ *
+ * | | Entrada (serviços tomados) | Serviço (serviços prestados) |
+ * |---|---|---|
+ * | Cadastro | `0020`, 94 campos | `0010`, 94 campos (+ município IBGE) |
+ * | Lançamento | `1000`, 94 campos | `3000`, **40** campos |
+ * | CFOP | 1933 / 2933 | não existe |
+ * | Série | sim | não existe |
  *
  * Função pura, sem DOM e sem leitura de arquivo — recebe as linhas já lidas da
  * planilha. É o que permite testar as regras (último dia útil, CFOP, formatação)
- * sem navegador, do mesmo jeito que `lib/reconciliation` e `lib/split`.
+ * sem navegador, como em `lib/reconciliation` e `lib/split`.
  */
 
-/** Colunas que a planilha do emissor nacional precisa ter, com o nome exato. */
-export const COLUNAS_ESPERADAS = [
-  "Número NFS-e",
-  "Competência",
-  "CNPJ/CPF Prestador",
-  "Nome Prestador",
-  "Valor do Serviço (R$)",
-  "Município de Incidência",
-] as const;
+export type ModeloDominio = "ENTRADA" | "SERVICO";
 
-/** O leiaute do Domínio tem 94 campos por linha, separados por `|`. */
-const TOTAL_CAMPOS = 94;
+/** O cadastro tem 94 campos nos dois modelos; o lançamento varia. */
+const CAMPOS_CADASTRO = 94;
+const CAMPOS_ENTRADA = 94;
+const CAMPOS_SERVICO = 40;
 
-export interface ConversaoConfig {
+/**
+ * Colunas que cada modelo procura na planilha, com o nome exato.
+ *
+ * No modelo de **serviço** a contraparte é o tomador, não o prestador. Os nomes
+ * abaixo são a expectativa; se o export do emissor nacional usar outros, a tela
+ * diz quais faltaram — é melhor recusar com o nome da coluna do que gerar um TXT
+ * com o documento errado.
+ */
+export const COLUNAS_POR_MODELO: Record<ModeloDominio, readonly string[]> = {
+  ENTRADA: [
+    "Número NFS-e",
+    "Competência",
+    "CNPJ/CPF Prestador",
+    "Nome Prestador",
+    "Valor do Serviço (R$)",
+    "Município de Incidência",
+  ],
+  SERVICO: [
+    "Número NFS-e",
+    "Competência",
+    "CNPJ/CPF Tomador",
+    "Nome Tomador",
+    "Valor do Serviço (R$)",
+  ],
+};
+
+/** Campos comuns aos dois modelos. */
+export interface ConfigComum {
   acumulador: string;
+  especiePadrao: string;
+}
+
+export interface ConfigEntrada extends ConfigComum {
   ufTomador: string;
   seriePadrao: string;
-  especiePadrao: string;
+}
+
+export interface ConfigServico extends ConfigComum {
+  /** Campo 20 do registro 3000 — código de serviço do município. */
+  codigoServico: string;
+  /** Campo 8 do cadastro 0010 — código IBGE do município. */
+  municipioIbge: string;
+  /** Campo 9 do cadastro 0010. */
+  uf: string;
 }
 
 export interface ResultadoConversao {
   /** Conteúdo do TXT, pronto para download. */
   conteudo: string;
   notas: number;
-  prestadores: number;
+  /** Cadastros gerados — prestadores no modelo de entrada, tomadores no de serviço. */
+  cadastros: number;
   valorTotal: number;
-  /** Linhas ignoradas por não ter número de nota ou CNPJ do prestador. */
+  /** Linhas ignoradas por não ter número de nota ou documento da contraparte. */
   ignoradas: number;
   /** Notas sem competência legível — receberam a data padrão. Ver `DATA_PADRAO`. */
   semCompetencia: number;
+  /** Só no modelo de entrada; no de serviço não existe CFOP. */
   cfopDentroDoEstado: number;
   cfopForaDoEstado: number;
   /** Colunas esperadas que não existem na planilha enviada. */
@@ -69,7 +113,8 @@ function formatarBR(data: Date): string {
 }
 
 /**
- * Último dia **útil** do mês da competência, no formato DD/MM/AAAA.
+ * Último dia **útil** do mês da competência, no formato DD/MM/AAAA. Vale para os
+ * **dois** modelos — decisão do usuário.
  *
  * Sábado volta para sexta, domingo volta para sexta. Feriado não é considerado —
  * a ferramenta original também não considerava, e tratar feriado exigiria uma
@@ -130,96 +175,200 @@ function valorBR(valor: number): string {
 
 export type LinhaPlanilha = Record<string, unknown>;
 
-export function converterParaDominio(
+/** Uma linha da planilha já reduzida ao que os dois modelos precisam. */
+interface NotaLida {
+  numero: string;
+  documento: string;
+  nome: string;
+  valor: number;
+  data: string;
+  temCompetencia: boolean;
+  ufContraparte: string;
+}
+
+function lerLinhas(
   linhas: LinhaPlanilha[],
-  config: ConversaoConfig,
-): ResultadoConversao {
+  colunaDocumento: string,
+  colunaNome: string,
+): { notas: NotaLida[]; ignoradas: number } {
+  const notas: NotaLida[] = [];
+  let ignoradas = 0;
+
+  for (const linha of linhas) {
+    const numero = String(linha["Número NFS-e"] ?? "").trim();
+    const documento = String(linha[colunaDocumento] ?? "").replace(/\D/g, "");
+    if (!numero || !documento) {
+      ignoradas += 1;
+      continue;
+    }
+
+    const bruto = linha["Valor do Serviço (R$)"];
+    const data = ultimoDiaUtil(linha["Competência"]);
+
+    notas.push({
+      numero,
+      documento,
+      nome: String(linha[colunaNome] ?? "").trim(),
+      valor: typeof bruto === "number" ? bruto : parseNumber(String(bruto ?? "")),
+      data: data ?? DATA_PADRAO,
+      temCompetencia: data !== null,
+      ufContraparte: ufDoMunicipio(linha["Município de Incidência"]),
+    });
+  }
+
+  return { notas, ignoradas };
+}
+
+function colunasFaltando(linhas: LinhaPlanilha[], modelo: ModeloDominio): string[] {
+  const presentes = new Set(linhas.length > 0 ? Object.keys(linhas[0]) : []);
+  return COLUNAS_POR_MODELO[modelo].filter((c) => !presentes.has(c));
+}
+
+/** Serviços **tomados** — cadastros `0020` e lançamentos `1000`. */
+export function converterEntrada(linhas: LinhaPlanilha[], config: ConfigEntrada): ResultadoConversao {
   const acumulador = config.acumulador.trim();
   const ufTomador = config.ufTomador.trim().toUpperCase() || "SP";
   const serie = config.seriePadrao.trim() || "900";
   const especie = config.especiePadrao.trim() || "39";
 
-  const presentes = new Set(linhas.length > 0 ? Object.keys(linhas[0]) : []);
-  const colunasFaltando = COLUNAS_ESPERADAS.filter((c) => !presentes.has(c));
+  const { notas, ignoradas } = lerLinhas(linhas, "CNPJ/CPF Prestador", "Nome Prestador");
 
-  const linhas0020: string[] = [];
-  const linhas1000: string[] = [];
-  const prestadores = new Set<string>();
-
-  let ignoradas = 0;
-  let semCompetencia = 0;
+  const cadastros: string[] = [];
+  const lancamentos: string[] = [];
+  const vistos = new Set<string>();
   let valorTotal = 0;
+  let semCompetencia = 0;
   let cfopDentroDoEstado = 0;
   let cfopForaDoEstado = 0;
 
-  for (const linha of linhas) {
-    const numeroNota = String(linha["Número NFS-e"] ?? "").trim();
-    const cnpjCpf = String(linha["CNPJ/CPF Prestador"] ?? "").replace(/\D/g, "");
-    if (!numeroNota || !cnpjCpf) {
-      ignoradas += 1;
-      continue;
-    }
-
-    const nomePrestador = String(linha["Nome Prestador"] ?? "").trim();
-    const bruto = linha["Valor do Serviço (R$)"];
-    const valor = typeof bruto === "number" ? bruto : parseNumber(String(bruto ?? ""));
-    const ufPrestador = ufDoMunicipio(linha["Município de Incidência"]);
-
-    const data = ultimoDiaUtil(linha["Competência"]);
-    if (data === null) semCompetencia += 1;
-    const dataFormatada = data ?? DATA_PADRAO;
+  for (const nota of notas) {
+    if (!nota.temCompetencia) semCompetencia += 1;
 
     // Dentro do estado do tomador (ou UF do prestador desconhecida) é 1933;
     // fora do estado, 2933.
-    const dentroDoEstado = ufPrestador === ufTomador || ufPrestador === "";
+    const dentroDoEstado = nota.ufContraparte === ufTomador || nota.ufContraparte === "";
     if (dentroDoEstado) cfopDentroDoEstado += 1;
     else cfopForaDoEstado += 1;
 
-    if (!prestadores.has(cnpjCpf)) {
-      prestadores.add(cnpjCpf);
-      const campos = new Array(TOTAL_CAMPOS).fill("");
-      campos[0] = "0020";
-      campos[1] = cnpjCpf;
-      campos[2] = nomePrestador;
-      campos[3] = nomePrestador;
-      campos[9] = ufPrestador;
-      campos[21] = "N";
-      campos[23] = "O";
-      campos[24] = "N";
-      campos[30] = "N";
-      linhas0020.push(campos.join("|"));
+    if (!vistos.has(nota.documento)) {
+      vistos.add(nota.documento);
+      const c = new Array(CAMPOS_CADASTRO).fill("");
+      c[0] = "0020";
+      c[1] = nota.documento;
+      c[2] = nota.nome;
+      c[3] = nota.nome;
+      c[9] = nota.ufContraparte;
+      c[21] = "N";
+      c[23] = "O";
+      c[24] = "N";
+      c[30] = "N";
+      cadastros.push(c.join("|"));
     }
 
-    const campos = new Array(TOTAL_CAMPOS).fill("");
-    campos[0] = "1000";
-    campos[1] = especie;
-    campos[2] = cnpjCpf;
-    campos[3] = ""; // Inscrição estadual fica vazia de propósito.
-    campos[4] = acumulador;
-    campos[5] = dentroDoEstado ? "1933" : "2933";
-    campos[7] = numeroNota;
-    campos[8] = serie;
-    campos[10] = dataFormatada; // Data de emissão
-    campos[11] = dataFormatada; // Data de entrada
-    campos[12] = valorBR(valor);
-    campos[15] = "S"; // Gera EFD
-    campos[38] = valorBR(valor); // Base de cálculo
-    linhas1000.push(campos.join("|"));
+    const l = new Array(CAMPOS_ENTRADA).fill("");
+    l[0] = "1000";
+    l[1] = especie;
+    l[2] = nota.documento;
+    l[3] = ""; // Inscrição estadual fica vazia de propósito.
+    l[4] = acumulador;
+    l[5] = dentroDoEstado ? "1933" : "2933";
+    l[7] = nota.numero;
+    l[8] = serie;
+    l[10] = nota.data; // Data de emissão
+    l[11] = nota.data; // Data de entrada
+    l[12] = valorBR(nota.valor);
+    l[15] = "S"; // Gera EFD
+    l[38] = valorBR(nota.valor); // Base de cálculo
+    lancamentos.push(l.join("|"));
 
-    valorTotal += valor;
+    valorTotal += nota.valor;
   }
 
-  return {
-    // Cadastros (0020) antes dos lançamentos (1000): o Domínio precisa do
-    // prestador existindo antes da nota que o referencia.
-    conteudo: [...linhas0020, ...linhas1000].join("\r\n"),
-    notas: linhas1000.length,
-    prestadores: prestadores.size,
+  return montar(cadastros, lancamentos, {
+    notas: lancamentos.length,
+    cadastros: vistos.size,
     valorTotal,
     ignoradas,
     semCompetencia,
     cfopDentroDoEstado,
     cfopForaDoEstado,
-    colunasFaltando: [...colunasFaltando],
-  };
+    colunasFaltando: colunasFaltando(linhas, "ENTRADA"),
+  });
+}
+
+/** Serviços **prestados** — cadastros `0010` e lançamentos `3000`. */
+export function converterServico(linhas: LinhaPlanilha[], config: ConfigServico): ResultadoConversao {
+  const acumulador = config.acumulador.trim();
+  const especie = config.especiePadrao.trim() || "39";
+  const codigoServico = config.codigoServico.trim();
+  const municipioIbge = config.municipioIbge.trim();
+  const uf = config.uf.trim().toUpperCase();
+
+  const { notas, ignoradas } = lerLinhas(linhas, "CNPJ/CPF Tomador", "Nome Tomador");
+
+  const cadastros: string[] = [];
+  const lancamentos: string[] = [];
+  const vistos = new Set<string>();
+  let valorTotal = 0;
+  let semCompetencia = 0;
+
+  for (const nota of notas) {
+    if (!nota.temCompetencia) semCompetencia += 1;
+
+    if (!vistos.has(nota.documento)) {
+      vistos.add(nota.documento);
+      const c = new Array(CAMPOS_CADASTRO).fill("");
+      c[0] = "0010";
+      c[1] = nota.documento;
+      c[2] = nota.nome;
+      c[3] = nota.nome;
+      c[8] = municipioIbge;
+      c[9] = uf;
+      c[21] = "N";
+      c[23] = "O";
+      c[24] = "N";
+      // No 0010 este marcador fica no campo 29 — no 0020 do outro modelo é o 30.
+      c[29] = "N";
+      cadastros.push(c.join("|"));
+    }
+
+    const l = new Array(CAMPOS_SERVICO).fill("");
+    l[0] = "3000";
+    l[1] = especie;
+    l[2] = nota.documento;
+    l[3] = ""; // Inscrição estadual
+    l[4] = acumulador;
+    l[5] = "0";
+    l[6] = nota.numero;
+    l[9] = nota.data; // Data de emissão
+    l[10] = nota.data; // Data de entrada
+    l[11] = valorBR(nota.valor);
+    l[19] = "0";
+    l[20] = codigoServico;
+    l[28] = valorBR(nota.valor); // Base de cálculo
+    lancamentos.push(l.join("|"));
+
+    valorTotal += nota.valor;
+  }
+
+  return montar(cadastros, lancamentos, {
+    notas: lancamentos.length,
+    cadastros: vistos.size,
+    valorTotal,
+    ignoradas,
+    semCompetencia,
+    cfopDentroDoEstado: 0,
+    cfopForaDoEstado: 0,
+    colunasFaltando: colunasFaltando(linhas, "SERVICO"),
+  });
+}
+
+/** Cadastros antes dos lançamentos: o Domínio precisa da pessoa existindo antes
+ *  da nota que a referencia. */
+function montar(
+  cadastros: string[],
+  lancamentos: string[],
+  resto: Omit<ResultadoConversao, "conteudo">,
+): ResultadoConversao {
+  return { conteudo: [...cadastros, ...lancamentos].join("\r\n"), ...resto };
 }
