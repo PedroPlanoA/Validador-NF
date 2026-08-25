@@ -25,9 +25,18 @@ Três peças de layout, todas em `components/layout/HubHeader.tsx`:
 
 - **`HubHeader`** — a faixa. Degradê que escurece de leve para a direita, dentro
   do mesmo verde-petróleo (`--color-deep` → `--color-deep-dark`): dá profundidade
-  sem introduzir cor nova. O título é sans **bold** com relevo gravado (sombra
-  escura embaixo, fio de luz em cima) — em fundo escuro é o que dá volume sem
-  precisar de outra cor. A marca leva ao hub.
+  sem introduzir cor nova.
+
+  A hierarquia é **invertida de propósito**: a marca é moldura (`BrandLockup`
+  tamanho `sm`, 16px) e o nome da tela é o assunto (Merriweather 900, 30px,
+  branco), aberto por um travessão em menta. Antes os dois tinham o mesmo tamanho
+  ótico nas duas pontas e disputavam a atenção — nenhum liderava. Quem resolve é o
+  **tamanho**, não a cor: apagar a marca em cinza a faria parecer desbotada em vez
+  de secundária.
+
+  Sem efeito de sombra no texto: o app inteiro é plano, com sombra só onde há
+  elevação real, e um texto com relevo era o único do sistema — lia como enfeite
+  colado. A profundidade fica no degradê. A marca leva ao hub.
 - **`VoltarParaFerramentas`** — fica **fora** da faixa. Dentro dela, a faixa
   engrossava só nas telas que tinham para onde voltar e a barra pulava de tamanho
   ao navegar. Alinha pela margem da tela (`px-8`, como o cabeçalho), não pela

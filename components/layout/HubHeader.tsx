@@ -14,21 +14,21 @@ import { BrandLockup } from "@/components/layout/BrandLockup";
  */
 export function HubHeader({ titulo }: { titulo: string }) {
   return (
-    <div className="bg-[linear-gradient(to_right,var(--color-deep),var(--color-deep-dark))] px-8 py-7 flex items-center justify-between gap-4">
+    <div className="bg-[linear-gradient(to_right,var(--color-deep),var(--color-deep-dark))] px-8 py-7 flex items-center justify-between gap-6">
+      {/* A marca é moldura, o nome da tela é o assunto. Antes os dois tinham o
+          mesmo tamanho ótico nas duas pontas da faixa e disputavam a atenção —
+          nenhum liderava. Quem resolve é o **tamanho**: a marca cai para 16px e o
+          título sobe para 30px. Sem apagar a marca em cinza, que leria como
+          desbotada em vez de secundária. */}
       <Link href="/" className="shrink-0">
-        <BrandLockup size="lg" />
+        <BrandLockup size="sm" />
       </Link>
-      {/* Merriweather em peso normal, não a sans em bold: o serifado dá presença
-          sem o peso da haste grossa, que sobre o fundo escuro fechava demais. Vem
-          da própria marca, e o contraste com o "Plano A" (mesmo serifado em 900)
-          se resolve pelo peso, não por trocar de família.
-
-          A profundidade agora é uma sombra difusa embaixo — o texto parece pairar
-          um pouco acima da faixa. O relevo gravado anterior tinha um fio de luz em
-          cima que, com bold, lia como carimbo. */}
-      <h1 className="font-serif font-normal text-[28px] text-white/95 whitespace-nowrap tracking-[-0.015em] [text-shadow:0_2px_10px_rgba(0,0,0,0.40)]">
-        {titulo}
-      </h1>
+      <div className="flex items-center gap-4 min-w-0">
+        <span className="h-px w-10 bg-mint-300 shrink-0" />
+        <h1 className="font-serif font-black text-[30px] text-white whitespace-nowrap tracking-[-0.02em]">
+          {titulo}
+        </h1>
+      </div>
     </div>
   );
 }
