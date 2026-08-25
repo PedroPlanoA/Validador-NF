@@ -370,7 +370,7 @@ Erros, porque é outro tipo de pendência e o cliente quer vê-la sozinha.
 | **Dashboard** | depende da seção | ver abaixo |
 | **Vendas** | sim (`competenciaEfetiva`) | paginada, 10 por página |
 | **Notas Fiscais** | sim (competência da própria nota) | filtros de status, serviço, tipo e plataforma |
-| **Split de Notas** | **não** — mostra a série inteira | só existe quando a empresa emite os dois modelos; ver abaixo |
+| **Split de Notas** | **sim** nos números do topo; as tabelas de evolução mostram a série inteira | só existe quando a empresa emite os dois modelos; ver abaixo |
 | **Produtos** | não | abas por plataforma; ajusta % de comissão |
 | **Painel de Erros** | **não, de propósito** | precisa mostrar toda divergência, senão um erro fora do mês selecionado ficaria escondido. Filtra por plataforma, situação NF, situação da venda e situação da reconciliação — **não** por produto (removido a pedido do usuário) |
 | **Checklist** | sim, e **exige** uma competência | audita um mês por vez |
@@ -412,6 +412,14 @@ URL direta não escapar da regra.
 
 O que fica fora é **reportado na tela** com tipo e quantidade, em vez de
 desaparecer do total.
+
+**Dois recortes, de propósito.** O seletor de competência vale aqui como em toda
+aba, mas aplicá-lo às tabelas por mês e por trimestre as reduziria a uma linha e
+mataria justamente o que elas mostram — a mudança da regra de rateio ao longo do
+tempo. Então `getSplitAnalysis` devolve **dois** recortes: `periodo` (filtrado
+pela competência selecionada — alimenta os KPIs, o resumo geral e a visão por
+produto) e `serie` (inteira — alimenta as tabelas por competência e por
+trimestre). Em "Todas", os dois são o mesmo objeto.
 
 **Base de cálculo:** só notas com `situacaoNf = EMITIDO`. Cancelada, com erro ou
 pendente distorceria qualquer rateio.

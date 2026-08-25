@@ -2,19 +2,32 @@ import { db } from "@/lib/db";
 import { computeSplit, type SplitResult } from "@/lib/split/computeSplit";
 import { modeloDaNota } from "@/lib/split/modeloNota";
 
+export interface SplitAnalysis {
+  /** Série inteira — alimenta as tabelas por competência e por trimestre, que
+   *  só fazem sentido mostrando a evolução. */
+  serie: SplitResult;
+  /** Recortado pela competência selecionada (ou igual a `serie` em "Todas") —
+   *  alimenta os KPIs, o resumo geral e a visão por produto. */
+  periodo: SplitResult;
+  competencia?: string;
+}
+
 /**
  * Análise de split de uma empresa. Como o dashboard, considera **apenas notas
  * emitidas** — cancelada, com erro ou pendente não é faturamento e distorceria
  * qualquer percentual de rateio.
  *
- * Não é filtrada por competência: a tela mostra a série inteira por mês e por
- * trimestre, que é onde a mudança na regra de rateio aparece.
+ * Devolve dois recortes de propósito. O seletor de competência precisa valer
+ * aqui como vale em toda aba, mas aplicá-lo às tabelas por mês e por trimestre
+ * as reduziria a uma linha e mataria justamente o que elas mostram — a mudança
+ * da regra de rateio ao longo do tempo. Então o período recorta os números do
+ * topo e a série alimenta as tabelas de evolução.
  *
  * O produto vem do relatório de **vendas** (a nota fiscal não tem produto),
  * casado pelo código normalizado — o mesmo cruzamento que o dashboard usa para
  * plataforma e moeda.
  */
-export async function getSplitAnalysis(companyId: string): Promise<SplitResult> {
+export async function getSplitAnalysis(companyId: string, competencia?: string): Promise<SplitAnalysis> {
   const [notas, vendas] = await Promise.all([
     db.invoice.findMany({
       where: { companyId, situacaoNf: "EMITIDO" },
@@ -26,7 +39,16 @@ export async function getSplitAnalysis(companyId: string): Promise<SplitResult> 
     }),
   ]);
 
-  return computeSplit(notas, new Map(vendas.map((v) => [v.codigoVendaNormalized, v.produto])));
+  const produtoPorCodigo = new Map(vendas.map((v) => [v.codigoVendaNormalized, v.produto]));
+  const serie = computeSplit(notas, produtoPorCodigo);
+  const periodo = competencia
+    ? computeSplit(
+        notas.filter((n) => n.competencia === competencia),
+        produtoPorCodigo,
+      )
+    : serie;
+
+  return { serie, periodo, competencia };
 }
 
 /**

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Split } from "lucide-react";
 import { getSplitAnalysis, hasSplitDeNotas } from "@/lib/actions/split";
+import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
 import { formatCurrency } from "@/lib/validation/currency";
 import { formatCompetencia, formatTrimestre } from "@/lib/format/competencia";
 import { formatPercent } from "@/lib/format/percent";
@@ -94,13 +95,18 @@ export default async function SplitPage({ params }: { params: Promise<{ companyI
   // divisão a demonstrar, e a URL direta não deve escapar dessa regra.
   if (!(await hasSplitDeNotas(companyId))) notFound();
 
-  const r = await getSplitAnalysis(companyId);
+  const competencia = await getCompetenciaCookie(companyId);
+  const { serie, periodo: r } = await getSplitAnalysis(companyId, competencia);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Split de Notas"
-        sub="Divisão do faturamento entre NF-e (produto) e NFS-e (serviço), por período e por produto."
+        sub={
+          competencia
+            ? `Divisão do faturamento em ${formatCompetencia(competencia)} — as tabelas de evolução seguem mostrando a série inteira.`
+            : "Divisão do faturamento entre NF-e (produto) e NFS-e (serviço), por período e por produto."
+        }
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -211,19 +217,19 @@ export default async function SplitPage({ params }: { params: Promise<{ companyI
 
       <PanelCard title="Receita por competência">
         <PeriodoTable
-          periodos={r.competencias}
+          periodos={serie.competencias}
           rotulo={formatCompetencia}
           cabecalho="Competência"
-          vendasTotais={r.vendas}
+          vendasTotais={serie.vendas}
         />
       </PanelCard>
 
       <PanelCard title="Receita por trimestre">
         <PeriodoTable
-          periodos={r.trimestres}
+          periodos={serie.trimestres}
           rotulo={formatTrimestre}
           cabecalho="Trimestre"
-          vendasTotais={r.vendas}
+          vendasTotais={serie.vendas}
         />
       </PanelCard>
 
@@ -292,7 +298,7 @@ export default async function SplitPage({ params }: { params: Promise<{ companyI
               </tr>
             </thead>
             <tbody className={TBODY_CLASS}>
-              {r.trimestres.map((t) => (
+              {serie.trimestres.map((t) => (
                 <tr key={t.chave} className={TR_CLASS}>
                   <td className={TD}>{formatTrimestre(t.chave)}</td>
                   <td className={TD_NUM}>{formatPercent(t.receita > 0 ? t.nfe / t.receita : null)}</td>
