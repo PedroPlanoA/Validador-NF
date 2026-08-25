@@ -139,7 +139,7 @@ export function DominioConverterForm() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {MODELOS.map((m) => {
           const ativo = m.valor === modelo;

@@ -19,12 +19,26 @@ de ferramentas; cada ferramenta é uma entrada dali:
 | **Conversor de Leiaute** | `/conversor-dominio` | planilha de NFS-e do emissor nacional → TXT de importação do Domínio, nos modelos de entrada (tomados) e de serviço (prestados) |
 
 Acrescentar ferramenta é acrescentar um item na lista `FERRAMENTAS` de
-`app/page.tsx` e uma rota própria. O `HubHeader` é a faixa comum dessas telas — a
-marca leva ao hub. A faixa tem **altura fixa**: o botão de voltar é o
-`VoltarParaFerramentas`, que fica fora dela, no corpo da página — dentro da faixa,
-ela engrossava só nas telas que tinham para onde voltar e a barra pulava de
-tamanho ao navegar. Em repouso o botão é um relevo negativo (sombra interna) e
-sobe no hover. De dentro de uma empresa, o botão flutuante tem "Ferramentas".
+`app/page.tsx` e uma rota própria.
+
+Três peças de layout, todas em `components/layout/HubHeader.tsx`:
+
+- **`HubHeader`** — a faixa. Degradê que escurece de leve para a direita, dentro
+  do mesmo verde-petróleo (`--color-deep` → `--color-deep-dark`): dá profundidade
+  sem introduzir cor nova. O título é sans **bold** com relevo gravado (sombra
+  escura embaixo, fio de luz em cima) — em fundo escuro é o que dá volume sem
+  precisar de outra cor. A marca leva ao hub.
+- **`VoltarParaFerramentas`** — fica **fora** da faixa. Dentro dela, a faixa
+  engrossava só nas telas que tinham para onde voltar e a barra pulava de tamanho
+  ao navegar. Alinha pela margem da tela (`px-8`, como o cabeçalho), não pela
+  coluna central. Estilo **debossed**: sombra interna escura em cima e fio de luz
+  interno embaixo, como carimbado no fundo; no hover emerge (fundo branco, sombra
+  externa). Só sombra e cor mudam — nada muda de tamanho, para não deslocar o que
+  está ao redor.
+- **`HubTitle`** — título de seção das telas do hub, fechando com o **ponto em
+  menta**, a mesma assinatura do `PageTitle` das abas do validador.
+
+De dentro de uma empresa, o botão flutuante tem "Ferramentas".
 
 ### Conversor de Leiaute (NFS-e → Domínio)
 `lib/converters/dominioNfse.ts` é **puro** (sem DOM, sem leitura de arquivo), e a

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, ClipboardCheck, FileCode2 } from "lucide-react";
-import { HubHeader } from "@/components/layout/HubHeader";
+import { HubHeader, HubTitle } from "@/components/layout/HubHeader";
 import { Card } from "@/components/ui/Card";
 
 export const dynamic = "force-dynamic";
@@ -31,12 +31,7 @@ export default function HubPage() {
       <HubHeader titulo="Hub Fiscal" />
 
       <div className="max-w-6xl mx-auto px-6 py-12 space-y-8">
-        <div>
-          <h2 className="font-serif text-3xl font-black text-deep">Ferramentas</h2>
-          <p className="text-sm text-ink/60 mt-1.5">
-            Escolha a ferramenta que você vai usar agora.
-          </p>
-        </div>
+        <HubTitle sub="Escolha a ferramenta que você vai usar agora.">Ferramentas</HubTitle>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {FERRAMENTAS.map(({ href, nome, descricao, entrada, icone: Icone }) => (
