@@ -52,8 +52,10 @@ Regras comuns aos dois:
   exigiria uma tabela municipal que não existe aqui. Vale também no modelo de
   serviço, **por decisão do usuário**: o arquivo modelo que originou o leiaute
   trazia a data de emissão de cada nota, e essa diferença foi escolhida.
-- Linha **sem número de NFS-e ou sem o documento da contraparte é ignorada**, e a
-  quantidade aparece na tela.
+- Linha **sem número de NFS-e e sem documento** é estrutura, não dado faltando:
+  linha em branco ou o rodapé de totais que o emissor nacional acrescenta
+  ("TOTAL (4 notas)"). Sai sem entrar na contagem. Já faltar **só um** dos dois é
+  dado ruim de verdade, e esse aparece na tela como linha ignorada.
 - Competência ilegível cai em `DATA_PADRAO` (30/06/2026), herdado da ferramenta
   original. É um paliativo ruim — a nota entra com data que não é dela — então a
   tela avisa quantas notas caíram nesse caso, em vez de deixar passar calado.
@@ -65,8 +67,9 @@ coluna de município de incidência, depois da barra.
 
 As colunas esperadas mudam com o modelo (`COLUNAS_POR_MODELO`) — prestador num,
 tomador no outro. Quando falta alguma, a tela diz **qual**, em vez de gerar um TXT
-com o documento errado. Os nomes das colunas do export de notas emitidas ainda
-precisam ser confirmados contra um arquivo real.
+com o documento errado. Confirmado contra o export real de notas emitidas: as
+colunas são `CNPJ/CPF Tomador` e `Nome Tomador`, e o mesmo arquivo traz também as
+colunas de prestador.
 
 Verificado contra o arquivo modelo do usuário: as **3.362 linhas** (1.464
 cadastros + 1.898 lançamentos) saem idênticas campo a campo, ignorando só as

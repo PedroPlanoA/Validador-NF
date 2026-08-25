@@ -197,6 +197,15 @@ function lerLinhas(
   for (const linha of linhas) {
     const numero = String(linha["Número NFS-e"] ?? "").trim();
     const documento = String(linha[colunaDocumento] ?? "").replace(/\D/g, "");
+
+    // Sem número **e** sem documento, a linha não é uma nota: é linha em branco
+    // ou o rodapé de totais que o emissor nacional acrescenta ("TOTAL (4
+    // notas)"). Passa batido sem entrar na contagem, senão toda conversão
+    // acusaria uma "linha ignorada" que não é problema nenhum.
+    if (!numero && !documento) continue;
+
+    // Já com um dos dois preenchidos, faltar o outro é dado ruim de verdade —
+    // esse merece aparecer na tela.
     if (!numero || !documento) {
       ignoradas += 1;
       continue;
