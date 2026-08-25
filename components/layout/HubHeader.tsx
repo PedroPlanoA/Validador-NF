@@ -18,9 +18,15 @@ export function HubHeader({ titulo }: { titulo: string }) {
       <Link href="/" className="shrink-0">
         <BrandLockup size="lg" />
       </Link>
-      {/* Relevo gravado: sombra escura embaixo e um fio de luz em cima. Em fundo
-          escuro é o que dá volume ao texto sem precisar de outra cor. */}
-      <h1 className="font-sans font-bold text-[26px] text-white whitespace-nowrap tracking-[-0.01em] [text-shadow:0_2px_3px_rgba(0,0,0,0.45),0_-1px_0_rgba(255,255,255,0.10)]">
+      {/* Merriweather em peso normal, não a sans em bold: o serifado dá presença
+          sem o peso da haste grossa, que sobre o fundo escuro fechava demais. Vem
+          da própria marca, e o contraste com o "Plano A" (mesmo serifado em 900)
+          se resolve pelo peso, não por trocar de família.
+
+          A profundidade agora é uma sombra difusa embaixo — o texto parece pairar
+          um pouco acima da faixa. O relevo gravado anterior tinha um fio de luz em
+          cima que, com bold, lia como carimbo. */}
+      <h1 className="font-serif font-normal text-[28px] text-white/95 whitespace-nowrap tracking-[-0.015em] [text-shadow:0_2px_10px_rgba(0,0,0,0.40)]">
         {titulo}
       </h1>
     </div>
