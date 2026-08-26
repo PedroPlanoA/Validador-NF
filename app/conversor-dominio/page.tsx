@@ -4,7 +4,7 @@ import { DominioConverterForm } from "@/components/tools/DominioConverterForm";
 export default function ConversorDominioPage() {
   return (
     <main className="min-h-full bg-paper">
-      <HubHeader titulo="Conversor de Leiaute" />
+      <HubHeader titulo="Conversor" />
       <VoltarParaFerramentas />
 
       {/* A coluna acompanha a largura do formulário: com o container largo, os

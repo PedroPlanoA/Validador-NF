@@ -15,17 +15,19 @@ import { BrandLockup } from "@/components/layout/BrandLockup";
 export function HubHeader({ titulo }: { titulo: string }) {
   return (
     <div className="bg-[linear-gradient(to_right,var(--color-deep),var(--color-deep-dark))] px-8 py-7 flex items-center justify-between gap-6">
-      {/* A marca é moldura, o nome da tela é o assunto. Antes os dois tinham o
-          mesmo tamanho ótico nas duas pontas da faixa e disputavam a atenção —
-          nenhum liderava. Quem resolve é o **tamanho**: a marca cai para 16px e o
-          título sobe para 30px. Sem apagar a marca em cinza, que leria como
-          desbotada em vez de secundária. */}
+      {/* A marca lidera (30px/900) e o nome da tela apoia (22px/700). O problema
+          original era os dois terem o mesmo tamanho ótico e empatarem; resolvido
+          pela diferença de tamanho, com a marca no topo da hierarquia.
+
+          Peso normal: ao lado do 900 da marca, qualquer bold no título voltava a
+          disputar atenção. A hierarquia fica inteira no tamanho e no peso da
+          marca. */}
       <Link href="/" className="shrink-0">
-        <BrandLockup size="sm" />
+        <BrandLockup size="lg" />
       </Link>
       <div className="flex items-center gap-4 min-w-0">
         <span className="h-px w-10 bg-mint-300 shrink-0" />
-        <h1 className="font-serif font-black text-[30px] text-white whitespace-nowrap tracking-[-0.02em]">
+        <h1 className="font-serif font-normal text-[16px] text-white whitespace-nowrap">
           {titulo}
         </h1>
       </div>

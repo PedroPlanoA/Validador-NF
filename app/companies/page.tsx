@@ -9,7 +9,7 @@ export default async function CompaniesPage() {
 
   return (
     <main className="min-h-full bg-paper">
-      <HubHeader titulo="Validador de Emissões" />
+      <HubHeader titulo="Validador" />
       <VoltarParaFerramentas />
 
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">

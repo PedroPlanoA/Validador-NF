@@ -1,14 +1,4 @@
 const SIZES = {
-  /** Marca como moldura, não como protagonista — usada na faixa do hub, onde o
-   *  nome da tela é que lidera. A hierarquia vem do **tamanho**; a cor continua
-   *  branca cheia, porque marca lavada em cinza lê como desbotada, não como
-   *  secundária. */
-  sm: {
-    logo: "h-8 w-8",
-    name: "text-[16px]",
-    tag: "text-[8px]",
-    gap: "gap-3",
-  },
   md: {
     logo: "h-11 w-11",
     name: "text-[17px]",
@@ -16,10 +6,10 @@ const SIZES = {
     gap: "gap-3",
   },
   lg: {
-    logo: "h-16 w-16",
-    name: "text-[30px]",
-    tag: "text-[10px]",
-    gap: "gap-4",
+    logo: "h-20 w-20",
+    name: "text-[34px]",
+    tag: "text-[11px]",
+    gap: "gap-5",
   },
 } as const;
 
