@@ -9,7 +9,10 @@ const SIZES = {
     logo: "h-20 w-20",
     name: "text-[34px]",
     tag: "text-[11px]",
-    gap: "gap-5",
+    // Símbolo e nome formam uma assinatura só, então o respiro entre eles é
+    // menor que o tamanho do símbolo sugeriria — afastados, liam como dois
+    // elementos soltos lado a lado.
+    gap: "gap-3",
   },
 } as const;
 

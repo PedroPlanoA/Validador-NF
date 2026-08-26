@@ -27,7 +27,7 @@ export function HubHeader({ titulo }: { titulo: string }) {
       </Link>
       <div className="flex items-center gap-4 min-w-0">
         <span className="h-px w-10 bg-mint-300 shrink-0" />
-        <h1 className="font-serif font-normal text-[16px] text-white whitespace-nowrap">
+        <h1 className="font-serif font-normal text-[16px] text-mint-300 whitespace-nowrap">
           {titulo}
         </h1>
       </div>
@@ -49,8 +49,8 @@ export function VoltarParaFerramentas({ label = "Ferramentas" }: { label?: strin
     <div className="px-8 pt-7">
       <Link
         href="/"
-        className="inline-flex items-center gap-2 text-[13px] font-bold text-ink/60 bg-paper-alt rounded-pill px-5 py-2.5
-                   shadow-[inset_0_2px_4px_rgba(0,50,60,0.22),inset_0_-1px_0_rgba(255,255,255,0.85)]
+        className="inline-flex items-center gap-2 text-[13px] font-bold text-ink/40 bg-paper-alt/70 rounded-pill px-5 py-2.5
+                   shadow-[inset_0_1px_3px_rgba(0,50,60,0.10),inset_0_-1px_0_rgba(255,255,255,0.70)]
                    hover:text-deep hover:bg-white hover:shadow-card
                    transition-all duration-200
                    outline-none focus-visible:ring-4 focus-visible:ring-mint/30"
