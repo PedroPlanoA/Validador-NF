@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ClipboardCheck, FileCode2 } from "lucide-react";
+import { ArrowRight, ClipboardCheck, FileCode2, FileType2 } from "lucide-react";
 import { HubHeader, HubTitle } from "@/components/layout/HubHeader";
 import { Card } from "@/components/ui/Card";
 
@@ -19,9 +19,17 @@ const FERRAMENTAS = [
     href: "/conversor-dominio",
     nome: "Conversor de Leiaute",
     descricao:
-      "Converte a planilha de NFS-e do emissor nacional (serviços tomados) no arquivo TXT de importação do Domínio, já com acumulador, série, espécie e CFOP resolvidos.",
+      "Converte a planilha de NFS-e do emissor nacional no arquivo TXT de importação do Domínio, nos modelos de entrada (serviços tomados) e de serviço (prestados).",
     entrada: "Abrir o conversor",
     icone: FileCode2,
+  },
+  {
+    href: "/conversor-ansi",
+    nome: "Conversor ANSI",
+    descricao:
+      "Converte arquivos .txt para a codificação ANSI (Windows-1252), vários de uma vez, avisando quais caracteres não têm equivalente antes de você importar.",
+    entrada: "Abrir o conversor",
+    icone: FileType2,
   },
 ] as const;
 

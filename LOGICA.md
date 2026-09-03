@@ -17,6 +17,7 @@ de ferramentas; cada ferramenta é uma entrada dali:
 |---|---|---|
 | **Validador de Emissões** | `/companies` → `/c/[companyId]/...` | o sistema descrito no resto deste documento |
 | **Conversor de Leiaute** | `/conversor-dominio` | planilha de NFS-e do emissor nacional → TXT de importação do Domínio, nos modelos de entrada (tomados) e de serviço (prestados) |
+| **Conversor ANSI** | `/conversor-ansi` | arquivos .txt para a codificação ANSI (Windows-1252), vários de uma vez |
 
 Acrescentar ferramenta é acrescentar um item na lista `FERRAMENTAS` de
 `app/page.tsx` e uma rota própria.
@@ -27,12 +28,11 @@ Três peças de layout, todas em `components/layout/HubHeader.tsx`:
   do mesmo verde-petróleo (`--color-deep` → `--color-deep-dark`): dá profundidade
   sem introduzir cor nova.
 
-  A hierarquia é **invertida de propósito**: a marca é moldura (`BrandLockup`
-  tamanho `sm`, 16px) e o nome da tela é o assunto (Merriweather 900, 30px,
-  branco), aberto por um travessão em menta. Antes os dois tinham o mesmo tamanho
-  ótico nas duas pontas e disputavam a atenção — nenhum liderava. Quem resolve é o
-  **tamanho**, não a cor: apagar a marca em cinza a faria parecer desbotada em vez
-  de secundária.
+  A **marca lidera**: `BrandLockup` tamanho `lg` (símbolo 80px, "Plano A" 34px,
+  peso 900). O nome da tela apoia — Merriweather peso normal, 16px, em `mint-300`,
+  aberto por um travessão do mesmo verde, de modo que traço e palavra leiam como
+  um elemento só. O problema original era os dois terem o mesmo tamanho ótico nas
+  duas pontas e empatarem; quem resolve é o **tamanho**, não a cor.
 
   Sem efeito de sombra no texto: o app inteiro é plano, com sombra só onde há
   elevação real, e um texto com relevo era o único do sistema — lia como enfeite
@@ -98,6 +98,25 @@ Verificado contra o arquivo modelo do usuário: as **3.362 linhas** (1.464
 cadastros + 1.898 lançamentos) saem idênticas campo a campo, ignorando só as
 datas.
 
+### Conversor ANSI (TXT → Windows-1252)
+`lib/converters/ansi.ts` é **puro**; a leitura dos arquivos e o zip ficam no
+componente cliente. Roda inteiro no navegador — são arquivos fiscais prontos para
+importação, não há razão para trafegarem.
+
+- **ANSI aqui é a página de código Windows-1252**, o nome que o Windows dá a ela.
+- A faixa **0x80–0x9F** é onde o Windows-1252 diverge do Latin-1: aspas curvas,
+  travessão, reticências, €, ™. São exatamente os caracteres que o Word e os
+  emissores inserem sem avisar, então é a tabela que mais importa acertar.
+- O que **não existe** em ANSI (emoji, CJK) vira `?` ou é removido, à escolha na
+  tela, e a quantidade por arquivo aparece antes do download. `?` preserva o
+  tamanho da coluna em arquivo posicional; remover encurta a linha.
+- A contagem percorre por **code point** (`for...of`), não por índice: emoji é par
+  substituto e por índice contaria como duas perdas.
+- Leitura tenta **UTF-8 estrito** e cai para Windows-1252 se falhar. Arquivo que
+  já estava em ANSI sai idêntico — verificado por ida e volta.
+- Um arquivo baixa direto como `.txt`; dois ou mais saem em zip, para ninguém
+  precisar descompactar sem necessidade.
+
 ### Validador de Emissões
 Confere a **situação fiscal** de infoprodutores: cruza o que foi **vendido**
 (relatório exportado da plataforma de venda) com o que foi **faturado**
@@ -124,7 +143,8 @@ competência** (mês de referência fiscal).
 
 - **Next.js 16.2** (App Router, Turbopack), **React 19**, **Tailwind 4**
 - **Prisma 7** com adapter Neon (Postgres serverless)
-- `xlsx` + `papaparse` para leitura de planilhas, `chart.js` para gráficos,
+- `xlsx` + `papaparse` para planilhas, `jszip` para o zip do conversor ANSI,
+  `chart.js` para gráficos,
   `@react-pdf/renderer` para o PDF do checklist
 - Deploy na Vercel
 
@@ -132,6 +152,7 @@ competência** (mês de referência fiscal).
 app/
   page.tsx                      Hub Fiscal — a tela de ferramentas (raiz)
   conversor-dominio/            ferramenta: NFS-e do emissor nacional → TXT do Domínio
+  conversor-ansi/               ferramenta: .txt → ANSI (Windows-1252)
   companies/                    escolha da empresa (entrada do Validador)
   config/                       mapeamentos globais (fora do contexto de empresa)
   c/[companyId]/
@@ -146,13 +167,13 @@ components/
   ui/        Card/PanelCard, Button, Badge, Table (classes), FilterBar, EmptyState,
              PageTitle/PageHeader, Pagination, Input, Combobox, ExportRawDataButton
   wizard/    assistente de mapeamento e formulário de upload
-  tools/     formulários das ferramentas do hub (conversor de leiaute)
+  tools/     formulários das ferramentas do hub (conversores de leiaute e ANSI)
   dashboard/ KpiCard e os gráficos (Situação NF, Plataforma, Tipo)
 lib/
   parsing/         leitura de planilha, números, datas/competência, palpites de coluna
   mapping/         tipos, aplicação do mapeamento, normalização de código
   reconciliation/  engine (puro), classify (tabela de decisão), labels, types
-  converters/      conversores de leiaute (puros) — hoje NFS-e → Domínio
+  converters/      conversores puros — NFS-e → Domínio e TXT → ANSI
   split/           análise NF-e × NFS-e (puro) e classificação do modelo da nota
   imports/         importService (transações de import/reanálise)
   actions/         Server Actions e leituras (reconciliação, produtos, checklist...)
