@@ -4,7 +4,7 @@ Documento de referência da **estrutura e das regras de negócio** da aplicaçã
 Serve para retomar o desenvolvimento sem depender do histórico de conversa: se
 uma regra não estiver aqui nem no código, ela não existe.
 
-Última atualização: 20/08/2026.
+Última atualização: 16/09/2026.
 
 ---
 
@@ -18,6 +18,7 @@ de ferramentas; cada ferramenta é uma entrada dali:
 | **Validador de Emissões** | `/companies` → `/c/[companyId]/...` | o sistema descrito no resto deste documento |
 | **Conversor de Leiaute** | `/conversor-dominio` | planilha de NFS-e do emissor nacional → TXT de importação do Domínio, nos modelos de entrada (tomados) e de serviço (prestados) |
 | **Conversor ANSI** | `/conversor-ansi` | arquivos .txt para a codificação ANSI (Windows-1252), vários de uma vez |
+| **Extrair notas do Emissor Nacional** | `/extrator-nacional` | notas emitidas e tomadas lidas da API oficial do ADN com o certificado digital. **Não roda no servidor** — o Hub emoldura um agente local |
 
 Acrescentar ferramenta é acrescentar um item na lista `FERRAMENTAS` de
 `app/page.tsx` e uma rota própria.
@@ -117,6 +118,72 @@ importação, não há razão para trafegarem.
 - Um arquivo baixa direto como `.txt`; dois ou mais saem em zip, para ninguém
   precisar descompactar sem necessidade.
 
+### Extrair notas do Emissor Nacional (agente local emoldurado)
+Lê as notas **emitidas e tomadas** direto da API oficial do ADN
+(`adn.nfse.gov.br`), autenticada por **mTLS**, e exporta em Excel ou XML. O código
+da ferramenta fica em outro repositório (`Capturar relatório de notas`); aqui
+existe só a moldura.
+
+**Por que ela não roda no servidor do Hub.** Não é preferência de arquitetura, é
+impossibilidade: quem apresenta o certificado na negociação TLS é o **Chrome com
+interface gráfica**, a chave privada vive no **repositório de certificados do
+Windows**, alguém precisa **clicar** no diálogo nativo de escolha (o certificado
+nunca entra no código — não há `.pfx` nem senha em lugar nenhum), e um **processo
+vivo** segura a sessão e os documentos em memória entre a conexão e a leitura. O
+Hub é serverless na Vercel: nada disso existe lá. Então a ferramenta continua
+sendo um agente local (`http://localhost:3777`), e o Hub a **emoldura**.
+
+**Por que iframe, e não a interface reescrita em React.** Reescrever criaria
+**duas** interfaces para a mesma ferramenta, e elas divergiriam na primeira
+mudança feita de um lado só. Emoldurando, existe uma interface só — e, como o
+documento de dentro tem origem `localhost`, todas as chamadas de API dele ficam
+**mesma origem**. É isso que tira do caminho a política de rede privada do
+navegador, que barraria uma tela servida pela Vercel chamando `localhost` a cada
+requisição. `http://localhost` é origem potencialmente confiável, então embutir
+não conta como conteúdo misto mesmo com o Hub em https.
+
+**A presença do agente é afirmada, não inferida.** Iframe cujo destino recusa
+conexão **não dispara `onerror`** — do lado do Hub, agente desligado e agente no
+ar são indistinguíveis. Por isso `web/moldura.js`, no agente, envia um
+`postMessage` de aceno assim que carrega; o Hub espera 8s por ele e, sem aceno,
+mostra o painel de ausência. O Hub **confere a origem** de cada mensagem: sem
+isso, qualquer janela poderia se passar pelo agente.
+
+**A altura vem só do conteúdo.** O iframe não rola — quem rola é a página de
+fora —, então o agente informa a própria altura e o Hub aplica. Medir com
+`documentElement.scrollHeight` é **circular**: a altura aplicada vira a viewport
+do documento de dentro, e `scrollHeight` da raiz nunca é menor que a viewport, de
+modo que se mediria de volta o número recém-enviado. A altura passava a só
+crescer e sobrava papel em branco embaixo. A medida correta é o retângulo do
+`body`, que não tem altura ligada à viewport.
+
+**`frame-ancestors`.** O agente responde com
+`Content-Security-Policy: frame-ancestors` restrito ao domínio do Hub, a
+localhost:3000 e a `'self'` (ajustável por `HUB_ORIGENS`). Sem isso, qualquer site
+poderia embutir a ferramenta local: não conseguiria **ler** nada de dentro — a
+origem é outra —, mas conseguiria escondê-la sob a própria interface e colher
+cliques em "Conectar certificado" e nos botões de download.
+
+**Saída quando o navegador recusa embutir.** Agente desligado e enquadramento
+recusado dão o mesmo sintoma, e do lado do Hub não dá para distinguir. O painel
+de ausência oferece um link para abrir o extrator em **outra aba**: navegação de
+topo para `http://localhost` é permitida a partir de https, então a ferramenta
+continua inteira mesmo no pior caso.
+
+**Ela não toca o banco.** Como os dois conversores, é ferramenta autônoma: não
+cria `ImportBatch` nem `Invoice`, e nada do que ela lê entra na reconciliação.
+Alimentar o Validador com essas notas é caminho possível mas **não percorrido** —
+exigiria antes resolver de onde sairia o `codigoVenda` (a NFS-e não tem campo
+próprio para ele) e a autenticação das rotas de API, hoje inexistente.
+
+**Verificado:** com o Hub em `localhost:3000` e o agente em `localhost:3777`, a
+tela do agente carrega emoldurada, o aceno chega, a altura acompanha o conteúdo
+(2.213px medidos contra 2.296px da tela avulsa — a diferença é exatamente o
+respiro vertical que o modo embutido remove) e o painel de ausência aparece
+quando se aponta para uma porta morta. **Não verificado:** o Hub em produção
+(https, na Vercel) embutindo `localhost` — nesse par existe restrição de rede
+local no Chrome, e o teste precisa do Chrome real.
+
 ### Validador de Emissões
 Confere a **situação fiscal** de infoprodutores: cruza o que foi **vendido**
 (relatório exportado da plataforma de venda) com o que foi **faturado**
@@ -153,6 +220,7 @@ app/
   page.tsx                      Hub Fiscal — a tela de ferramentas (raiz)
   conversor-dominio/            ferramenta: NFS-e do emissor nacional → TXT do Domínio
   conversor-ansi/               ferramenta: .txt → ANSI (Windows-1252)
+  extrator-nacional/            ferramenta: moldura do agente local do Emissor Nacional
   companies/                    escolha da empresa (entrada do Validador)
   config/                       mapeamentos globais (fora do contexto de empresa)
   c/[companyId]/
@@ -168,6 +236,7 @@ components/
              PageTitle/PageHeader, Pagination, Input, Combobox, ExportRawDataButton
   wizard/    assistente de mapeamento e formulário de upload
   tools/     formulários das ferramentas do hub (conversores de leiaute e ANSI)
+             e a moldura do agente do Emissor Nacional
   dashboard/ KpiCard e os gráficos (Situação NF, Plataforma, Tipo)
 lib/
   parsing/         leitura de planilha, números, datas/competência, palpites de coluna

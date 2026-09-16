@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ClipboardCheck, FileCode2, FileType2 } from "lucide-react";
+import { ArrowRight, ClipboardCheck, FileCode2, FileKey2, FileType2 } from "lucide-react";
 import { HubHeader, HubTitle } from "@/components/layout/HubHeader";
 import { Card } from "@/components/ui/Card";
 
@@ -30,6 +30,14 @@ const FERRAMENTAS = [
       "Converte arquivos .txt para a codificação ANSI (Windows-1252), vários de uma vez, avisando quais caracteres não têm equivalente antes de você importar.",
     entrada: "Abrir o conversor",
     icone: FileType2,
+  },
+  {
+    href: "/extrator-nacional",
+    nome: "Extrair notas do Emissor Nacional",
+    descricao:
+      "Lê as notas emitidas e tomadas direto da API oficial do ADN, com o certificado digital da empresa, e exporta em Excel ou XML. Roda na sua máquina — o certificado nunca sai dela.",
+    entrada: "Abrir o extrator",
+    icone: FileKey2,
   },
 ] as const;
 
