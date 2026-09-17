@@ -10,10 +10,11 @@ import { Input } from "@/components/ui/Input";
  * Moldura do agente local do Emissor Nacional.
  *
  * **Por que um iframe e não a interface portada para React.** A extração precisa
- * de Chrome com interface (é ele que apresenta o certificado na negociação mTLS),
- * do repositório de certificados do Windows e de um processo vivo segurando os
- * documentos em memória. Nada disso existe na Vercel, então a ferramenta continua
- * sendo um agente local e o Hub só emoldura.
+ * do repositório de certificados do Windows da pessoa (o certificado é apresentado
+ * pelo Schannel na negociação mTLS) e de um processo vivo segurando os documentos
+ * em memória. Nada disso existe na Vercel, e nenhuma página servida de lá alcança
+ * o repositório de certificados de uma máquina — então a ferramenta continua sendo
+ * um agente local e o Hub só emoldura.
  *
  * O iframe é o que mantém **uma** interface. Se a tela fosse reescrita aqui,
  * passariam a existir duas — a do agente e a do Hub — e elas divergiriam na
@@ -36,6 +37,29 @@ const CHAVE_LOCAL = "hub:extrator-nacional:endereco";
 const ESPERA_ACENO_MS = 8000;
 
 const ALTURA_MINIMA = 720;
+
+/**
+ * A versão do agente que este Hub espera.
+ *
+ * Com a ferramenta instalada na máquina de cada pessoa, passam a existir várias
+ * cópias e nenhuma forma de saber quem está com qual — e quem estiver com uma
+ * cópia velha vai relatar erro já corrigido. O Hub é o único lado que está sempre
+ * atualizado (sai da Vercel), então é ele quem avisa. **Subir esta constante ao
+ * publicar uma versão nova do agente.**
+ */
+const VERSAO_ESPERADA = "0.2.0";
+
+/** Compara `1.10.0` > `1.9.0` — comparação de texto erraria essa. */
+function versaoMenor(a: string, b: string) {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] ?? 0;
+    const y = pb[i] ?? 0;
+    if (x !== y) return x < y;
+  }
+  return false;
+}
 
 type Estado = "procurando" | "ligado" | "ausente";
 
@@ -104,6 +128,7 @@ export function ExtratorNacionalFrame() {
   const [rascunhoEditado, setRascunhoEditado] = useState<string | null>(null);
   const rascunho = rascunhoEditado ?? endereco;
   const [estado, setEstado] = useState<Estado>("procurando");
+  const [versaoAgente, setVersaoAgente] = useState("");
   const [altura, setAltura] = useState(ALTURA_MINIMA);
   /** Muda a cada tentativa para remontar o iframe — trocar só o `src` para o
    *  mesmo endereço não recarrega nada. */
@@ -122,10 +147,11 @@ export function ExtratorNacionalFrame() {
     function aoReceber(evento: MessageEvent) {
       // Sem conferir a origem, qualquer janela poderia se passar pelo agente.
       if (evento.origin !== origem) return;
-      const dados = evento.data as { agente?: string; altura?: number } | null;
+      const dados = evento.data as { agente?: string; altura?: number; versao?: string } | null;
       if (dados?.agente !== "emissor-nacional") return;
 
       setEstado("ligado");
+      if (dados.versao) setVersaoAgente(dados.versao);
       if (typeof dados.altura === "number" && Number.isFinite(dados.altura)) {
         setAltura(Math.max(ALTURA_MINIMA, Math.ceil(dados.altura)));
       }
@@ -163,6 +189,20 @@ export function ExtratorNacionalFrame() {
           onSalvar={salvarEndereco}
           onProcurar={procurarDeNovo}
         />
+      )}
+
+      {estado === "ligado" && versaoAgente && versaoMenor(versaoAgente, VERSAO_ESPERADA) && (
+        <Card className="p-4 flex items-start gap-3 border-clay-300 bg-clay-50">
+          <TriangleAlert className="w-5 h-5 text-clay-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-ink leading-relaxed">
+            <span className="font-bold">
+              O extrator da sua máquina está na versão {versaoAgente}; a atual é a{" "}
+              {VERSAO_ESPERADA}.
+            </span>{" "}
+            Atualize a pasta da ferramenta e abra de novo — erros já corrigidos podem voltar a
+            aparecer numa cópia antiga.
+          </p>
+        </Card>
       )}
 
       {/* O iframe fica montado mesmo enquanto procura: é a própria carga dele
@@ -226,9 +266,9 @@ function PainelAgente({
         <div>
           <p className="text-sm font-bold text-ink">O agente não respondeu em {endereco}.</p>
           <p className="text-sm text-text-2 mt-1 leading-relaxed">
-            Esta ferramenta não roda no servidor do Hub: ela precisa do Chrome com interface para
-            você escolher o certificado, e do repositório de certificados do Windows. Por isso ela
-            fica na sua máquina, e o Hub só a emoldura.
+            Esta ferramenta não roda no servidor do Hub: ela lê o certificado do repositório do
+            Windows da sua máquina, e nenhuma página da internet alcança isso. Por isso ela fica
+            na sua máquina, e o Hub só a emoldura.
           </p>
           {/* Duas causas dão o mesmo sintoma — agente desligado, ou navegador
               recusando embutir a rede local — e daqui não dá para distinguir uma
@@ -251,13 +291,24 @@ function PainelAgente({
         </div>
       </div>
 
+      {/* A instrução antiga mandava rodar `npm start` numa pasta chamada
+          "Capturar relatório de notas" — o que pressupõe o projeto em desenvolvimento
+          na máquina de quem lê. Para um colega que recebeu a pasta pronta, era
+          impossível de seguir, e foi exatamente o que aconteceu na primeira vez
+          que alguém de fora abriu esta tela. */}
       <div className="rounded-card-sm bg-paper-alt/50 p-4 space-y-2">
         <p className="text-xs font-bold uppercase tracking-wide text-ink/50 flex items-center gap-1.5">
-          <TerminalSquare className="w-3.5 h-3.5" /> Ligue o agente e volte
+          <TerminalSquare className="w-3.5 h-3.5" /> Ligue o extrator e volte
         </p>
-        <pre className="text-[13px] font-mono text-deep overflow-x-auto">
-          cd &quot;Capturar relatório de notas&quot;{"\n"}npm start
-        </pre>
+        <p className="text-sm text-text-2 leading-relaxed">
+          Na pasta <span className="font-mono text-deep">Extrator Emissor Nacional</span>, dê dois
+          cliques em <span className="font-mono text-deep">Iniciar extrator.bat</span>. Deixe a
+          janela preta aberta — fechá-la encerra a ferramenta.
+        </p>
+        <p className="text-sm text-text-2">
+          Não tem a pasta? Peça a quem cuida do Hub: a ferramenta roda na sua máquina, não no
+          servidor.
+        </p>
       </div>
 
       <div className="flex items-end gap-3">

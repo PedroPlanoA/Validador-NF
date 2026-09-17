@@ -125,13 +125,20 @@ da ferramenta fica em outro repositório (`Capturar relatório de notas`); aqui
 existe só a moldura.
 
 **Por que ela não roda no servidor do Hub.** Não é preferência de arquitetura, é
-impossibilidade: quem apresenta o certificado na negociação TLS é o **Chrome com
-interface gráfica**, a chave privada vive no **repositório de certificados do
-Windows**, alguém precisa **clicar** no diálogo nativo de escolha (o certificado
-nunca entra no código — não há `.pfx` nem senha em lugar nenhum), e um **processo
-vivo** segura a sessão e os documentos em memória entre a conexão e a leitura. O
-Hub é serverless na Vercel: nada disso existe lá. Então a ferramenta continua
-sendo um agente local (`http://localhost:3777`), e o Hub a **emoldura**.
+impossibilidade: a chave privada vive no **repositório de certificados do Windows
+da pessoa**, o certificado é apresentado pelo **Schannel** (a pilha TLS do próprio
+Windows) na negociação mTLS, e um **processo vivo** segura a sessão e os documentos
+em memória entre a conexão e a leitura. O certificado nunca entra no código — não
+há `.pfx` nem senha em lugar nenhum. O Hub é serverless na Vercel: nada disso
+existe lá, e nenhuma página servida de lá alcança o repositório de certificados de
+uma máquina. Então a ferramenta continua sendo um agente local
+(`http://localhost:3777`), e o Hub a **emoldura**.
+
+Navegador **nenhum** participa disso — nem o Chrome. A tela do agente é servida
+por ele e aparece no navegador que a pessoa usar; a autenticação acontece fora do
+navegador, no processo. A escolha do certificado é feita numa lista na própria
+tela da ferramenta, e a impressão digital escolhida nunca é gravada: cada conexão
+exige alguém escolhendo de novo.
 
 **Por que iframe, e não a interface reescrita em React.** Reescrever criaria
 **duas** interfaces para a mesma ferramenta, e elas divergiriam na primeira
@@ -169,6 +176,14 @@ recusado dão o mesmo sintoma, e do lado do Hub não dá para distinguir. O pain
 de ausência oferece um link para abrir o extrator em **outra aba**: navegação de
 topo para `http://localhost` é permitida a partir de https, então a ferramenta
 continua inteira mesmo no pior caso.
+
+**O agente é distribuído como pasta, e o Hub avisa quando está velha.** Cada
+pessoa roda a ferramenta na máquina dela (o certificado está lá), então passam a
+existir várias cópias e nenhuma forma de saber quem está com qual — e quem estiver
+com uma cópia antiga relata erro já corrigido. O agente manda a própria versão no
+aceno, e o Hub, que está sempre atualizado porque sai da Vercel, compara com
+`VERSAO_ESPERADA` e mostra um aviso. **Ao publicar versão nova do agente, subir
+essa constante junto.**
 
 **Ela não toca o banco.** Como os dois conversores, é ferramenta autônoma: não
 cria `ImportBatch` nem `Invoice`, e nada do que ela lê entra na reconciliação.
