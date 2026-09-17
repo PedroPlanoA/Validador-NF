@@ -47,7 +47,7 @@ const ALTURA_MINIMA = 720;
  * atualizado (sai da Vercel), então é ele quem avisa. **Subir esta constante ao
  * publicar uma versão nova do agente.**
  */
-const VERSAO_ESPERADA = "0.2.0";
+const VERSAO_ESPERADA = "0.3.0";
 
 /** Compara `1.10.0` > `1.9.0` — comparação de texto erraria essa. */
 function versaoMenor(a: string, b: string) {
