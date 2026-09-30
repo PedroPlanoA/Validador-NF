@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { CompetenciaSidebarSelect } from "@/components/layout/CompetenciaSidebarSelect";
 import { BrandLockup } from "@/components/layout/BrandLockup";
+import { SessaoBadge } from "@/components/auth/SessaoBadge";
 
 interface NavItem {
   href: string;
@@ -59,6 +60,7 @@ export function Sidebar({
   currentCompetencia,
   showSplit,
   chaveDiario,
+  emailSessao,
 }: {
   companyId: string;
   companyName: string;
@@ -67,6 +69,8 @@ export function Sidebar({
   competencias: string[];
   currentCompetencia?: string;
   showSplit: boolean;
+  /** E-mail de quem está logado, para o rodapé da faixa. */
+  emailSessao: string | null;
   /** Chave do mesmo cliente no Diário, quando ele existe lá. `null` esconde o
    *  atalho — ver `lib/integracao/vinculoDiario.ts`. */
   chaveDiario: string | null;
@@ -137,6 +141,12 @@ export function Sidebar({
           </div>
         )}
       </nav>
+
+      {emailSessao && (
+        <div className="px-4 py-3 border-t border-white/10 shrink-0">
+          <SessaoBadge email={emailSessao} />
+        </div>
+      )}
     </aside>
   );
 }

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { BrandLockup } from "@/components/layout/BrandLockup";
+import { SessaoBadge } from "@/components/auth/SessaoBadge";
+import { emailDaSessao } from "@/lib/actions/usuarios";
 
 /**
  * Faixa de marca do Hub — a mesma em todas as telas fora do contexto de empresa.
@@ -12,7 +14,9 @@ import { BrandLockup } from "@/components/layout/BrandLockup";
  * O degradê escurece de leve para a direita, dentro do mesmo verde-petróleo — dá
  * profundidade à faixa sem introduzir cor nova, o que quebraria a paleta.
  */
-export function HubHeader({ titulo }: { titulo: string }) {
+export async function HubHeader({ titulo }: { titulo: string }) {
+  const email = await emailDaSessao();
+
   return (
     <div className="bg-[linear-gradient(to_right,var(--color-deep),var(--color-deep-dark))] px-8 py-7 flex items-center justify-between gap-6">
       {/* A marca lidera (30px/900) e o nome da tela apoia (22px/700). O problema
@@ -25,11 +29,14 @@ export function HubHeader({ titulo }: { titulo: string }) {
       <Link href="/" className="shrink-0">
         <BrandLockup size="lg" />
       </Link>
-      <div className="flex items-center gap-4 min-w-0">
-        <span className="h-px w-10 bg-mint-300 shrink-0" />
-        <h1 className="font-serif font-normal text-[16px] text-mint-300 whitespace-nowrap">
-          {titulo}
-        </h1>
+      <div className="flex items-center gap-6 min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
+          <span className="h-px w-10 bg-mint-300 shrink-0" />
+          <h1 className="font-serif font-normal text-[16px] text-mint-300 whitespace-nowrap">
+            {titulo}
+          </h1>
+        </div>
+        {email && <SessaoBadge email={email} />}
       </div>
     </div>
   );

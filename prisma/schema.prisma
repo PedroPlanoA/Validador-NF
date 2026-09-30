@@ -271,3 +271,34 @@ model DiarioCliente {
   totalBlocos Int      @default(0)
   updatedAt   DateTime @updatedAt
 }
+
+/// E-mails liberados a entrar no Hub.
+///
+/// Os **masters** não moram aqui: ficam fixos em `lib/auth/autorizados.ts`,
+/// porque são a raiz de confiança — quem pode liberar os outros. Mudá-los deve
+/// exigir uma alteração de código, com histórico, e não um clique de quem já
+/// está dentro.
+model UsuarioAutorizado {
+  email     String   @id
+  nome      String?
+  /// E-mail do master que liberou — para saber a quem perguntar depois.
+  criadoPor String
+  createdAt DateTime @default(now())
+}
+
+/// Código de uso único enviado por e-mail.
+///
+/// Guardado como **hash**: quem lê o banco não consegue entrar na conta de
+/// ninguém. Some depois de usado ou vencido.
+model CodigoAcesso {
+  id         String    @id @default(cuid())
+  email      String
+  codigoHash String
+  expiraEm   DateTime
+  /// Erros de digitação já feitos neste código — passou do limite, ele morre.
+  tentativas Int       @default(0)
+  usadoEm    DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email])
+}

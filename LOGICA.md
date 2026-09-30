@@ -260,6 +260,75 @@ competência** (mês de referência fiscal).
 
 ---
 
+---
+
+## 1.5 Autenticação (quem entra no Hub)
+
+Até 30/09/2026 o Hub **não tinha autenticação nenhuma**: quem tivesse a URL lia e
+escrevia dados fiscais de qualquer empresa e, depois do Diário, a carteira
+inteira do Acessórias. Agora tem.
+
+**Entrada por código no e-mail.** A pessoa informa o e-mail; se estiver liberado,
+recebe um código de 6 dígitos e o digita. Não há senha para vazar, esquecer ou
+reaproveitar de outro serviço.
+
+**Dois níveis de acesso:**
+
+| | Onde mora | Quem muda |
+|---|---|---|
+| **Masters** | fixos em `lib/auth/autorizados.ts` | alteração de código |
+| **Autorizados** | tabela `UsuarioAutorizado` | um master, em `/config/usuarios` |
+
+Os masters ficam no código de propósito: são a raiz de confiança. No banco
+criariam um ciclo (quem autoriza o primeiro?) e permitiriam que uma falha da
+aplicação promovesse alguém a master. Também não há botão para removê-los —
+senão um master poderia trancar os outros do lado de fora.
+
+**`proxy.ts`, não `middleware.ts`.** O Next 16 renomeou o arquivo, e o
+`middleware.ts` que quase toda a documentação da internet ainda mostra **não é
+mais lido** — colocar a proteção nele daria um sistema aberto com aparência de
+fechado. Sem sessão válida, navegação é redirecionada para `/login` e rota de API
+responde 401. Os dois casos são separados de propósito: senão um `fetch`
+receberia o HTML da tela de login como se fosse a resposta da API.
+
+O `matcher` exclui `_next/static` e o favicon. Sem essa exclusão, o próprio CSS
+da tela de login seria redirecionado para a tela de login.
+
+**A sessão é um cookie assinado, sem tabela de sessões.** O `proxy` roda antes de
+**toda** requisição; abrir conexão com o Postgres para servir um arquivo estático
+seria caro à toa. A assinatura é HMAC por **Web Crypto**, e não `node:crypto`,
+porque o `proxy` não roda no runtime do Node. A comparação da assinatura é de
+tempo constante. Dura 7 dias.
+
+**Consequência aceita:** revogar alguém não mata o cookie que ele já tem — vale
+até vencer. O que morre na hora é pedir código novo e usar a tela de usuários,
+que conferem a autorização a cada chamada. Para uma ferramenta interna esse é o
+balanço entre simplicidade e controle; para cortar acesso no mesmo instante,
+troque o `AUTH_SECRET`, o que derruba **todas** as sessões.
+
+**O código é guardado como hash**, vale 10 minutos, é de uso único, morre em 5
+tentativas erradas e é limitado a 5 pedidos por 15 minutos. Isso não é excesso:
+medido aqui, um código de 6 dígitos sai do hash por força bruta em **1 segundo**.
+O sorteio usa `randomInt`, não `Math.random` — código de acesso é segredo e
+precisa de gerador criptográfico.
+
+**Quem não está na lista recebe a recusa explícita** — "Usuário não autorizado,
+contate o administrador", como pedido. Isso revela se um endereço está liberado,
+o que num sistema público se evitaria; aqui é ferramenta interna de lista
+fechada, e deixar a pessoa esperando um e-mail que nunca vai chegar é pior.
+
+**Envio por SMTP do Google Workspace** (`lib/auth/email.ts`). `SMTP_PASSWORD`
+precisa ser uma **senha de app** do Google, não a senha da conta — o Google
+recusa a senha normal em SMTP. O remetente é a própria conta autenticada: o Gmail
+reescreve o `From` de qualquer jeito, e anunciar outro endereço só faria o e-mail
+parecer falsificado e cair em spam.
+
+**Variáveis necessárias:** `AUTH_SECRET` (mínimo 32 caracteres), `SMTP_USER` e
+`SMTP_PASSWORD`. Sem `AUTH_SECRET` nenhuma sessão é válida e ninguém entra — o
+erro é de fechar, não de abrir.
+
+---
+
 ## 2. Stack e estrutura de pastas
 
 - **Next.js 16.2** (App Router, Turbopack), **React 19**, **Tailwind 4**
@@ -302,6 +371,7 @@ lib/
   converters/      conversores puros — NFS-e → Domínio e TXT → ANSI
   split/           análise NF-e × NFS-e (puro) e classificação do modelo da nota
   imports/         importService (transações de import/reanálise)
+  auth/            sessão assinada, códigos por e-mail, lista de autorizados
   actions/         Server Actions e leituras (reconciliação, produtos, checklist...)
   integracao/      vínculo por CNPJ entre o Validador e o Diário do Cliente
   export/          geração de XLSX e do PDF
