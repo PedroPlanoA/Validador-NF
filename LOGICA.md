@@ -378,6 +378,89 @@ erro é de fechar, não de abrir.
 
 ---
 
+---
+
+## 1.6 Desempenho das telas da empresa
+
+Medido em 30/09/2026 com o build de produção, contra o banco real, na maior
+empresa da base (9.769 vendas, 9.444 notas). **Atenção ao viés:** a medição saiu
+de uma máquina no Brasil contra o Neon em `us-east-2` — ida e volta de 164 ms por
+consulta. Na Vercel o servidor fica ao lado do banco, então os números reais são
+bem menores; o que vale aqui é a comparação antes/depois.
+
+| Tela | Antes | Depois |
+|---|---|---|
+| Dashboard | 3.748 ms | 1.917 ms |
+| Painel de Erros | 4.037 ms | 1.907 ms |
+| Vendas | 2.775 ms | 1.582 ms |
+| Notas Fiscais | 2.177 ms | 1.260 ms |
+| Importações | 2.762 ms | 1.128 ms |
+| Produtos | 1.850 ms | 975 ms |
+
+Hub, tela de empresas e lista do Diário sempre estiveram entre 20 e 210 ms — o
+problema era **só** dentro da empresa.
+
+### O que estava caro
+
+**`listCompetencias` rodava a reconciliação inteira.** Ela alimenta o seletor da
+faixa lateral, que está no layout — ou seja, rodava em **toda** página aberta
+dentro de uma empresa. Custo medido para produzir uma lista de quatro meses:
+
+```
+SELECT * de Sale ........ 2.271 ms / 3,0 MB
+SELECT * de Invoice ..... 1.498 ms / 2,3 MB
+os dois DISTINCT ........... ~170 ms / 6 linhas
+```
+
+Agora são duas consultas `distinct`, cobertas pelos índices
+`(companyId, competencia)` que já existiam. Esta troca estava prevista neste
+documento como "muito mais barata, ao preço de eventualmente listar um mês em que
+existiam vendas mas todas foram faturadas em outro mês" — o preço foi pago de
+propósito. A união é **superconjunto** do que a reconciliação produzia, então
+nenhum mês verdadeiro some; no máximo sobra um, e selecioná-lo mostra a aba
+Vendas vazia.
+
+**A reconciliação trazia colunas que não usa.** `Sale` tem 21 colunas e o motor lê
+13; `Invoice` tem 18 e ele lê 8. Os `select` agora derivam de
+`SaleForReconciliation`/`InvoiceForReconciliation` via `Record<keyof …, true>`:
+acrescentar um campo ao tipo do motor sem trazê-lo do banco passa a ser erro de
+compilação, em vez de um `undefined` silencioso no meio da conferência.
+Efeito: `Sale` de 1.852 para 1.180 ms, `Invoice` de 1.375 para 602 ms.
+
+**A tela de Importações trafegava o CSV dos lotes.** `listActiveBatches` fazia
+`findMany` sem `select`, trazendo `rawContent` — 830 kB naquela empresa, quase
+7 MB na base inteira — para desenhar uma lista de quatro linhas com fonte, data e
+nome de arquivo. Agora usa `omit: { rawContent: true }`.
+
+**O dashboard buscava as notas duas vezes**: uma dentro da reconciliação e outra
+inteira, sem `select`. A segunda passou a trazer só os seis campos que a tela lê.
+
+### O que sobra, e por que parou aqui
+
+O resto é a natureza do desenho: as telas de conferência carregam todas as vendas
+e notas da empresa para reconciliar **em memória** — é isso que mantém
+`lib/reconciliation/` puro e testável. Numa empresa de 19 mil linhas, o piso é o
+tempo de trazer essas linhas.
+
+Guardar o resultado em cache derrubaria isso a quase zero, mas exigiria invalidar
+em toda importação, reanálise, exclusão de lote, edição de nota, ajuste de produto
+e anotação de conferência. **Esquecer um desses caminhos mostra dado fiscal
+desatualizado, que é pior do que lento** — por isso não foi feito sem decisão
+explícita.
+
+### Fluidez: `loading.tsx` em toda tela pesada
+
+Metade da sensação de lentidão não era tempo, era ausência de resposta. No App
+Router, clicar numa aba mantém a tela **anterior** congelada até o servidor
+responder. Sem `loading.tsx`, um segundo de tela imóvel depois de um clique é
+lido como travamento.
+
+Agora cada aba pesada tem o seu esqueleto (`components/ui/Skeleton.tsx`).
+Verificado: ao clicar, o esqueleto aparece no mesmo instante (t = 0 ms) e a URL
+troca na hora. Não acelera nada — muda o que se vê enquanto espera.
+
+---
+
 ## 2. Stack e estrutura de pastas
 
 - **Next.js 16.2** (App Router, Turbopack), **React 19**, **Tailwind 4**

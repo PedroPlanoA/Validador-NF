@@ -49,7 +49,20 @@ export default async function DashboardPage({
   // always surface every discrepancy found).
   const [allRows, allInvoices, allSales] = await Promise.all([
     getReconciliationRows(companyId),
-    db.invoice.findMany({ where: { companyId } }),
+    // Só os seis campos que esta tela lê. Sem o `select`, vinha a nota inteira —
+    // e como a reconciliação acima já carrega as notas por conta própria, o
+    // dashboard trazia o relatório de notas **duas vezes** por abertura.
+    db.invoice.findMany({
+      where: { companyId },
+      select: {
+        competencia: true,
+        situacaoNf: true,
+        valorNf: true,
+        tipo: true,
+        codigoServico: true,
+        codigoVendaNormalized: true,
+      },
+    }),
     db.sale.findMany({
       where: { companyId },
       select: { codigoVendaNormalized: true, moeda: true, plataforma: true },

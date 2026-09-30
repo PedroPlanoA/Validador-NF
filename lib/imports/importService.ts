@@ -296,7 +296,19 @@ export async function reanalyzeBatch(companyId: string, batchId: string) {
 export async function listActiveBatches(companyId: string) {
   return db.importBatch.findMany({
     where: { companyId },
-    include: { platformConfig: true, emitterConfig: true },
+    // `omit` do rawContent, e não `include` inteiro: ele guarda o CSV das
+    // colunas mapeadas do relatório — 830 kB numa empresa medida aqui, quase
+    // 7 MB na base toda — e a tela de Importações mostra fonte, data, nome do
+    // arquivo e competência. Trafegar o CSV para desenhar quatro linhas era o
+    // custo dessa tela.
+    //
+    // Dos configs, só o nome é lido; o resto são os mapeamentos e o statusMap,
+    // que esta tela não usa.
+    omit: { rawContent: true },
+    include: {
+      platformConfig: { select: { id: true, name: true } },
+      emitterConfig: { select: { id: true, name: true } },
+    },
     orderBy: { importedAt: "desc" },
   });
 }
