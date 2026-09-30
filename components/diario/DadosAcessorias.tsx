@@ -67,6 +67,11 @@ export function DadosAcessorias({
                 if (ehDeptos && departamentos) {
                   linhas = linhas.filter((l) => departamentos.includes(String(l.Nome ?? "").trim()));
                 }
+                // Obrigação inativa não diz nada sobre o cliente: numa empresa
+                // real são 27 das 37 linhas, e elas enterram as 10 que importam.
+                if (c.chave === "Obrigacoes") {
+                  linhas = linhas.filter((l) => String(l.Status ?? "").trim().toLowerCase() === "ativa");
+                }
                 return (
                   <div key={c.chave} className="min-w-0">
                     <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.14em] text-teal mb-3">

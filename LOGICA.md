@@ -58,6 +58,21 @@ inscrições estaduais.
 
 Concorrência 6 foi medida sem nenhum 429; 8 também passou, e 6 deixa folga.
 
+
+**Atualização em janelas (30/09/2026).** A carteira passou a ser gravada em
+`DiarioCarteira` e só é rebuscada **às 6h e às 12h**, ou quando alguém aperta
+atualizar na tela. Antes o cache vivia só na memória, e na Vercel cada instância
+tem a sua — instância fria refazia a busca inteira.
+
+Não há tarefa agendada: a janela é calculada na leitura (`lib/diario/janelas.ts`).
+Quem abrir depois das 6h encontra o registro velho e paga a busca; os seguintes
+pegam o novo. Num dia em que ninguém abrir, a busca não acontece — que é o
+desejado. O fuso é São Paulo, fixo em -3, porque o Brasil não tem horário de
+verão desde 2019; se voltar a ter, o sintoma será a atualização acontecendo uma
+hora fora do combinado.
+
+Se a busca falhar, serve-se o que está gravado **mesmo vencido**: uma lista de
+ontem é melhor que uma tela de erro.
 **O atalho do Validador não usa a lista.** A primeira versão perguntava pela
 carteira inteira só para saber se havia par, o que na instância fria custava a
 carteira inteira **em toda página aberta dentro de uma empresa**. `empresaExiste`

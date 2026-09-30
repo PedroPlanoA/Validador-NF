@@ -40,11 +40,22 @@ export async function ehAutorizado(email: string): Promise<boolean> {
   return achado !== null;
 }
 
-/** A lista da tela de usuários: masters primeiro, marcados, depois os liberados. */
+/**
+ * A lista da tela de usuários, com o último acesso de cada um.
+ *
+ * O último acesso responde a pergunta que a lista sozinha não responde: quem
+ * ainda usa, quem foi liberado e nunca entrou, e de quem dá para tirar o acesso
+ * sem atrapalhar ninguém.
+ */
 export async function listarAutorizados() {
-  const doBanco = await db.usuarioAutorizado.findMany({ orderBy: { email: "asc" } });
+  const [doBanco, acessos] = await Promise.all([
+    db.usuarioAutorizado.findMany({ orderBy: { email: "asc" } }),
+    db.acessoUsuario.findMany(),
+  ]);
+
+  const ultimo = new Map(acessos.map((a) => [a.email, a.ultimoEm]));
   return {
-    masters: [...MASTERS],
-    autorizados: doBanco,
+    masters: MASTERS.map((email) => ({ email, ultimoEm: ultimo.get(email) ?? null })),
+    autorizados: doBanco.map((u) => ({ ...u, ultimoEm: ultimo.get(u.email) ?? null })),
   };
 }

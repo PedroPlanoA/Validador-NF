@@ -2,26 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DollarSign, FileText, Users } from "lucide-react";
+import { DollarSign, FileText } from "lucide-react";
 
-export function ConfigTabs({
-  basePath = "/config",
-  mostrarUsuarios = false,
-}: {
-  basePath?: string;
-  /** Só administradores veem a aba — ver `lib/auth/autorizados.ts`. Esconder é
-   *  cosmético: quem chamar a ação direto é barrado nela mesma. */
-  mostrarUsuarios?: boolean;
-}) {
+export function ConfigTabs({ basePath = "/config" }: { basePath?: string }) {
   const pathname = usePathname();
 
   const tabs = [
     { href: `${basePath}/platforms`, label: "Plataformas de Venda", icon: DollarSign },
     { href: `${basePath}/emitters`, label: "Emissores de Nota Fiscal", icon: FileText },
-    // Usuários é global, não por empresa: mora só em /config.
-    ...(mostrarUsuarios && basePath === "/config"
-      ? [{ href: `${basePath}/usuarios`, label: "Usuários", icon: Users }]
-      : []),
   ];
 
   return (

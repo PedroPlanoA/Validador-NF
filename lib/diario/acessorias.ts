@@ -1,5 +1,7 @@
 import "server-only";
 import { EMPRESAS_DEMO } from "./demo";
+import { db } from "@/lib/db";
+import { estaFresco } from "./janelas";
 import { chaveEmpresa, type EmpresaAcessorias, type RespostaEmpresa, type RespostaEmpresas } from "./tipos";
 
 /**
@@ -146,22 +148,75 @@ async function buscarTodas(): Promise<RespostaEmpresas> {
   return { empresas, atualizadoEm: new Date().toISOString(), fonte: "acessorias" };
 }
 
-/** Lista de empresas, do cache se ainda estiver fresco. `forcar` ignora o cache. */
+/**
+ * Lista de empresas.
+ *
+ * Três camadas, da mais barata para a mais cara:
+ *
+ *  1. memória do processo (instantâneo, mas morre com a instância);
+ *  2. `DiarioCarteira` no Postgres (uns 50ms, sobrevive a tudo);
+ *  3. a API do Acessórias (~2,5s), só quando a janela venceu ou alguém pediu.
+ *
+ * As janelas são 6h e 12h (ver `janelas.ts`). `forcar` é o botão de atualizar
+ * da tela, e é o único jeito de buscar fora delas.
+ */
 export async function listarEmpresas(forcar = false): Promise<RespostaEmpresas> {
   const c = g.__diarioCache;
-  if (!forcar && c && Date.now() - c.em < CACHE_TTL_MS) return c.dados;
-  // Duas abas pedindo ao mesmo tempo compartilham a mesma busca.
-  if (c?.carregando) return c.carregando;
+  if (!forcar && c?.dados && estaFresco(new Date(c.dados.atualizadoEm))) return c.dados;
+  if (!forcar && c?.carregando) return c.carregando;
 
-  const carregando = buscarTodas();
+  const carregando = (async () => {
+    if (!forcar) {
+      const gravada = await lerCarteira();
+      if (gravada && estaFresco(new Date(gravada.atualizadoEm))) return gravada;
+    }
+    const nova = await buscarTodas();
+    await gravarCarteira(nova);
+    return nova;
+  })();
+
   g.__diarioCache = { ...(c ?? { dados: undefined as never, em: 0 }), carregando };
   try {
     const dados = await carregando;
     g.__diarioCache = { dados, em: Date.now() };
     return dados;
   } catch (e) {
+    // Falhou a busca? Serve o que está gravado, mesmo vencido: uma lista de
+    // ontem é muito melhor que uma tela de erro.
+    const gravada = await lerCarteira().catch(() => null);
+    if (gravada) {
+      g.__diarioCache = { dados: gravada, em: Date.now() };
+      return gravada;
+    }
     g.__diarioCache = c ? { dados: c.dados, em: c.em } : undefined;
     throw e;
+  }
+}
+
+/** O retrato gravado da carteira, se houver. */
+async function lerCarteira(): Promise<RespostaEmpresas | null> {
+  if (modoDemo()) return null;
+  try {
+    const linha = await db.diarioCarteira.findUnique({ where: { id: "global" } });
+    if (!linha) return null;
+    return {
+      empresas: linha.empresas as unknown as EmpresaAcessorias[],
+      atualizadoEm: linha.buscadoEm.toISOString(),
+      fonte: "acessorias",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function gravarCarteira(r: RespostaEmpresas): Promise<void> {
+  if (modoDemo()) return;
+  try {
+    const dados = { empresas: r.empresas as unknown as object, buscadoEm: new Date(r.atualizadoEm) };
+    await db.diarioCarteira.upsert({ where: { id: "global" }, update: dados, create: { id: "global", ...dados } });
+  } catch {
+    // Não conseguir gravar não pode derrubar a tela — só custa uma busca a mais
+    // na próxima instância fria.
   }
 }
 

@@ -4,13 +4,13 @@ import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 
 /**
- * Quem está logado e como sair.
+ * Sair.
  *
  * Existe em toda tela de propósito: sem isso, a única forma de trocar de usuário
  * seria apagar cookie na mão — e num escritório em que se usa a máquina do
  * colega, isso acontece.
  */
-export function SessaoBadge({ email, tom = "escuro" }: { email: string; tom?: "escuro" | "claro" }) {
+export function SessaoBadge({ tom = "escuro" }: { tom?: "escuro" | "claro" }) {
   const router = useRouter();
 
   async function sair() {
@@ -19,22 +19,19 @@ export function SessaoBadge({ email, tom = "escuro" }: { email: string; tom?: "e
     router.replace("/login");
   }
 
-  const cor = tom === "escuro" ? "text-sand/70 hover:text-mint-300" : "text-ink/50 hover:text-deep";
+  const cor = tom === "escuro" ? "text-sand/60 hover:text-mint-300" : "text-ink/45 hover:text-deep";
 
+  // Só o ícone. O e-mail escrito ao lado poluía toda tela sem dizer nada que a
+  // pessoa não soubesse — ela sabe quem é.
   return (
-    <div className="flex items-center gap-2 min-w-0">
-      <span className={`text-[11px] truncate ${tom === "escuro" ? "text-sand/55" : "text-ink/45"}`}>
-        {email}
-      </span>
-      <button
-        type="button"
-        onClick={sair}
-        title="Sair"
-        aria-label="Sair"
-        className={`shrink-0 transition-colors ${cor}`}
-      >
-        <LogOut className="w-3.5 h-3.5" />
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={sair}
+      title="Sair"
+      aria-label="Sair"
+      className={`shrink-0 transition-colors ${cor}`}
+    >
+      <LogOut className="w-4 h-4" />
+    </button>
   );
 }

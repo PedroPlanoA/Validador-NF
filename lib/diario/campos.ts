@@ -84,14 +84,10 @@ export const CATALOGO: Campo[] = [
     rotulo: "Obrigações",
     grupo: "Listas",
     tipo: "lista",
-    colunas: [
-      { chave: "Nome", rotulo: "Obrigação" },
-      { chave: "Status", rotulo: "Situação", tipo: "status" },
-      { chave: "Entregues", rotulo: "Entregues", numerico: true },
-      { chave: "Atrasadas", rotulo: "Atrasadas", numerico: true },
-      { chave: "Proximos30D", rotulo: "Próx. 30 dias", numerico: true },
-      { chave: "Futuras30+", rotulo: "Futuras", numerico: true },
-    ],
+    // Só o nome. Entregues, atrasadas e as projeções de 30 dias são o painel de
+    // produção do Acessórias, não o que se quer saber ao abrir a ficha de um
+    // cliente — ali a pergunta é "o que esta empresa entrega", não "quantas".
+    colunas: [{ chave: "Nome", rotulo: "Obrigação" }],
   },
 ];
 

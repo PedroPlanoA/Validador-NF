@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ehAutorizado, normalizarEmail } from "@/lib/auth/autorizados";
 import { conferirCodigo } from "@/lib/auth/codigos";
 import { COOKIE_SESSAO, DURACAO_SESSAO_S, criarCookie } from "@/lib/auth/sessao";
+import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,18 @@ export async function POST(request: NextRequest) {
 
   if (!(await conferirCodigo(email, codigo))) {
     return NextResponse.json({ erro: "Código inválido ou expirado." }, { status: 401 });
+  }
+
+  // Último acesso, para a tela de usuários saber quem ainda usa o Hub — e quem
+  // foi liberado e nunca entrou. Falhar aqui não pode impedir a entrada.
+  try {
+    await db.acessoUsuario.upsert({
+      where: { email },
+      update: { ultimoEm: new Date() },
+      create: { email, ultimoEm: new Date() },
+    });
+  } catch {
+    /* registro de acesso é informativo */
   }
 
   const resposta = NextResponse.json({ ok: true });

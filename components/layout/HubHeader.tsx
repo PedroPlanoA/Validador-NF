@@ -29,14 +29,16 @@ export async function HubHeader({ titulo }: { titulo: string }) {
       <Link href="/" className="shrink-0">
         <BrandLockup size="lg" />
       </Link>
-      <div className="flex items-center gap-6 min-w-0">
+      {/* O sair fica embaixo do nome da tela, no pé da faixa: sai do caminho da
+          leitura e continua à mão. */}
+      <div className="flex flex-col items-end gap-2 min-w-0">
         <div className="flex items-center gap-4 min-w-0">
           <span className="h-px w-10 bg-mint-300 shrink-0" />
           <h1 className="font-serif font-normal text-[16px] text-mint-300 whitespace-nowrap">
             {titulo}
           </h1>
         </div>
-        {email && <SessaoBadge email={email} />}
+        {email && <SessaoBadge />}
       </div>
     </div>
   );

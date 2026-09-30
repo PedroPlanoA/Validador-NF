@@ -10,9 +10,7 @@ export default function ExtratorNacionalPage() {
       {/* Mais largo que as outras ferramentas: aqui dentro cabe a tabela de notas
           inteira, que é o conteúdo da tela, não um formulário. */}
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        <HubTitle sub="Lê as notas emitidas e tomadas direto da API oficial do ADN, com o certificado digital da empresa. Roda na sua máquina — o certificado nunca sai dela.">
-          Emissor Nacional
-        </HubTitle>
+        <HubTitle>Emissor Nacional</HubTitle>
 
         <ExtratorNacionalFrame />
       </div>

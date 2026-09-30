@@ -11,13 +11,36 @@ interface Autorizado {
   email: string;
   nome: string | null;
   criadoPor: string;
+  ultimoEm: string | Date | null;
+}
+
+interface Master {
+  email: string;
+  ultimoEm: string | Date | null;
+}
+
+/**
+ * Quando a pessoa entrou pela última vez.
+ *
+ * É o dado que a lista sozinha não dá: quem ainda usa, quem foi liberado e
+ * nunca entrou, e de quem dá para tirar o acesso sem atrapalhar ninguém.
+ */
+function quandoAcessou(v: string | Date | null): string {
+  if (!v) return "nunca entrou";
+  const d = typeof v === "string" ? new Date(v) : v;
+  const dias = Math.floor((Date.now() - d.getTime()) / 86_400_000);
+  const hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  if (dias === 0) return `hoje às ${hora}`;
+  if (dias === 1) return `ontem às ${hora}`;
+  if (dias < 30) return `há ${dias} dias`;
+  return d.toLocaleDateString("pt-BR");
 }
 
 export function UsuariosManager({
   masters,
   autorizados,
 }: {
-  masters: string[];
+  masters: Master[];
   autorizados: Autorizado[];
 }) {
   const [estadoAdd, addAction, addPendente] = useActionState(autorizarEmail, null);
@@ -62,12 +85,15 @@ export function UsuariosManager({
         </div>
         <ul className="divide-y divide-ink/5">
           {masters.map((m) => (
-            <li key={m} className="px-6 py-3.5 flex items-center gap-3">
+            <li key={m.email} className="px-6 py-3.5 flex items-center gap-3">
               <ShieldCheck className="w-4 h-4 text-mint-700 shrink-0" />
-              <span className="text-sm text-ink font-medium">{m}</span>
+              <div className="min-w-0">
+                <p className="text-sm text-ink font-medium truncate">{m.email}</p>
+                <p className="text-xs text-ink/45 mt-0.5">Último acesso: {quandoAcessou(m.ultimoEm)}</p>
+              </div>
               {/* Não há botão de remover: administrador sai do código, não da
                   tela — senão daria para um deles trancar os outros do lado de fora. */}
-              <span className="ml-auto text-[10px] font-bold uppercase tracking-wide text-ink/35">
+              <span className="ml-auto shrink-0 text-[10px] font-bold uppercase tracking-wide text-ink/35">
                 Fixo no sistema
               </span>
             </li>
@@ -93,6 +119,9 @@ export function UsuariosManager({
                   <p className="text-sm text-ink font-medium truncate">{u.email}</p>
                   <p className="text-xs text-ink/45 mt-0.5">
                     {u.nome ? `${u.nome} · ` : ""}liberado por {u.criadoPor}
+                  </p>
+                  <p className="text-xs text-ink/55 mt-0.5 font-medium">
+                    Último acesso: {quandoAcessou(u.ultimoEm)}
                   </p>
                 </div>
                 <form action={delAction} className="ml-auto">

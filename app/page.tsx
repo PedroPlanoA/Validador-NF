@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, BookUser, ClipboardCheck, FileKey2, FileType2 } from "lucide-react";
+import { ArrowRight, BookUser, ClipboardCheck, FileKey2, FileType2, Users } from "lucide-react";
+import { ehMaster } from "@/lib/auth/autorizados";
+import { emailDaSessao } from "@/lib/actions/usuarios";
 import { HubHeader, HubTitle } from "@/components/layout/HubHeader";
 import { Card } from "@/components/ui/Card";
 
@@ -44,7 +46,23 @@ const FERRAMENTAS = [
   },
 ] as const;
 
-export default function HubPage() {
+/** Só administradores veem. Esconder é cosmético — a rota devolve 404 para quem
+ *  não é master, e as ações conferem de novo por conta própria. */
+const FERRAMENTA_USUARIOS = {
+  href: "/usuarios",
+  nome: "Usuários",
+  descricao:
+    "Quem pode entrar no Hub. Libere ou remova e-mails da equipe e veja o último acesso de cada um.",
+  entrada: "Gerenciar usuários",
+  icone: Users,
+} as const;
+
+export default async function HubPage() {
+  const email = await emailDaSessao();
+  const ferramentas = ehMaster(email ?? "")
+    ? [...FERRAMENTAS, FERRAMENTA_USUARIOS]
+    : [...FERRAMENTAS];
+
   return (
     <main className="min-h-full bg-paper">
       <HubHeader titulo="Hub Fiscal" />
@@ -53,7 +71,7 @@ export default function HubPage() {
         <HubTitle sub="Escolha a ferramenta que você vai usar agora.">Ferramentas</HubTitle>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {FERRAMENTAS.map(({ href, nome, descricao, entrada, icone: Icone }) => (
+          {ferramentas.map(({ href, nome, descricao, entrada, icone: Icone }) => (
             <Link key={href} href={href} className="group">
               <Card className="h-full p-6 flex flex-col gap-4 transition-shadow group-hover:shadow-card-hover">
                 <div className="w-12 h-12 rounded-card-sm bg-mint/12 flex items-center justify-center shrink-0">

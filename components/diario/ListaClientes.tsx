@@ -248,7 +248,7 @@ export function ListaClientes() {
           <Building2 className="w-3.5 h-3.5 text-primary" />
           {visiveis.length === empresas.length
             ? `${empresas.length} ${empresas.length === 1 ? "cliente" : "clientes"}`
-            : `${visiveis.length} de ${empresas.length} clientes`}
+            : `${visiveis.length} ${visiveis.length === 1 ? "cliente" : "clientes"}`}
           {dados && (
             <span className="text-ink/35 font-normal">
               · {carregando ? "atualizando…" : `Acessórias ${horaCurta(dados.atualizadoEm)}`}

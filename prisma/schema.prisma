@@ -302,3 +302,21 @@ model CodigoAcesso {
 
   @@index([email])
 }
+
+/// A carteira do Acessórias guardada entre acessos — uma única linha (id = "global").
+///
+/// Sem isto o cache vivia só na memória do servidor, e na Vercel cada instância
+/// tem a sua: instância fria refazia a busca inteira. Agora a busca acontece nas
+/// janelas de atualização (6h e 12h) ou quando alguém pede na tela.
+model DiarioCarteira {
+  id          String   @id
+  empresas    Json
+  buscadoEm   DateTime
+  updatedAt   DateTime @updatedAt
+}
+
+/// Último acesso de cada pessoa, para a tela de usuários.
+model AcessoUsuario {
+  email     String   @id
+  ultimoEm  DateTime
+}

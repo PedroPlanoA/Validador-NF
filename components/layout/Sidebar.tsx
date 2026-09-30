@@ -12,6 +12,7 @@ import {
   Package,
   Split,
   BookUser,
+  FileKey2,
 } from "lucide-react";
 import { CompetenciaSidebarSelect } from "@/components/layout/CompetenciaSidebarSelect";
 import { BrandLockup } from "@/components/layout/BrandLockup";
@@ -138,13 +139,20 @@ export function Sidebar({
             >
               <BookUser className="w-4 h-4 shrink-0" /> Diário
             </Link>
+            <Link
+              href="/extrator-nacional"
+              className={`${NAV_LINK_BASE} ${NAV_LINK_INACTIVE}`}
+              title="Abrir o extrator do Emissor Nacional"
+            >
+              <FileKey2 className="w-4 h-4 shrink-0" /> Extrator
+            </Link>
           </div>
         )}
       </nav>
 
       {emailSessao && (
         <div className="px-4 py-3 border-t border-white/10 shrink-0">
-          <SessaoBadge email={emailSessao} />
+          <SessaoBadge />
         </div>
       )}
     </aside>
