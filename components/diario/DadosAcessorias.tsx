@@ -77,9 +77,23 @@ export function DadosAcessorias({
                     <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.14em] text-teal mb-3">
                       <span className="w-4 h-px bg-mint" />
                       {c.rotulo}
-                      <span className="bg-deep/8 text-deep rounded-pill px-2 py-0.5 tracking-normal">{linhas.length}</span>
+                      {/* Contagem em obrigações não: o que se quer saber é *o que* a
+                        empresa entrega, não quantas coisas são. Nas outras listas
+                        o número ainda orienta (quantos contatos, quantos
+                        departamentos), então fica. */}
+                    {c.chave !== "Obrigacoes" && (
+                      <span className="bg-deep/8 text-deep rounded-pill px-2 py-0.5 tracking-normal">
+                        {linhas.length}
+                      </span>
+                    )}
                     </span>
-                    {ehDeptos ? <CartoesDepartamentos linhas={linhas} /> : <Tabela linhas={linhas} colunas={c.colunas ?? []} />}
+                    {ehDeptos ? (
+                      <CartoesDepartamentos linhas={linhas} />
+                    ) : c.chave === "Obrigacoes" ? (
+                      <ListaObrigacoes linhas={linhas} />
+                    ) : (
+                      <Tabela linhas={linhas} colunas={c.colunas ?? []} />
+                    )}
                   </div>
                 );
               })}
@@ -203,6 +217,39 @@ function CartoesDepartamentos({ linhas }: { linhas: Record<string, unknown>[] })
           </li>
         );
       })}
+    </ul>
+  );
+}
+
+/**
+ * As obrigações ativas do cliente.
+ *
+ * Uma tabela de **uma coluna só** é peso sem informação: cabeçalho, bordas e
+ * linhas divisórias para exibir uma lista de nomes. Como só sobrou o nome (as
+ * contagens de entregues e atrasadas são o painel de produção do Acessórias, não
+ * o que se pergunta ao abrir a ficha), a lista cabe em colunas simples e lê-se
+ * de relance — que é o uso real: bater o olho e ver o que a empresa entrega.
+ */
+function ListaObrigacoes({ linhas }: { linhas: Record<string, unknown>[] }) {
+  if (linhas.length === 0) {
+    return <p className="text-sm text-ink/40 italic">Nenhuma obrigação ativa.</p>;
+  }
+
+  const nomes = linhas
+    .map((l) => String(l.Nome ?? "").trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  return (
+    <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5">
+      {nomes.map((nome, i) => (
+        <li key={i} className="flex items-baseline gap-2 text-sm text-ink/85 min-w-0">
+          <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-mint shrink-0 translate-y-[-1px]" />
+          <span className="truncate" title={nome}>
+            {nome}
+          </span>
+        </li>
+      ))}
     </ul>
   );
 }
