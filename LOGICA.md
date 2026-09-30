@@ -30,6 +30,40 @@ necessário. Saíram a rota, o formulário e `lib/converters/dominioNfse.ts`.
 Acrescentar ferramenta é acrescentar um item na lista `FERRAMENTAS` de
 `app/page.tsx` e uma rota própria.
 
+
+#### Custo de abrir a lista de clientes
+
+A lista vem da API do Acessórias, com cache de 10 minutos **na memória do
+servidor**. Na Vercel cada instância tem a sua, então instância fria busca de
+novo — o que acontece com frequência num uso esparso.
+
+Medido contra a carteira real (424 empresas, 20 por página, 23 páginas):
+
+| Como | Tempo | Dados |
+|---|---|---|
+| Sequencial, com `includes` (antes) | 17,7 s | 2,25 MB |
+| Paralelo (6), sem `includes` | 1,2 s | 0,13 MB |
+| Uma empresa com `includes` | 258 ms | — |
+
+A lista só mostra `Razao`, `Fantasia`, `Identificador`, `Status` e `Regime` —
+nada que venha dos `includes`. Carregar obrigações, departamentos e contatos das
+424 para desenhar uma lista de nomes eram 12 segundos jogados fora por abertura.
+
+**Mas o catálogo de campos depende deles.** `catalogoCompleto` descobre os campos
+disponíveis a partir das empresas carregadas, e alimenta a tela de configuração
+da ficha. Por isso `buscarTodas` enriquece **uma** empresa com os `includes`
+depois de montar a lista: basta uma amostra para declarar as chaves, e custa
+258 ms. Sem isso, sumiriam da configuração obrigações, departamentos, contatos e
+inscrições estaduais.
+
+Concorrência 6 foi medida sem nenhum 429; 8 também passou, e 6 deixa folga.
+
+**O atalho do Validador não usa a lista.** A primeira versão perguntava pela
+carteira inteira só para saber se havia par, o que na instância fria custava a
+carteira inteira **em toda página aberta dentro de uma empresa**. `empresaExiste`
+aproveita o cache quando ele está quente e cai para uma requisição quando não
+está. Depois da correção, a página do Validador leva ~1 s.
+
 ### Validador ↔ Diário (atalho entre as duas ferramentas)
 
 Um cliente costuma existir nas duas: no Validador para conferir emissões, no

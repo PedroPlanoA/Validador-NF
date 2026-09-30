@@ -1,6 +1,5 @@
 import { db } from "@/lib/db";
-import { listarEmpresas } from "@/lib/diario/acessorias";
-import { chaveEmpresa } from "@/lib/diario/tipos";
+import { empresaExiste } from "@/lib/diario/acessorias";
 
 /**
  * Liga o **Validador de Emissões** ao **Diário do Cliente**, nos dois sentidos.
@@ -58,16 +57,18 @@ export async function companyIdPorChave(chave: string): Promise<string | null> {
  * A chave do Diário para uma empresa do Validador, se ela estiver na carteira
  * do Acessórias.
  *
- * `listarEmpresas` tem cache no servidor, então isto não gera uma chamada à API
- * a cada navegação dentro da empresa.
+ * Pergunta pela **empresa**, não pela carteira. A primeira versão usava a lista
+ * completa, e como ela custa segundos quando o cache está frio (e na Vercel cada
+ * instância tem o seu), isso pesava em toda página aberta dentro de uma empresa
+ * do Validador. `empresaExiste` aproveita o cache quando ele está quente e cai
+ * para uma única requisição quando não está.
  */
 export async function chaveDiarioDaEmpresa(cnpj: string): Promise<string | null> {
   const doc = soDigitos(cnpj);
   if (!documentoValido(doc)) return null;
 
   try {
-    const { empresas } = await listarEmpresas();
-    return empresas.some((e) => chaveEmpresa(e) === doc) ? doc : null;
+    return (await empresaExiste(doc)) ? doc : null;
   } catch {
     // Acessórias fora do ar não pode derrubar o Validador: sem resposta, o item
     // do Diário simplesmente não aparece na faixa lateral.
