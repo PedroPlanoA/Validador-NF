@@ -5,6 +5,7 @@ import { CompanyFab } from "@/components/layout/CompanyFab";
 import { listCompetencias } from "@/lib/actions/reconciliation";
 import { getCompetenciaCookie } from "@/lib/actions/competenciaCookie";
 import { hasSplitDeNotas } from "@/lib/actions/split";
+import { chaveDiarioDaEmpresa } from "@/lib/integracao/vinculoDiario";
 
 export default async function CompanyLayout({
   children,
@@ -17,10 +18,11 @@ export default async function CompanyLayout({
   const company = await db.company.findUnique({ where: { id: companyId } });
   if (!company) notFound();
 
-  const [competencias, currentCompetencia, showSplit] = await Promise.all([
+  const [competencias, currentCompetencia, showSplit, chaveDiario] = await Promise.all([
     listCompetencias(companyId),
     getCompetenciaCookie(companyId),
     hasSplitDeNotas(companyId),
+    chaveDiarioDaEmpresa(company.cnpj),
   ]);
 
   // A faixa lateral é `fixed` (ver Sidebar) — a página inteira rola
@@ -36,6 +38,7 @@ export default async function CompanyLayout({
         competencias={competencias}
         currentCompetencia={currentCompetencia}
         showSplit={showSplit}
+        chaveDiario={chaveDiario}
       />
       <main className="ml-64 min-h-dvh bg-paper">
         <div className="p-8 pb-24">{children}</div>

@@ -11,6 +11,7 @@ import {
   ListChecks,
   Package,
   Split,
+  BookUser,
 } from "lucide-react";
 import { CompetenciaSidebarSelect } from "@/components/layout/CompetenciaSidebarSelect";
 import { BrandLockup } from "@/components/layout/BrandLockup";
@@ -57,6 +58,7 @@ export function Sidebar({
   competencias,
   currentCompetencia,
   showSplit,
+  chaveDiario,
 }: {
   companyId: string;
   companyName: string;
@@ -65,6 +67,9 @@ export function Sidebar({
   competencias: string[];
   currentCompetencia?: string;
   showSplit: boolean;
+  /** Chave do mesmo cliente no Diário, quando ele existe lá. `null` esconde o
+   *  atalho — ver `lib/integracao/vinculoDiario.ts`. */
+  chaveDiario: string | null;
 }) {
   const pathname = usePathname();
 
@@ -116,6 +121,21 @@ export function Sidebar({
             <Icon className="w-4 h-4 shrink-0" /> {label}
           </Link>
         ))}
+
+        {/* O Diário é outra ferramenta, não mais uma aba do Validador — daí o
+            traço que o separa das abas. Só existe quando este mesmo CNPJ está
+            na carteira do Acessórias; sem par, nada aparece. */}
+        {chaveDiario && (
+          <div className="pt-3 mt-3 border-t border-white/10">
+            <Link
+              href={`/diario-cliente/${chaveDiario}`}
+              className={`${NAV_LINK_BASE} ${NAV_LINK_INACTIVE}`}
+              title="Abrir a ficha deste cliente no Diário"
+            >
+              <BookUser className="w-4 h-4 shrink-0" /> Diário
+            </Link>
+          </div>
+        )}
       </nav>
     </aside>
   );

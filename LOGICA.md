@@ -16,13 +16,50 @@ de ferramentas; cada ferramenta é uma entrada dali:
 | Ferramenta | Rota | O que faz |
 |---|---|---|
 | **Validador de Emissões** | `/companies` → `/c/[companyId]/...` | o sistema descrito no resto deste documento |
-| **Conversor de Leiaute** | `/conversor-dominio` | planilha de NFS-e do emissor nacional → TXT de importação do Domínio, nos modelos de entrada (tomados) e de serviço (prestados) |
+| **Diário do Cliente** | `/diario-cliente` → `/diario-cliente/[chave]` | ficha de cada cliente com os dados do Acessórias (sempre atualizados) e um diário editável da equipe |
 | **Conversor ANSI** | `/conversor-ansi` | arquivos .txt para a codificação ANSI (Windows-1252), vários de uma vez |
 | **Extrair notas do Emissor Nacional** | `/extrator-nacional` | notas emitidas e tomadas lidas da API oficial do ADN com o certificado digital. **Não roda no servidor** — o Hub emoldura um agente local |
-| **Diário do Cliente** | `/diario-cliente` → `/diario-cliente/[chave]` | ficha de cada cliente com os dados do Acessórias (sempre atualizados) e um diário editável da equipe |
+
+Os dois primeiros ficam **lado a lado** na grade porque tratam do mesmo cliente
+e se referenciam (ver *Validador ↔ Diário*, adiante).
+
+O **Conversor de Leiaute** (`/conversor-dominio`, planilha de NFS-e → TXT do
+Domínio) foi **removido** em 30/09/2026, a pedido do usuário: deixou de ser
+necessário. Saíram a rota, o formulário e `lib/converters/dominioNfse.ts`.
 
 Acrescentar ferramenta é acrescentar um item na lista `FERRAMENTAS` de
 `app/page.tsx` e uma rota própria.
+
+### Validador ↔ Diário (atalho entre as duas ferramentas)
+
+Um cliente costuma existir nas duas: no Validador para conferir emissões, no
+Diário para saber o que a equipe sabe dele. Transitar entre os dois exigia voltar
+ao hub e procurar de novo.
+
+- Na faixa lateral do Validador, um item **Diário** leva à ficha do cliente.
+- No cabeçalho da ficha do Diário, um botão **Validador** leva ao dashboard dele.
+
+**O vínculo é o CNPJ, não um cadastro à parte** (`lib/integracao/vinculoDiario.ts`).
+É isso que torna a ligação **automática**: cliente novo em qualquer um dos lados
+ganha o atalho assim que existir no outro, sem ninguém configurar nada.
+
+Normalizar para dígitos é obrigatório, não zelo: das 84 empresas do Validador,
+**78 guardam o CNPJ pontuado** e 5 guardam lixo de um caractere. Comparar o texto
+cru não casaria quase nada. Por isso a comparação roda no banco, com
+`regexp_replace`, e só aceita documento de 14 ou 11 dígitos — sem essa guarda, as
+empresas de cadastro incompleto casariam entre si.
+
+**Sem par dos dois lados, nenhum atalho aparece** — em vez de um link que abriria
+tela vazia. Medido em 30/09/2026: das 84 empresas, 79 têm CNPJ utilizável e
+**todas as 79 casam** com a carteira de 424 do Acessórias; as 5 restantes são
+justamente as de cadastro incompleto.
+
+**CNPJ repetido entre empresas** existe (3 casos em 84). O atalho do Diário leva à
+de **menor código**, a mesma ordem da tela de empresas, para não depender da ordem
+que o banco devolver.
+
+Nenhum dos dois lados pode derrubar o outro: falha ao consultar o Acessórias ou o
+banco devolve `null`, e a tela abre normalmente, só sem o atalho.
 
 Três peças de layout, todas em `components/layout/HubHeader.tsx`:
 
@@ -50,55 +87,6 @@ Três peças de layout, todas em `components/layout/HubHeader.tsx`:
   menta**, a mesma assinatura do `PageTitle` das abas do validador.
 
 De dentro de uma empresa, o botão flutuante tem "Ferramentas".
-
-### Conversor de Leiaute (NFS-e → Domínio)
-`lib/converters/dominioNfse.ts` é **puro** (sem DOM, sem leitura de arquivo), e a
-leitura da planilha fica no componente cliente. A conversão roda **inteira no
-navegador**: a planilha do cliente nunca sobe para o servidor.
-
-Dois modelos, escolhidos na tela:
-
-| | Notas de Entrada (tomados) | Notas de Serviço (prestados) |
-|---|---|---|
-| Cadastro | `0020`, 94 campos | `0010`, 94 campos + município IBGE no campo 8 |
-| Lançamento | `1000`, 94 campos | `3000`, **40** campos |
-| CFOP | 1933 / 2933 | **não existe** |
-| Série | sim | **não existe** |
-| Contraparte | prestador | tomador |
-| Marcador final do cadastro | campo 30 | campo **29** |
-
-Saída: cadastros antes dos lançamentos, unidos por CRLF — o Domínio precisa da
-pessoa existindo antes da nota que a referencia.
-
-Regras comuns aos dois:
-
-- **Data de emissão e de entrada** = último dia **útil** do mês da competência.
-  Sábado volta para sexta, domingo volta para sexta. Feriado não é considerado —
-  exigiria uma tabela municipal que não existe aqui. Vale também no modelo de
-  serviço, **por decisão do usuário**: o arquivo modelo que originou o leiaute
-  trazia a data de emissão de cada nota, e essa diferença foi escolhida.
-- Linha **sem número de NFS-e e sem documento** é estrutura, não dado faltando:
-  linha em branco ou o rodapé de totais que o emissor nacional acrescenta
-  ("TOTAL (4 notas)"). Sai sem entrar na contagem. Já faltar **só um** dos dois é
-  dado ruim de verdade, e esse aparece na tela como linha ignorada.
-- Competência ilegível cai em `DATA_PADRAO` (30/06/2026), herdado da ferramenta
-  original. É um paliativo ruim — a nota entra com data que não é dela — então a
-  tela avisa quantas notas caíram nesse caso, em vez de deixar passar calado.
-- Valor aceita número ou texto pt-BR e sai com vírgula decimal.
-
-Só no modelo de entrada: **CFOP** = `1933` quando a UF do prestador é a mesma do
-tomador **ou** não vem na planilha; `2933` quando é de outro estado. A UF sai da
-coluna de município de incidência, depois da barra.
-
-As colunas esperadas mudam com o modelo (`COLUNAS_POR_MODELO`) — prestador num,
-tomador no outro. Quando falta alguma, a tela diz **qual**, em vez de gerar um TXT
-com o documento errado. Confirmado contra o export real de notas emitidas: as
-colunas são `CNPJ/CPF Tomador` e `Nome Tomador`, e o mesmo arquivo traz também as
-colunas de prestador.
-
-Verificado contra o arquivo modelo do usuário: as **3.362 linhas** (1.464
-cadastros + 1.898 lançamentos) saem idênticas campo a campo, ignorando só as
-datas.
 
 ### Conversor ANSI (TXT → Windows-1252)
 `lib/converters/ansi.ts` é **puro**; a leitura dos arquivos e o zip ficam no
@@ -284,7 +272,6 @@ competência** (mês de referência fiscal).
 ```
 app/
   page.tsx                      Hub Fiscal — a tela de ferramentas (raiz)
-  conversor-dominio/            ferramenta: NFS-e do emissor nacional → TXT do Domínio
   conversor-ansi/               ferramenta: .txt → ANSI (Windows-1252)
   extrator-nacional/            ferramenta: moldura do agente local do Emissor Nacional
   diario-cliente/               ferramenta: lista de clientes e ficha (`[chave]` = CNPJ/CPF)
@@ -316,6 +303,7 @@ lib/
   split/           análise NF-e × NFS-e (puro) e classificação do modelo da nota
   imports/         importService (transações de import/reanálise)
   actions/         Server Actions e leituras (reconciliação, produtos, checklist...)
+  integracao/      vínculo por CNPJ entre o Validador e o Diário do Cliente
   export/          geração de XLSX e do PDF
 prisma/            schema + migrations
 ```

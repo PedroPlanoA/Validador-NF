@@ -47,6 +47,9 @@ export interface RespostaEmpresa {
   empresa: EmpresaAcessorias;
   atualizadoEm: string;
   fonte: "acessorias" | "demo";
+  /** Id da mesma empresa no Validador de Emissões, casada por CNPJ, ou `null`
+   *  quando ela não existe lá — ver `lib/integracao/vinculoDiario.ts`. */
+  companyId?: string | null;
 }
 
 /** Só dígitos do CNPJ/CPF — é assim que a empresa aparece na URL da ficha. */

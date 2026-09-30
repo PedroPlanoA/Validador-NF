@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, RefreshCw } from "lucide-react";
 import { formatarValor, statusAtivo } from "@/lib/diario/campos";
 import { useConfigFicha, useDiario } from "@/lib/diario/armazenamento";
 import { nomeEmpresa, type RespostaEmpresa } from "@/lib/diario/tipos";
@@ -113,16 +113,31 @@ export function FichaCliente({ chave }: { chave: string }) {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={carregar}
-            disabled={carregando}
-            className="self-start md:self-auto inline-flex items-center gap-2 text-xs font-semibold text-sand hover:text-mint-300 disabled:opacity-60 shrink-0"
-            title="Buscar de novo no Acessórias"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${carregando ? "animate-spin" : ""}`} />
-            {carregando ? "Atualizando…" : `Acessórias · ${horaCurta(resp.atualizadoEm)}`}
-          </button>
+          <div className="self-start md:self-auto flex flex-col items-start md:items-end gap-3 shrink-0">
+            {/* Só quando este mesmo CNPJ existe no Validador. Sem par, nenhum
+                botão — em vez de um link que abriria uma empresa inexistente. */}
+            {resp.companyId && (
+              <Link
+                href={`/c/${resp.companyId}/dashboard`}
+                className="inline-flex items-center gap-2 bg-mint text-deep text-xs font-bold px-4 py-2 rounded-pill hover:bg-mint-400 transition-colors"
+                title="Abrir este cliente no Validador de Emissões"
+              >
+                <ClipboardCheck className="w-3.5 h-3.5" />
+                Validador
+              </Link>
+            )}
+
+            <button
+              type="button"
+              onClick={carregar}
+              disabled={carregando}
+              className="inline-flex items-center gap-2 text-xs font-semibold text-sand hover:text-mint-300 disabled:opacity-60"
+              title="Buscar de novo no Acessórias"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${carregando ? "animate-spin" : ""}`} />
+              {carregando ? "Atualizando…" : `Acessórias · ${horaCurta(resp.atualizadoEm)}`}
+            </button>
+          </div>
         </div>
       </header>
 

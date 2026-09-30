@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookUser, ClipboardCheck, FileCode2, FileKey2, FileType2 } from "lucide-react";
+import { ArrowRight, BookUser, ClipboardCheck, FileKey2, FileType2 } from "lucide-react";
 import { HubHeader, HubTitle } from "@/components/layout/HubHeader";
 import { Card } from "@/components/ui/Card";
 
@@ -15,13 +15,16 @@ const FERRAMENTAS = [
     entrada: "Escolher a empresa",
     icone: ClipboardCheck,
   },
+  // Logo depois do Validador de propósito: os dois tratam do mesmo cliente e se
+  // referenciam um ao outro (ver a integração por CNPJ em
+  // `lib/integracao/vinculoDiario.ts`), então ficam lado a lado na grade.
   {
-    href: "/conversor-dominio",
-    nome: "Conversor de Leiaute",
+    href: "/diario-cliente",
+    nome: "Diário do Cliente",
     descricao:
-      "Converte a planilha de NFS-e do emissor nacional no arquivo TXT de importação do Domínio, nos modelos de entrada (serviços tomados) e de serviço (prestados).",
-    entrada: "Abrir o conversor",
-    icone: FileCode2,
+      "Ficha de cada cliente com os dados do Acessórias sempre atualizados e um diário com seções, tópicos, dicas, informações importantes e alertas que só a equipe conhece.",
+    entrada: "Escolher o cliente",
+    icone: BookUser,
   },
   {
     href: "/conversor-ansi",
@@ -38,14 +41,6 @@ const FERRAMENTAS = [
       "Lê as notas emitidas e tomadas direto da API oficial do ADN, com o certificado digital da empresa, e exporta em Excel ou XML. Roda na sua máquina — o certificado nunca sai dela.",
     entrada: "Abrir o extrator",
     icone: FileKey2,
-  },
-  {
-    href: "/diario-cliente",
-    nome: "Diário do Cliente",
-    descricao:
-      "Ficha de cada cliente com os dados do Acessórias sempre atualizados e um diário com seções, tópicos, dicas, informações importantes e alertas que só a equipe conhece.",
-    entrada: "Escolher o cliente",
-    icone: BookUser,
   },
 ] as const;
 
