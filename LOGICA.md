@@ -4,7 +4,7 @@ Documento de referência da **estrutura e das regras de negócio** da aplicaçã
 Serve para retomar o desenvolvimento sem depender do histórico de conversa: se
 uma regra não estiver aqui nem no código, ela não existe.
 
-Última atualização: 16/09/2026.
+Última atualização: 30/09/2026.
 
 ---
 
@@ -19,6 +19,7 @@ de ferramentas; cada ferramenta é uma entrada dali:
 | **Conversor de Leiaute** | `/conversor-dominio` | planilha de NFS-e do emissor nacional → TXT de importação do Domínio, nos modelos de entrada (tomados) e de serviço (prestados) |
 | **Conversor ANSI** | `/conversor-ansi` | arquivos .txt para a codificação ANSI (Windows-1252), vários de uma vez |
 | **Extrair notas do Emissor Nacional** | `/extrator-nacional` | notas emitidas e tomadas lidas da API oficial do ADN com o certificado digital. **Não roda no servidor** — o Hub emoldura um agente local |
+| **Diário do Cliente** | `/diario-cliente` → `/diario-cliente/[chave]` | ficha de cada cliente com os dados do Acessórias (sempre atualizados) e um diário editável da equipe |
 
 Acrescentar ferramenta é acrescentar um item na lista `FERRAMENTAS` de
 `app/page.tsx` e uma rota própria.
@@ -199,6 +200,56 @@ quando se aponta para uma porta morta. **Não verificado:** o Hub em produção
 (https, na Vercel) embutindo `localhost` — nesse par existe restrição de rede
 local no Chrome, e o teste precisa do Chrome real.
 
+### Diário do Cliente
+Ficha individual de cada cliente da carteira. A lista (`/diario-cliente`) usa o
+mesmo desenho da lista de empresas do Validador; a ficha (`/diario-cliente/[chave]`)
+reúne dois tipos de informação:
+
+- **Dados do Acessórias** — vêm da API do Acessórias e nunca são digitados aqui.
+  `lib/diario/acessorias.ts` (somente servidor, `import "server-only"`) lê
+  `/companies/ListAll` com `obligations&departments&stateRegistrations&contacts&registrationData`,
+  20 empresas por página. A lista fica em **cache na memória do servidor por 10
+  minutos** (limite da API: 100 requisições/minuto; HTTP 429 espera 6 s e tenta
+  de novo). A ficha, ao abrir, busca **só aquela empresa** (1 requisição) e
+  atualiza o cache. Sem `ACESSORIAS_TOKEN` o módulo entra em **modo demonstração**
+  com empresas fictícias (`lib/diario/demo.ts`) e a tela avisa.
+- **Diário** — itens que só existem aqui: seção, tópico, subtópico, anotação,
+  dica, importante e alerta. Lista ordenada; o recuo é derivado da ordem (conteúdo
+  de um tópico fica um nível para dentro), não guardado. **Alertas sobem para o
+  topo da ficha** e viram selo no card da lista. O painel **não é recolhível**.
+
+**Chave da empresa = dígitos do CNPJ/CPF** (`chaveEmpresa`), não o `id` de
+`Company`: o diário cobre toda a carteira do Acessórias, e o Validador só
+cadastra as empresas que têm vendas para conferir.
+
+**Configuração geral dos campos** (modal "Campos da ficha"): escolhe quais campos
+do Acessórias aparecem e em que ordem — **vale para todas as empresas**. O
+catálogo (`lib/diario/campos.ts`) traz rótulo, grupo e formato dos campos
+conhecidos; qualquer chave nova que a API devolver entra sozinha em "Outros
+campos". Dentro de "Responsáveis por departamento" há um **subfiltro** com os
+departamentos que entram na lista (`departamentos`; `null` = todos).
+
+**Persistência** (`DiarioConfig` e `DiarioCliente`, via `lib/actions/diario.ts`):
+o estado na tela é otimista e a gravação do diário é **adiada 700 ms** (o editor
+grava a cada tecla); ao sair da ficha o pendente é enviado na hora. As gravações
+da mesma ficha entram em **fila** (uma espera a anterior), para não brigarem entre si.
+
+**Edição simultânea — controle de versão otimista.** Quem abre a ficha guarda a
+versão carregada (`DiarioCliente.updatedAt`); `salvarDiario` só grava se o banco
+ainda estiver nessa versão, conferindo **dentro do próprio UPDATE** (`where` com
+`updatedAt`), sem janela entre conferir e gravar. Se outra pessoa salvou antes,
+nada é gravado, o envio pausa e o editor mostra um aviso com duas saídas:
+**usar a versão mais recente** (descarta o que a pessoa escreveu) ou **manter as
+minhas e sobrescrever**. Diário que ainda não existia usa `create`; se outra pessoa
+o criou antes, também é conflito. A **configuração geral** (`DiarioConfig`) não
+tem esse controle — vale a última gravação, por ser rara e de baixo risco.
+`DiarioCliente.alertas`/`totalBlocos` são contagens desnormalizadas gravadas junto,
+para a lista não carregar o JSON de todos os diários.
+
+**Configuração de ambiente:** `ACESSORIAS_TOKEN` (Acessórias → engrenagem → "API
+Token") em `.env.local` **e nas variáveis de ambiente da Vercel**. O token fica só
+no servidor; o navegador nunca o vê.
+
 ### Validador de Emissões
 Confere a **situação fiscal** de infoprodutores: cruza o que foi **vendido**
 (relatório exportado da plataforma de venda) com o que foi **faturado**
@@ -236,12 +287,14 @@ app/
   conversor-dominio/            ferramenta: NFS-e do emissor nacional → TXT do Domínio
   conversor-ansi/               ferramenta: .txt → ANSI (Windows-1252)
   extrator-nacional/            ferramenta: moldura do agente local do Emissor Nacional
+  diario-cliente/               ferramenta: lista de clientes e ficha (`[chave]` = CNPJ/CPF)
   companies/                    escolha da empresa (entrada do Validador)
   config/                       mapeamentos globais (fora do contexto de empresa)
   c/[companyId]/
     layout.tsx                  faixa lateral fixa + botão flutuante
     dashboard/ sales/ invoices/ products/ errors/ checklist/ imports/
     config/                     mesmos mapeamentos, acessados de dentro da empresa
+  api/diario/empresas/          lista e ficha de empresa lidas do Acessórias (com cache)
   api/c/[companyId]/
     imports/                    upload, reanálise e exclusão de lote
     export/                     XLSX de vendas, notas, conciliação + PDF do checklist
@@ -252,11 +305,13 @@ components/
   wizard/    assistente de mapeamento e formulário de upload
   tools/     formulários das ferramentas do hub (conversores de leiaute e ANSI)
              e a moldura do agente do Emissor Nacional
+  diario/    lista de clientes, ficha, editor do diário, modal de campos
   dashboard/ KpiCard e os gráficos (Situação NF, Plataforma, Tipo)
 lib/
   parsing/         leitura de planilha, números, datas/competência, palpites de coluna
   mapping/         tipos, aplicação do mapeamento, normalização de código
   reconciliation/  engine (puro), classify (tabela de decisão), labels, types
+  diario/          cliente do Acessórias (servidor), catálogo de campos, tipos, hooks de persistência
   converters/      conversores puros — NFS-e → Domínio e TXT → ANSI
   split/           análise NF-e × NFS-e (puro) e classificação do modelo da nota
   imports/         importService (transações de import/reanálise)
@@ -284,6 +339,8 @@ tocar no Postgres.
 | `ProductOverride` | % de comissão fixado manualmente por (empresa, plataforma, produto). |
 | `ValueCheckAnnotation` | Marca "conferi essa divergência de valor e está certa". |
 | `ChecklistState` | Estado dos itens do checklist por (empresa, competência). |
+| `DiarioConfig` | Configuração geral do Diário do Cliente — **uma linha** (`id = "global"`): campos visíveis, ordem e departamentos exibidos. |
+| `DiarioCliente` | Diário de um cliente (`blocos` em JSON), chaveado pelos dígitos do CNPJ/CPF — **sem relação com `Company`**. |
 
 ### Decisões que não são óbvias no schema
 

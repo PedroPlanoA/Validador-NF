@@ -16,17 +16,27 @@ export function PanelCard({
   title,
   action,
   className = "",
+  editorial = false,
   children,
 }: {
   title: string;
   action?: React.ReactNode;
   className?: string;
+  /** Título em Merriweather com o ponto menta — o tom das telas do Diário do Cliente. */
+  editorial?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <Card className={`overflow-hidden flex flex-col ${className}`}>
       <div className="px-6 py-4 border-b border-ink/8 bg-paper-alt/40 flex items-center justify-between gap-3 shrink-0">
-        <h4 className="text-sm font-bold text-ink">{title}</h4>
+        {editorial ? (
+          <h4 className="font-serif text-base font-black text-deep">
+            {title}
+            <span className="text-mint">.</span>
+          </h4>
+        ) : (
+          <h4 className="text-sm font-bold text-ink">{title}</h4>
+        )}
         {action}
       </div>
       <div className="flex-1 min-w-0">{children}</div>

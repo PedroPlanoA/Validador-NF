@@ -44,11 +44,11 @@ export function HubHeader({ titulo }: { titulo: string }) {
  * sombra externa. Só sombra e cor mudam, sem alterar tamanho, para nada ao redor
  * deslocar.
  */
-export function VoltarParaFerramentas({ label = "Ferramentas" }: { label?: string }) {
+export function VoltarParaFerramentas({ label = "Ferramentas", href = "/" }: { label?: string; href?: string }) {
   return (
     <div className="px-8 pt-7">
       <Link
-        href="/"
+        href={href}
         className="inline-flex items-center gap-2 text-[13px] font-bold text-ink/40 bg-paper-alt/70 rounded-pill px-5 py-2.5
                    shadow-[inset_0_1px_3px_rgba(0,50,60,0.10),inset_0_-1px_0_rgba(255,255,255,0.70)]
                    hover:text-deep hover:bg-white hover:shadow-card

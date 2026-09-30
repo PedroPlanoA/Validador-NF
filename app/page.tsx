@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ClipboardCheck, FileCode2, FileKey2, FileType2 } from "lucide-react";
+import { ArrowRight, BookUser, ClipboardCheck, FileCode2, FileKey2, FileType2 } from "lucide-react";
 import { HubHeader, HubTitle } from "@/components/layout/HubHeader";
 import { Card } from "@/components/ui/Card";
 
@@ -38,6 +38,14 @@ const FERRAMENTAS = [
       "Lê as notas emitidas e tomadas direto da API oficial do ADN, com o certificado digital da empresa, e exporta em Excel ou XML. Roda na sua máquina — o certificado nunca sai dela.",
     entrada: "Abrir o extrator",
     icone: FileKey2,
+  },
+  {
+    href: "/diario-cliente",
+    nome: "Diário do Cliente",
+    descricao:
+      "Ficha de cada cliente com os dados do Acessórias sempre atualizados e um diário com seções, tópicos, dicas, informações importantes e alertas que só a equipe conhece.",
+    entrada: "Escolher o cliente",
+    icone: BookUser,
   },
 ] as const;
 

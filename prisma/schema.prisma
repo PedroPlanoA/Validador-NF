@@ -246,3 +246,28 @@ model ChecklistState {
 
   @@unique([companyId, competencia])
 }
+
+/// Configuração geral do Diário do Cliente — uma única linha (id = "global"),
+/// aplicada à ficha de todas as empresas: quais campos do Acessórias aparecem,
+/// em que ordem, e quais departamentos entram na lista de responsáveis.
+model DiarioConfig {
+  id            String   @id
+  campos        Json
+  /// Nomes dos departamentos exibidos; nulo = todos.
+  departamentos Json?
+  updatedAt     DateTime @updatedAt
+}
+
+/// Diário de um cliente: a lista ordenada de itens (seção, tópico, anotação,
+/// dica, importante, alerta). Chaveado pelos dígitos do CNPJ/CPF — a identidade
+/// da empresa no Acessórias — e não por `Company`, porque o diário cobre toda a
+/// carteira e o Validador só cadastra as empresas que têm vendas para conferir.
+model DiarioCliente {
+  chave       String   @id
+  blocos      Json
+  /// Contagens desnormalizadas para os selos da lista de clientes, que assim
+  /// não precisa carregar o JSON de todos os diários.
+  alertas     Int      @default(0)
+  totalBlocos Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
