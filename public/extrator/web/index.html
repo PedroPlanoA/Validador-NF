@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relatório de NFS-e — Plano A</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta name="theme-color" content="#00323C">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilo.css">
+</head>
+<body>
+
+<header class="topo">
+  <div class="wrap topo-in">
+    <img src="/logo-fundo-escuro.png" alt="Plano A Contabilidade" class="marca">
+    <span class="topo-sep"></span>
+    <span class="topo-nome">Relatório de NFS-e</span>
+
+    <div class="cert" id="cert">
+      <span class="cert-ponto" id="certPonto"></span>
+      <span class="cert-texto">
+        <strong id="certEmpresa">Nenhum certificado conectado</strong>
+        <small id="certDetalhe">Conecte um certificado para começar</small>
+      </span>
+      <button class="btn-cert" id="btnCert">Conectar certificado</button>
+      <button class="btn-cert btn-cert-sair" id="btnSair" hidden>Desconectar</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap page">
+
+  <section class="card conexao" id="conexao">
+    <h1>Conectar o certificado digital</h1>
+    <p class="sub">
+      O certificado é lido do repositório do Windows desta máquina. A chave privada não sai
+      dele, e nada é guardado: a cada conexão a escolha é feita de novo.
+    </p>
+    <div class="acoes">
+      <button class="btn btn-primario" id="btnConectar">Escolher certificado</button>
+    </div>
+  </section>
+
+  <section class="card filtros" id="filtros" hidden>
+    <h2 class="titulo-passo">Escolher o que carregar</h2>
+
+    <div class="grid-filtros">
+      <div class="field">
+        <label for="tipo">Tipo de nota</label>
+        <select id="tipo">
+          <option value="EMITIDA">Emitidas</option>
+          <option value="TOMADA">Tomadas</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="base">Filtrar o período por</label>
+        <select id="base">
+          <option value="emissao">Data de emissão</option>
+          <option value="competencia">Competência</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="de">De</label>
+        <input type="date" id="de">
+      </div>
+
+      <div class="field">
+        <label for="ate">Até</label>
+        <input type="date" id="ate">
+      </div>
+
+    </div>
+
+    <div class="atalhos-linha">
+      <span class="atalhos-rotulo">Atalhos de período</span>
+      <div class="atalhos">
+        <button type="button" class="chip" data-periodo="mes-atual">Este mês</button>
+        <button type="button" class="chip" data-periodo="mes-anterior">Mês anterior</button>
+        <button type="button" class="chip" data-periodo="ano">Este ano</button>
+      </div>
+    </div>
+
+    <div class="acoes">
+      <button class="btn btn-primario" id="btnCarregar">Carregar notas</button>
+    </div>
+
+    <div class="progresso" id="progresso" hidden>
+      <div class="progresso-topo">
+        <span class="pulso"></span>
+        <strong id="progressoTitulo">Carregando…</strong>
+      </div>
+      <p id="progressoTexto" class="sub"></p>
+    </div>
+
+    <p class="leitura-info" id="leituraInfo" hidden></p>
+  </section>
+
+  <nav class="abas" id="abas" hidden>
+    <button type="button" class="aba ativa" data-aba="notas">Notas do período</button>
+    <button type="button" class="aba" data-aba="validador">Validador de lançamentos</button>
+  </nav>
+
+  <div class="selecao" id="selecao" hidden>
+    <strong id="selecaoInfo"></strong>
+    <div class="selecao-acoes">
+      <button class="btn btn-primario btn-pequeno" id="btnXmlSel">Baixar XMLs das notas selecionadas</button>
+      <button class="btn btn-primario btn-pequeno" id="btnXlsSel">Baixar relatório XLS das notas selecionadas</button>
+      <button class="btn-link" id="btnLimparSel">Limpar seleção</button>
+    </div>
+  </div>
+
+  <section id="resultado" hidden>
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi-label" id="kpiQtdLabel">Notas emitidas</span>
+        <strong class="kpi-value" id="kpiQtd">—</strong>
+        <span class="kpi-nota" id="kpiQtdNota"></span>
+      </div>
+      <div class="kpi kpi-destaque">
+        <span class="kpi-label">Valor total</span>
+        <strong class="kpi-value" id="kpiTotal">—</strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Notas canceladas</span>
+        <strong class="kpi-value" id="kpiCanc">—</strong>
+        <span class="kpi-nota" id="kpiCancNota"></span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Retenções</span>
+        <strong class="kpi-value" id="kpiRetencoes">—</strong>
+        <span class="kpi-nota" id="kpiRetencoesNota"></span>
+      </div>
+    </div>
+
+    <div class="barra">
+      <p class="tbl-info" id="tblInfo"></p>
+      <div class="barra-acoes">
+        <label class="check check-inline">
+          <input type="checkbox" id="incluirCanceladas" checked>
+          <span>Mostrar canceladas</span>
+        </label>
+        <button class="btn btn-fantasma btn-pequeno" id="btnXmlTodos">Baixar todos os XMLs</button>
+        <button class="btn btn-fantasma btn-pequeno" id="btnExcel">Baixar Excel</button>
+      </div>
+    </div>
+
+    <div class="card sem-pad tabela-bloco" id="codigosServico" hidden></div>
+
+    <div id="tabelas"></div>
+  </section>
+
+  <section id="painelValidador" hidden>
+    <div class="card">
+      <h2>Validador de lançamentos</h2>
+      <p class="sub">
+        Importe a relação de lançamentos da contabilidade. Conferimos, pelo número da nota, quais
+        das notas carregadas estão lançadas e se o valor bate.
+      </p>
+      <div class="acoes">
+        <label class="btn btn-primario" for="arquivoLancamentos">Escolher arquivo</label>
+        <input type="file" id="arquivoLancamentos" accept=".csv,.txt,.xlsx,.xlsm" hidden>
+        <span class="arquivo-nome" id="arquivoNome"></span>
+      </div>
+      <div class="progresso" id="progressoValidacao" hidden>
+        <div class="progresso-topo"><span class="pulso"></span><strong>Conferindo…</strong></div>
+      </div>
+    </div>
+
+    <div class="kpis" id="kpisValidacao" hidden>
+      <div class="kpi">
+        <span class="kpi-label">Não localizadas</span>
+        <strong class="kpi-value" id="kpiNaoLoc">—</strong>
+        <span class="kpi-nota">Número ausente no lançamento</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Valor divergente</span>
+        <strong class="kpi-value" id="kpiDiverg">—</strong>
+        <span class="kpi-nota">Lançado com valor diferente</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Cancelamento divergente</span>
+        <strong class="kpi-value" id="kpiCancel">—</strong>
+        <span class="kpi-nota">Cancelamento não bate</span>
+      </div>
+    </div>
+
+    <div id="tabelasValidacao"></div>
+  </section>
+
+  <p class="aviso" id="aviso" hidden></p>
+</main>
+
+<!-- Seletor de certificado. Substitui o diálogo nativo do Chrome, que mostra
+     centenas de entradas sem busca e sem dizer quais estão vencidas. -->
+<dialog class="seletor" id="seletor">
+  <div class="seletor-topo">
+    <div>
+      <h2>Escolher o certificado</h2>
+      <p class="sub" id="seletorResumo">Carregando…</p>
+    </div>
+    <button class="btn btn-fantasma" id="btnFecharSeletor" type="button">Fechar</button>
+  </div>
+
+  <div class="seletor-filtros">
+    <input type="search" id="buscaCert" placeholder="Buscar por razão social ou CNPJ" autocomplete="off">
+    <label class="seletor-check">
+      <input type="checkbox" id="mostrarVencidos"> Mostrar vencidos
+    </label>
+    <button class="btn btn-fantasma" id="btnAtualizarCert" type="button">Atualizar lista</button>
+  </div>
+
+  <div class="lista-cert" id="listaCert"></div>
+</dialog>
+
+<script src="/app.js"></script>
+<!-- Depois de app.js: a moldura mede a altura da página já montada. -->
+<script src="/moldura.js"></script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+{
+  "versao": "0.4.5",
+  "dependencias": {
+    "exceljs": "^4.4.0",
+    "jszip": "^3.10.2"
+  },
+  "arquivos": [
+    {
+      "caminho": "Desinstalar - nao iniciar com o Windows.bat",
+      "sha256": "24b1b31ea1336c88286a06573e5d4243aa1b9203148596a6c45f42e80579b5c6",
+      "bytes": 456
+    },
+    {
+      "caminho": "Fechar extrator.bat",
+      "sha256": "8bea845054ee85736146555f7ac8fd2e8771901f452cfe2943f20c880316c3ba",
+      "bytes": 676
+    },
+    {
+      "caminho": "Iniciar extrator.bat",
+      "sha256": "7276f9831ef6a6d7c820297b25038d461dadcb168d932463e261511383e2b283",
+      "bytes": 318
+    },
+    {
+      "caminho": "iniciar-oculto.vbs",
+      "sha256": "793f32ff0ecf71527f18b7b0b31d22980487ae16de5b91d01a044b988daf27ff",
+      "bytes": 407
+    },
+    {
+      "caminho": "Instalar - iniciar com o Windows.bat",
+      "sha256": "7ab02855fe2100a41cb40e13fa127a035f8fd6c93c47d2835b1909b31e5846f6",
+      "bytes": 1180
+    },
+    {
+      "caminho": "LEIAME.md",
+      "sha256": "0e12811bbaebde0736886ef990e0befbd3d419c9da3168c8262bfc3adde31762",
+      "bytes": 2281
+    },
+    {
+      "caminho": "package.json",
+      "sha256": "43d84f43b9d6cd2a291751d577f8e40556f9d9b164f058fe155d1467ce2009ac",
+      "bytes": 578
+    },
+    {
+      "caminho": "servidor.mjs",
+      "sha256": "b568d7d2be37e7c81f7d99d5bd1dca6fd023be6de92b855e4cc8a9d0d167fb3b",
+      "bytes": 29493
+    },
+    {
+      "caminho": "src/adn.mjs",
+      "sha256": "b41e313dcba38ad9edfc06a8844162622a3a9bccd7c16060ef8cb4e829457d47",
+      "bytes": 11485
+    },
+    {
+      "caminho": "src/atualizador.mjs",
+      "sha256": "9ed5a994edafb84fdde3c8883e6125b8fb62ed24ce5b443dda8f1151bbbb14c1",
+      "bytes": 10212
+    },
+    {
+      "caminho": "src/certificados.mjs",
+      "sha256": "5b716e367ab3bba467cc739afc1c346aa62a0d24ff9bc2371a2d7f30a958f5d4",
+      "bytes": 5287
+    },
+    {
+      "caminho": "src/excel.mjs",
+      "sha256": "98b537e759e79a3ae9963492e9a9f7851e4eae74906628e55bc9b86b455b0f90",
+      "bytes": 8300
+    },
+    {
+      "caminho": "src/importar.mjs",
+      "sha256": "787032515c58bd77e72275aef0d17ac500fed89be8b08130982b9d9551b48508",
+      "bytes": 9296
+    },
+    {
+      "caminho": "src/janela.mjs",
+      "sha256": "3f39ce19fb46e691ce0b9a159eed7ea58487ac531f15b9a8534e3e70ac05ec94",
+      "bytes": 9824
+    },
+    {
+      "caminho": "src/nfse.mjs",
+      "sha256": "3e0d10e0dba902a219b7ce275f09c5e530f42ff918e58c45e9481dbd79523899",
+      "bytes": 12109
+    },
+    {
+      "caminho": "src/relatorio.mjs",
+      "sha256": "36316889d262cd45296bd6794608a2818a51355fd395e4de978becc10bce7a93",
+      "bytes": 4199
+    },
+    {
+      "caminho": "src/sessao.mjs",
+      "sha256": "16de4045dc330c6918b47fdea6c4508dd248a0500f9cd7efd281f00189c61e9f",
+      "bytes": 7929
+    },
+    {
+      "caminho": "src/validador.mjs",
+      "sha256": "6d43663d310ab80b3cd856a699222edd22bf35d5b5ea11794e49950f38688eea",
+      "bytes": 4159
+    },
+    {
+      "caminho": "src/xml.mjs",
+      "sha256": "ea88ee18c4ef892fe03d1948ecbbeb0b81027831aa585eeeb52fd4ae00b46de5",
+      "bytes": 3553
+    },
+    {
+      "caminho": "web/app.js",
+      "sha256": "1b755d71f1f70252053f096668bbda7ce51a87e710c2d32323804a63760a5676",
+      "bytes": 30221
+    },
+    {
+      "caminho": "web/estilo.css",
+      "sha256": "20c0efa257854491f8d12f483525c8de1657458b43a0ff4975f7f2e2cdc707f2",
+      "bytes": 18253
+    },
+    {
+      "caminho": "web/favicon.png",
+      "sha256": "2bc78741aa6fee94e131c5f66abf6e2d07cb399331032deb93c2352f3739b569",
+      "bytes": 1862
+    },
+    {
+      "caminho": "web/index.html",
+      "sha256": "a1efa8bac0422dc9135a78cf61b1416918bd361469270ed5891a6ce9243834c7",
+      "bytes": 8269
+    },
+    {
+      "caminho": "web/logo-fundo-escuro.png",
+      "sha256": "6296d8d4ab3f9a9a62982c44a8ad3e06801b01b8bdbf88c015e861ab79686571",
+      "bytes": 20234
+    },
+    {
+      "caminho": "web/moldura.js",
+      "sha256": "959a85b55bda56cbb48f1b6746eec05723cd63da03c0682ebad2813e30e525da",
+      "bytes": 3561
+    }
+  ]
+}

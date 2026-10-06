@@ -37,6 +37,14 @@ export const config = {
    *  - a própria tela de login e as rotas de autenticação (senão ninguém entra);
    *  - os estáticos do Next e o favicon — sem esta exclusão, a tela de login
    *    apareceria sem CSS, porque o próprio CSS seria redirecionado para ela.
+   *  - `extrator/`, de onde os extratores instalados nas máquinas baixam as
+   *    próprias atualizações. Eles não têm sessão do Hub e não têm como ter: são
+   *    um processo local, sem ninguém logado dentro. O que mora ali é só o
+   *    código da ferramenta, que não carrega segredo nenhum — nem certificado,
+   *    nem senha, nem chave — e isso é invariante do projeto, não sorte.
+   *
+   * A barra em `extrator/` não é detalhe: sem ela, `/extrator-nacional` — a
+   * página do Hub que abre a ferramenta — também passaria a ser pública.
    */
-  matcher: ["/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!login|api/auth|extrator/|_next/static|_next/image|favicon.ico).*)"],
 };

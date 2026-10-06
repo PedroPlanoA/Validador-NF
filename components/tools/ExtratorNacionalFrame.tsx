@@ -39,15 +39,15 @@ const ESPERA_ACENO_MS = 8000;
 const ALTURA_MINIMA = 720;
 
 /**
- * A versão do agente que este Hub espera.
+ * Onde mora a versão atual do extrator.
  *
- * Com a ferramenta instalada na máquina de cada pessoa, passam a existir várias
- * cópias e nenhuma forma de saber quem está com qual — e quem estiver com uma
- * cópia velha vai relatar erro já corrigido. O Hub é o único lado que está sempre
- * atualizado (sai da Vercel), então é ele quem avisa. **Subir esta constante ao
- * publicar uma versão nova do agente.**
+ * Era uma constante aqui, mantida à mão. Agora sai de `public/extrator/`, que é
+ * de onde os extratores instalados também se atualizam — a mesma fonte para os
+ * dois, publicada pelo `npm run publicar` do repositório do extrator. Uma
+ * constante que precisava ser lembrada era mais uma chance de o Hub dizer uma
+ * coisa e as máquinas terem outra.
  */
-const VERSAO_ESPERADA = "0.4.0";
+const MANIFESTO = "/extrator/manifest.json";
 
 /** Compara `1.10.0` > `1.9.0` — comparação de texto erraria essa. */
 function versaoMenor(a: string, b: string) {
@@ -129,12 +129,31 @@ export function ExtratorNacionalFrame() {
   const rascunho = rascunhoEditado ?? endereco;
   const [estado, setEstado] = useState<Estado>("procurando");
   const [versaoAgente, setVersaoAgente] = useState("");
+  /** A versão publicada, lida do mesmo manifesto de onde os extratores se servem. */
+  const [versaoAtual, setVersaoAtual] = useState("");
   const [altura, setAltura] = useState(ALTURA_MINIMA);
   /** Muda a cada tentativa para remontar o iframe — trocar só o `src` para o
    *  mesmo endereço não recarrega nada. */
   const [tentativa, setTentativa] = useState(0);
 
   const origem = useMemo(() => origemLocalValida(endereco), [endereco]);
+
+  useEffect(() => {
+    let vivo = true;
+    fetch(MANIFESTO, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m) => {
+        if (vivo && m?.versao) setVersaoAtual(String(m.versao));
+      })
+      .catch(() => {
+        // Sem manifesto não há com o que comparar, e o aviso simplesmente não
+        // aparece. Não saber a versão não é motivo para atrapalhar quem só quer
+        // usar a ferramenta.
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
 
   const procurarDeNovo = useCallback(() => {
     setEstado("procurando");
@@ -191,16 +210,20 @@ export function ExtratorNacionalFrame() {
         />
       )}
 
-      {estado === "ligado" && versaoAgente && versaoMenor(versaoAgente, VERSAO_ESPERADA) && (
+      {/* Desde que o extrator se atualiza sozinho ao abrir, ficar para trás deixou
+          de ser o normal e virou sintoma: ou ele não conseguiu falar com o Hub, ou
+          a versão nova não subiu e ele voltou para a anterior. Por isso o texto
+          não manda mais trocar pasta — manda fechar e abrir, que é o que dispara
+          a tentativa de novo. */}
+      {estado === "ligado" && versaoAgente && versaoAtual && versaoMenor(versaoAgente, versaoAtual) && (
         <Card className="p-4 flex items-start gap-3 border-clay-300 bg-clay-50">
           <TriangleAlert className="w-5 h-5 text-clay-600 shrink-0 mt-0.5" />
           <p className="text-sm text-ink leading-relaxed">
             <span className="font-bold">
-              O extrator da sua máquina está na versão {versaoAgente}; a atual é a{" "}
-              {VERSAO_ESPERADA}.
+              O extrator da sua máquina está na versão {versaoAgente}; a atual é a {versaoAtual}.
             </span>{" "}
-            Atualize a pasta da ferramenta e abra de novo — erros já corrigidos podem voltar a
-            aparecer numa cópia antiga.
+            Ele se atualiza sozinho ao abrir, então feche e abra de novo. Se continuar atrasado,
+            avise — pode ser que a atualização não esteja conseguindo chegar aí.
           </p>
         </Card>
       )}

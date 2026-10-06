@@ -1,0 +1,16 @@
+{
+  "name": "relatorio-nfse",
+  "version": "0.4.5",
+  "description": "Extração do relatório de NFS-e emitidas e tomadas pela API oficial ADN, autenticando por mTLS com o certificado do repositório do Windows.",
+  "type": "module",
+  "scripts": {
+    "start": "node servidor.mjs",
+    "test": "node testes/janela.test.mjs && node testes/retencoes.test.mjs && node testes/validador.test.mjs && node testes/dono.test.mjs",
+    "empacotar": "node empacotar.mjs",
+    "publicar": "node publicar.mjs"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "jszip": "^3.10.2"
+  }
+}
