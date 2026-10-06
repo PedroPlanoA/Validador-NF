@@ -1,5 +1,5 @@
 {
-  "versao": "0.4.5",
+  "versao": "0.4.6",
   "dependencias": {
     "exceljs": "^4.4.0",
     "jszip": "^3.10.2"
@@ -32,12 +32,12 @@
     },
     {
       "caminho": "LEIAME.md",
-      "sha256": "0e12811bbaebde0736886ef990e0befbd3d419c9da3168c8262bfc3adde31762",
-      "bytes": 2281
+      "sha256": "c9f1a3e70c0cf6cd7ccb1833da669483d6926db7b80b034c845c82da134fa3cb",
+      "bytes": 2339
     },
     {
       "caminho": "package.json",
-      "sha256": "43d84f43b9d6cd2a291751d577f8e40556f9d9b164f058fe155d1467ce2009ac",
+      "sha256": "e06ae9167e89d1a98beaba0576fe0231402932bbe89af05d3692a7c79e254c0d",
       "bytes": 578
     },
     {

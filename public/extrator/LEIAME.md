@@ -45,16 +45,18 @@ nada. São 92 MB, e é o arquivo mais pesado daqui.
 
 ## Atualização
 
-1. **Feche primeiro** (Fechar extrator.bat).
-2. Substitua a pasta pela nova.
-3. Abra de novo, ou reinicie o computador se ele sobe sozinho.
+**Você não precisa fazer nada.**
 
-Pular o passo 1 dá errado de dois jeitos, e os dois enganam:
+Toda vez que o extrator abre, ele pergunta ao Hub Fiscal se existe versão nova.
+Se existir, baixa, troca e reinicia sozinho — leva poucos segundos e acontece
+antes de a tela aparecer. Não há pasta para substituir e não há zip para pedir.
 
-- O Windows **não deixa** apagar a pasta `node`, porque o `node.exe` dela está em
-  uso. Parece falta de permissão; é só o programa aberto.
-- Se você substituir só o resto e deixar o `node` para lá, a pasta fica nova mas
-  **o programa que está rodando continua sendo o antigo** — ele foi carregado para
-  a memória quando abriu. Tudo parece atualizado e nada mudou.
+Só o código é trocado. A pasta `node` fica onde está, e é por isso que isto
+funciona mesmo com o extrator aberto.
 
-Para conferir qual versão está no ar: <http://localhost:3777/api/sessao>.
+Se o Hub estiver fora do ar ou a internet cair, ele abre normalmente com a versão
+que já está instalada. Nunca deixa de abrir por causa de atualização.
+
+E se a versão nova não subir, ele devolve a anterior e volta a funcionar com ela.
+
+Para ver em que versão você está: <http://localhost:3777/api/sessao>.

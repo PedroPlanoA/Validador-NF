@@ -1,6 +1,6 @@
 {
   "name": "relatorio-nfse",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Extração do relatório de NFS-e emitidas e tomadas pela API oficial ADN, autenticando por mTLS com o certificado do repositório do Windows.",
   "type": "module",
   "scripts": {
