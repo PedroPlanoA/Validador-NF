@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookUser, ClipboardCheck, FileKey2, FileType2, Users } from "lucide-react";
+import { ArrowRight, BookUser, Gauge, ClipboardCheck, FileKey2, FileType2, Users } from "lucide-react";
 import { ehMaster } from "@/lib/auth/autorizados";
 import { emailDaSessao } from "@/lib/actions/usuarios";
 import { HubHeader, HubTitle } from "@/components/layout/HubHeader";
@@ -27,6 +27,14 @@ const FERRAMENTAS = [
       "Ficha de cada cliente com os dados do Acessórias sempre atualizados e um diário com seções, tópicos, dicas, informações importantes e alertas que só a equipe conhece.",
     entrada: "Escolher o cliente",
     icone: BookUser,
+  },
+  {
+    href: "/ico-fiscal",
+    nome: "ICO Fiscal",
+    descricao:
+      "Mede a complexidade de cada cliente do fiscal e a produtividade da equipe contra essa carga: nota por empresa, peso por responsável, entregas por dia e aderência ao prazo. Você importa os dois CSVs e o relatório se monta.",
+    entrada: "Abrir o relatório",
+    icone: Gauge,
   },
   {
     href: "/conversor-ansi",

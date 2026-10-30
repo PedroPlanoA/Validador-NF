@@ -320,3 +320,21 @@ model AcessoUsuario {
   email     String   @id
   ultimoEm  DateTime
 }
+
+/// ICO Fiscal: um arquivo importado (base de ICO de um trimestre ou registro de
+/// obrigacoes). `dados` guarda so o que o calculo usa, ja processado no navegador;
+/// planilha original, CNPJ, endereco e telefone nao sao guardados.
+model IcoArquivo {
+  id        String   @id @default(cuid())
+  nome      String   @unique
+  /// "base" ou "obr".
+  tipo      String
+  /// Trimestre da base (ex.: 2026-T3); nulo nas obrigacoes.
+  tri       String?
+  tag       String
+  detalhe   String
+  dados     Json
+  createdAt DateTime @default(now())
+
+  @@index([tipo, tri])
+}
