@@ -4,7 +4,7 @@ Documento de referência da **estrutura e das regras de negócio** da aplicaçã
 Serve para retomar o desenvolvimento sem depender do histórico de conversa: se
 uma regra não estiver aqui nem no código, ela não existe.
 
-Última atualização: 30/09/2026.
+Última atualização: 30/10/2026.
 
 ---
 
@@ -19,9 +19,18 @@ de ferramentas; cada ferramenta é uma entrada dali:
 | **Diário do Cliente** | `/diario-cliente` → `/diario-cliente/[chave]` | ficha de cada cliente com os dados do Acessórias (sempre atualizados) e um diário editável da equipe |
 | **Conversor ANSI** | `/conversor-ansi` | arquivos .txt para a codificação ANSI (Windows-1252), vários de uma vez |
 | **Extrair notas do Emissor Nacional** | `/extrator-nacional` | notas emitidas e tomadas lidas da API oficial do ADN com o certificado digital. **Não roda no servidor** — o Hub emoldura um agente local |
+| **ICO Fiscal** | `/ico-fiscal` | relatório trimestral de complexidade e produtividade do setor fiscal. Importa a planilha do escritório (abas "Base de Dados" e "Obrigações Acessórias"), guarda cada arquivo na tabela `IcoArquivo` e monta indicadores, grau de complexidade, responsáveis e produção |
 
 Os dois primeiros ficam **lado a lado** na grade porque tratam do mesmo cliente
 e se referenciam (ver *Validador ↔ Diário*, adiante).
+
+O **ICO Fiscal** entrou em 30/10/2026 (commit `f144406`). Os cálculos foram
+portados do HTML original sem mudar regra; a leitura do arquivo roda no
+navegador. **Pendências conhecidas**, detalhadas em
+`Projeto Claude\Diário do Cliente\HANDOFF-ICO-FISCAL.md`: ainda **não foi
+publicado na Vercel** (o projeto não está ligado ao GitHub; publica-se pela CLI)
+e ainda **não foi testado pela tela com sessão logada** — a importação existente
+foi feita por script direto no banco.
 
 O **Conversor de Leiaute** (`/conversor-dominio`, planilha de NFS-e → TXT do
 Domínio) foi **removido** em 30/09/2026, a pedido do usuário: deixou de ser
