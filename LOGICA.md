@@ -24,13 +24,45 @@ de ferramentas; cada ferramenta é uma entrada dali:
 Os dois primeiros ficam **lado a lado** na grade porque tratam do mesmo cliente
 e se referenciam (ver *Validador ↔ Diário*, adiante).
 
-O **ICO Fiscal** entrou em 30/10/2026 (commit `f144406`). Os cálculos foram
-portados do HTML original sem mudar regra; a leitura do arquivo roda no
-navegador. **Pendências conhecidas**, detalhadas em
-`Projeto Claude\Diário do Cliente\HANDOFF-ICO-FISCAL.md`: ainda **não foi
-publicado na Vercel** (o projeto não está ligado ao GitHub; publica-se pela CLI)
-e ainda **não foi testado pela tela com sessão logada** — a importação existente
-foi feita por script direto no banco.
+O **ICO Fiscal** entrou em 30/10/2026 (commit `f144406`) e está publicado. Os
+cálculos foram portados do HTML original sem mudar regra; a leitura do arquivo
+roda no navegador. O que ainda **não foi exercitado pela tela com sessão
+logada** está em `Projeto Claude\Diário do Cliente\HANDOFF-ICO-FISCAL.md`.
+
+#### O arquivo da base vem meio pronto do Acessórias
+
+`GET /api/ico-fiscal/arquivo?inicio=&fim=` monta a planilha a partir do modelo
+em `public/modelos/`, já com a aba **Acessórias-Empresas** preenchida pela API
+(carteira inteira, ativas e inativas, com o responsável de cada departamento) e
+o período gravado em `B2`/`B3` da Base de Dados — que antes era digitado à mão a
+cada trimestre. **Domínio, Obrigações Acessórias, Digisac e Contatos continuam
+sendo colados à mão.**
+
+O arquivo é editado **no XML** (`lib/ico/montarArquivo.ts`), nunca reescrito por
+biblioteca de planilha: reescrever destruiria a matriz dinâmica `UNIQUE/FILTER`
+da coluna D e as fórmulas de ICO. Só a aba de empresas é trocada inteira, mais
+duas células de período.
+
+**Por que as obrigações não vêm da API.** O endpoint existe
+(`GET /deliveries/{CNPJ}`) e traz quase tudo — inclusive o Prazo Técnico, que é
+o `EntDtPrazo` (o `EntDtAtraso` é o prazo legal), e o `Config.RespPrazo`. Mas
+**não expõe o Protocolo**, que o usuário usa; e o `ListAll` desse endpoint só
+devolve entregas alteradas ontem/hoje, obrigando a uma chamada por empresa, com
+teto de 31 dias por consulta. Decisão de 30/10/2026: automatizar só as empresas.
+
+**Data de entrada quando o cadastro não tem.** A coluna A é
+`EOMONTH(Cli. desde, senão Data de abertura, senão MIN(Cadastro, início do
+período))`. A API não expõe a data de abertura e 239 das 427 empresas não têm
+"Cli. desde". O `MIN` não é detalhe: o Cadastro diz quando a empresa entrou no
+Acessórias, não quando virou cliente — há empresa aberta em 2019 e cadastrada em
+2025 — e sem ele 20 empresas caíam fora do trimestre. Com a regra atual, 191 das
+198 empresas do 1º tri/2025 são reproduzidas.
+
+**Limitação assumida:** o cadastro reflete o **presente**. Numa análise
+retroativa, quem saiu da carteira depois não aparece mais — as 7 empresas que
+faltam para as 198 são 4 que ficaram inativas em ago/set de 2026 e 3 que sumiram
+da base. Para refazer um trimestre antigo com exatidão, o arquivo daquela época
+é a fonte, não o cadastro de hoje.
 
 O **Conversor de Leiaute** (`/conversor-dominio`, planilha de NFS-e → TXT do
 Domínio) foi **removido** em 30/09/2026, a pedido do usuário: deixou de ser

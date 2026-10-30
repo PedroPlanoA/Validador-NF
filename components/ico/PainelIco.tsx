@@ -8,6 +8,7 @@ import { montarDB, resumo, todosTris, trisVisiveis } from "@/lib/ico/calculo";
 import { rotuloTri, rotuloTriLongo } from "@/lib/ico/formato";
 import { linhasDaPlanilha, parseCsv, reconhece } from "@/lib/ico/leitura";
 import type { Arquivo, Tri } from "@/lib/ico/tipos";
+import { BaixarArquivo } from "./BaixarArquivo";
 import { TipProvider } from "./graficos";
 import { Complexidade, GrauCarteira, KpisPrincipais, Metodologia, MudancaDeGrau, PorResponsavel, Producao, Rodape, TabelaEmpresas } from "./SecoesIco";
 
@@ -237,8 +238,9 @@ export function PainelIco() {
             <Button size="sm" onClick={() => entrada.current?.click()} disabled={lendo}>
               {lendo && <Loader2 className="w-4 h-4 animate-spin" />} Adicionar arquivos
             </Button>
+            <BaixarArquivo />
             <a href={MODELO} download={NOME_MODELO} className="inline-flex items-center gap-2 text-[13px] font-semibold px-4 py-2 rounded-pill border border-ink/15 text-ink hover:border-mint hover:text-mint-700">
-              <Download className="w-4 h-4" /> Baixar modelo da planilha
+              <Download className="w-4 h-4" /> Modelo em branco
             </a>
             <Button size="sm" variant="danger" onClick={removerTodos}>Remover todos</Button>
           </div>
@@ -303,11 +305,12 @@ function ZonaImportar({ lendo, arrastando, setArrastando, entrada, receber, reto
       <Button variant="solid" onClick={() => entrada.current?.click()} disabled={lendo}>
         {lendo && <Loader2 className="w-4 h-4 animate-spin" />} {lendo ? "Lendo e guardando…" : "Selecionar arquivos"}
       </Button>
-      <p className="mt-4 text-[13px]">
-        <a href={MODELO} download={NOME_MODELO} className="inline-flex items-center gap-1.5 font-semibold text-teal hover:underline">
-          <Download className="w-4 h-4" /> Baixar o modelo da planilha (com as fórmulas, sem dados)
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[13px]">
+        <BaixarArquivo className="inline-flex items-center gap-1.5 font-semibold text-teal hover:underline" />
+        <a href={MODELO} download={NOME_MODELO} className="inline-flex items-center gap-1.5 font-semibold text-text-2 hover:underline">
+          <Download className="w-4 h-4" /> Modelo em branco, sem dados
         </a>
-      </p>
+      </div>
       <div className="grid gap-3.5 grid-cols-[repeat(auto-fit,minmax(min(100%,255px),1fr))] mt-6 text-left">
         {[
           ["Base de Dados", "Um arquivo por trimestre. Precisa das colunas ID, Pontos e Grau, e das células Data Início / Data Fim."],
